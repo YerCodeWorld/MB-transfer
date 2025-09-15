@@ -6,10 +6,11 @@ import { RiMoonFill, RiSunFill } from "react-icons/ri";
 type FixedSwitchProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 export default function FixedSwitch(props: FixedSwitchProps) {
-  const [darkmode, setDarkmode] = useState(false);
+
+  const [darkmode, setDarkmode] = useState<boolean>(false);
 
   useEffect(() => {    
-    setDarkmode(document.documentElement.classList.contains("dark"));
+    setDarkmode(document.documentElement.classList.contains("dark"));    
   }, []);
 
   const toggleTheme = () => {
@@ -34,9 +35,9 @@ export default function FixedSwitch(props: FixedSwitchProps) {
     >
       <div className="cursor-pointer">
         {darkmode ? (
-          <RiSunFill className="h-5 w-5 text-white" />
-        ) : (
           <RiMoonFill className="h-5 w-5 text-white" />
+        ) : (
+          <RiSunFill className="h-5 w-5 text-white" />
         )}
       </div>
     </button>
