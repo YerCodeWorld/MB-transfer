@@ -1,6 +1,7 @@
 // Assets
 import { BsArrowRight } from "react-icons/bs";
 
+// Needs to be attached with DB's data
 const Schedule = () => {
 
   const eventBg = '';

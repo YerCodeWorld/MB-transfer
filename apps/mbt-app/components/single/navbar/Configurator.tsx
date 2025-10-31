@@ -12,8 +12,6 @@ import MiniSidebar from "../../../public/layout/MiniSidebar.png";
 import MiniSidebarDark from "../../../public/layout/MiniSidebarDark.png";
 import ConfiguratorLogo from "../../../public/layout/ConfiguratorLogo.png";
 
-import Dialog from "../dialog";
-
 // Assets
 import {
   MdSettings,
@@ -29,7 +27,7 @@ export default function HeaderLinks(props: { [x: string]: any }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState("Purple");
   const [contrast, setContrast] = useState(false);
-  const btnRef = React.useRef();
+  const btnRef = React.useRef<HTMLButtonElement>(null);
 
   const [isDialogOpen, setDialogOpen] = useState(false);
 

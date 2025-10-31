@@ -104,7 +104,7 @@ const Navbar = (props: {
           : mini === true && hovered === true
           ? "w-[calc(100vw_-_6%)] md:w-[calc(100vw_-_8%)] lg:w-[calc(100vw_-_6%)] xl:w-[calc(100vw_-_350px)] 2xl:w-[calc(100vw_-_365px)]"
           : "w-[calc(100vw_-_6%)] md:w-[calc(100vw_-_8%)] lg:w-[calc(100vw_-_6%)] xl:w-[calc(100vw_-_180px)] 2xl:w-[calc(100vw_-_195px)]"
-      }  p-2 backdrop-blur-xl dark:bg-[#0b14374d] md:top-4 md:right-[30px] xl:top-[20px] z-2`}
+      }  p-2 backdrop-blur-xl dark:bg-[#0b14374d] md:top-4 md:right-[30px] xl:top-[20px] z-50`}
     >
       <div className="ml-[6px]">
       <h2 className="text-accent-500 dark:text-accent-100">{mounted ? `${message}!` : ""}</h2>
@@ -263,12 +263,13 @@ const Navbar = (props: {
               className="h-10 w-10 rounded-full object-cover"
             />
           }
+          animation="origin-[75%_0%] md:origin-top-right transition-all duration-300 ease-in-out"
           children={
             <div className="flex h-max w-56 flex-col justify-start rounded-[20px] bg-white bg-cover bg-no-repeat pb-4 shadow-xl shadow-shadow-500 dark:!bg-navy-700 dark:text-white dark:shadow-none">
               <div className="mt-3 ml-4">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-bold text-navy-700 dark:text-white">
-                    👋 Hey, Adela
+                    👋 Hey, Yahir!
                   </p>{" "}
                 </div>
               </div>

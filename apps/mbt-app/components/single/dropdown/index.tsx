@@ -2,13 +2,13 @@ import React from "react";
 import { useState, useEffect, useRef } from "react";
 
 interface DropdownProps {
-  button: HTMLButtonElement;
+  button: React.ReactNode;
   animation: string;
-  children: HTMLElement;
+  children: React.ReactNode;
   classNames: string;
 }
 
-function useOutsideAlerter(ref, setX) {
+function useOutsideAlerter(ref: any, setX: any) {
   useEffect(() => {
     /**
      * Alert if clicked on outside of element

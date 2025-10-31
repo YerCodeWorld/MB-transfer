@@ -14,7 +14,7 @@ import {
 type ItemKey =
   | "itinerary"
   | "notes"
-  | "people"
+  | "employees"
   | "accounting"
   | "stats";
 
@@ -41,8 +41,8 @@ function Sidebar(props: {
 
   const menu: Array<{ key: ItemKey; label: string; Icon: any; title?: string }> = [
     { key: "itinerary", label: "Itinerary of Services", Icon: HiOutlineCalendar, title: "Drives / services" },
-    { key: "notes",     label: "Notes · Tasks · Reminders", Icon: HiOutlinePencilAlt },
-    { key: "people",    label: "Employees · Allies · Vehicles", Icon: HiOutlineUsers },
+    { key: "notes",     label: "Agenda", Icon: HiOutlinePencilAlt },
+    { key: "employees", label: "Personal", Icon: HiOutlineUsers },
     { key: "accounting",label: "Accounting", Icon: HiOutlineBriefcase },
     { key: "stats",     label: "Statistics", Icon: HiOutlineChartBar },
   ];

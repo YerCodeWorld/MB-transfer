@@ -2,7 +2,7 @@ import { MdOutlineTimer } from "react-icons/md";
 
 const Course = (props: {
   bgBox: string;
-  icon: JSX.Element;
+  icon: React.ReactElement;
   title: string;
   desc: string;
   day: string;
@@ -10,11 +10,13 @@ const Course = (props: {
   topics: string[];
   time: string;
   extra?: string;
+  onClick?: () => void;
 }) => {
-  const { bgBox, icon, title, desc, day, date, topics, time, extra } = props;
+  const { bgBox, icon, title, desc, day, date, topics, time, extra, onClick } = props;
   return (
     <div
-      className={`flex h-fit w-full flex-col rounded-[20px] bg-white bg-clip-border p-4 !pb-10 shadow-3xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none 2xl:flex-row 3xl:h-[310px] ${extra}`}
+      className={`cursor-pointer flex h-fit w-full flex-col rounded-[20px] bg-white bg-clip-border p-4 !pb-10 shadow-3xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none 2xl:flex-row 3xl:h-[310px] ${extra}`}
+      onClick={onClick}
     >
       <div
         className={`${bgBox} bg-center bg-no-repeat bg-cover object-cover transition duration-300 ease-out group-hover:scale-105 mr-8 flex min-h-[200px] min-w-full items-center justify-center rounded-xl text-[100px] 2xl:h-[270px] 2xl:min-w-[470px]`}

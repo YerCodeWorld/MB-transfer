@@ -6,7 +6,11 @@ import "../../css/MiniCalendar.css";
 
 const MiniCalendar = (props: { width?: string }) => {
   const { width } = props;
-  const [value, onChange] = useState(new Date());
+  const [value, onChange] = useState<Date | null>(new Date());
+
+  const handleDateChange = (value: any) => {
+    onChange(value);
+  };
 
   return (
     <div>
@@ -16,7 +20,7 @@ const MiniCalendar = (props: { width?: string }) => {
         } h-full max-w-full flex-col rounded-[20px] bg-white px-3 z-0 py-4 dark:border dark:!border-white/10 dark:!bg-navy-800`}
       >
         <Calendar
-          onChange={onChange}
+          onChange={handleDateChange}
           value={value}
           prevLabel={<MdChevronLeft className="ml-1 h-6 w-6" />}
           nextLabel={<MdChevronRight className="ml-1 h-6 w-6" />}

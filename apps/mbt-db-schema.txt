@@ -1,0 +1,363 @@
+We need to structure the base schema for the application we are developing
+for the transport company. We will cover the basic systems and workflow. The
+main ideas of the application are to track daily services.
+
+The company operates in the Dominican Republic, east region - while it does 
+local services occasionally, most of its services come from two companies, 
+one located in Mexico and the other one in poland. These companies make sure
+to manage the process of having proper transport airport-hotel and viceversa 
+without issues, saving the client from having to deal with those themselved 
+and falling into potential dangers of doing so. 
+
+The way does companies make of this is through this company, where we here 
+operate with the clients based on the information provided by the ally companies.
+
+Sacbé Transfer
+
+Operates in Mexico, sends us a daily XLSX file containing the services of the day.
+
+AirportTrasnfer (AT)
+
+Operates in Poland, has a website with a dashboard where we can extract all the
+information we need about the services.
+
+The information they provide relevant to us is simple, it compresses the name 
+of the client, service code, pickup time, pax number, pickup, dropoff and notes.
+We then extend with more information relevant to OUR workflow and not theirs, so
+I tried to represent it:
+
+model Service {
+
+  code       String   // provided by the ally or our own system
+  
+  kindOf     ServiceType 
+  state      ServiceState 
+  
+  client     String   
+  pickup     Time 
+  flightCode String   // Like 'AV 128'
+  vehicule   Vehicule
+
+  pax        Int 
+  luggage    Int 
+
+  driver     Driver 
+  
+  company    Ally // just the name 
+  
+  from       Hotel or Airport
+  to         Hotel or Airport
+  route      Routes 
+
+  price      Int 
+  currency   String // DOP || USD || EUR ¦ Curreny enum? 
+
+  flier      PDF // !IMPORTANT 
+  
+  notes      Note[]
+}
+
+And that is it. Now, we need to extend it will a greater layer to manage all
+the services, the itinerary. The itinerary is the model to manage, by day,
+all the services for that specific day, and any relevant information necessary.
+
+model Itinerary {
+    
+    date                 Date        // Date    
+    services             Service[]   // list of services 
+
+    // after uploading the itinerary's data, we need to go through some proceses
+    // like organazing based on time, checking time of flight codes, converting
+    // 24h to 12h and checking for some specific edge cases. 
+    sorted               Bool 
+    flightsChecked       Bool
+    timesConverted       Bool  
+    edgeCases            Bool
+
+    notes                Note[] 
+    
+    createdAt            DateTime
+    updatedAt            Date
+}
+
+-----------------------------------------------------------
+
+Now, as you could see we have many different references and relations
+to other models or enums, and they are exactly necessary. For example
+the service type or service state: 
+
+enum ServiceType { 
+  // These are the three types the company operates with 
+  DEPARTURE
+  ARRIVAL
+  TRANSFER
+}
+
+enum ServiceState {  
+  COMPLETED
+  ONGOING
+  UPCOMING
+  CANCELED
+  REFUNDED
+}
+
+We operate with roughly 4 vehicules, we will keep relevant info
+about them for usage in the application. It has a relation in the
+service model 
+
+model Vehicule {
+  name               String 
+  image              String // string no ?? 
+  brand              String 
+  identifierDocument String 
+  
+  state              VehiculeState   
+  
+  paxCapacity        Int
+  luggageCapacity    Int 
+
+  gasType            String 
+  gasPrice           Int // useful for accounting
+  gasState           VehiculeGasState 
+
+  services           Int // autoincrement (count of usage)
+    
+  notes              String   
+  lastMaintenance    String
+
+  notes              Note[]
+}
+
+enum VehiculeState {
+  FUNCTIONAL 
+  DAMAGED
+  USING
+  PARKED       
+}
+
+enum VehiculeGasState {
+  FULL
+  MIDDLE 
+  EMPTY 
+}
+
+-------------------------------------------------------------------
+
+I wrote 'Driver' as a relation, but a that is just an employee with
+a role of Driver. The company operates with workflows, where we have 
+5 to 6 employees that each operate on their own set of things.
+
+model Employee {
+  name               String
+  photo              String
+  identification     String
+  
+  role               EmployeeRole 
+  state              EmployeeState 
+  
+  age                Int 
+  birhtdate          Date 
+  startedOn          Date // when started working 
+  
+  avrgWorkingHours   Int // a day
+  
+  phone              String
+  emergencyPhone     String
+  email              String 
+
+  isPaid             Int // how much is paid 
+  frequency          Int // frequency of paiment  
+
+  accessKey          AccessKey    
+
+  // app preferences 
+  darkMode           Bool 
+  appAccent          String 
+  minimized          Bool 
+
+  responsabilities   Note[]  
+  observations       Note 
+}
+
+enum EmployeeRole {
+  ADMINISTRATOR 
+  DEVELOPER
+  COORDINATOR
+  MANAGER
+  DRIVER 
+  STAFF 
+}
+
+enum EmployeeState {
+  WORKING
+  SUSPENDED
+  FIRED
+}
+
+// for the application itself 
+model AccessKey {
+  key        String 
+  ip         String[]  // mapped IPs user can join from
+}
+
+Having these mapped out helps a lot with the permissons for access for the 
+different modules of the application. We need to know the role specially to
+determine that. We can both assign the accesable areas in the model or set that
+up in the source code. 
+
+-------------------------------------------------------------------------------
+
+EXTRA - things that need even more work to formalize it
+
+We can map out all hotels slowly:
+
+model Hotel {
+  name          String 
+  accessNotes   Note[]   
+  coordinates   GeoJson
+}
+
+And airports:
+
+model Airport {
+  name          String 
+  iata          String 
+  coordinates   GeoJson 
+}
+
+And even routes:
+
+model Route {
+  name          String 
+  from          Hotel or Aiport 
+  to            Hotel or Airpot 
+  price         Int
+  observations  Note[] 
+}
+
+----------------------------------------------------------
+
+A very important model that will help with the overall UX. Helpful
+for all other models, sections and features of the application. 
+
+model Note {
+  title        String
+  caption      String 
+  
+  tag          NoteTag
+  content      Text 
+
+  createdAt    Date 
+  updatedAt    Date
+}
+
+enum NoteTag {
+  EMERGENCY
+  IMPORTANT 
+  REMINDER
+  MINOR 
+  IDEA 
+  SUGGESTION  
+}
+
+-----------------------------------------------------------------------------
+
+Finance Module - Just sketched out, this needs to be improved 
+
+model Transaction {
+
+  title            String 
+  amount           Int 
+  currency         String 
+
+  notes            Note[] 
+
+  // not sure, I want to do something to keep a relation with the data based on the type
+  // of transaction - helps fetch all and have them be useful or create better custom checks.  
+  
+  serviceId        String 
+  vehicule         Vehicule 
+  employee         Employee 
+
+  assignedBudget   Budget
+
+  createdAt        Date 
+}
+
+model Budget {
+
+  title        String 
+  amount       Int
+
+  category     Categroy 
+  currency     String 
+
+  // app 
+  color        String 
+
+  notes        Note[] 
+
+  createdAt    Date 
+}
+
+model Spendings {
+
+  title                 String 
+  description           String 
+
+  amount                String 
+  assignedBudged        Budget
+
+  frequency             Frequency
+
+  createdAt             Date 
+  updatedAt             Date 
+}
+
+
+enum BudgetCategory {}
+
+enum Frequency {
+  HOURLY 
+  DAILY 
+  WEEKLY 
+  MONTLY
+  YEARLY  
+}
+
+------------------------------------------------------------------
+
+METADATA-LIKE information 
+
+model Ally {
+  name            String 
+  website         String
+  logo            String 
+  email           String
+  contactNumber   String  
+  notes           String
+  observations    Note   
+}
+
+model Document {
+  title         String 
+  description   String 
+  html          String   // html, rendered ready to read 
+  
+  createdAt     String
+  updatedAt     String 
+}
+
+// main model for metadata from the company and application 
+model Contract {
+  phoneNumber      String
+  emergencyNumber  String
+  email            String 
+  logo             String 
+  about            Text   
+  documentation    Document[]
+
+  // etc 
+}
+
+

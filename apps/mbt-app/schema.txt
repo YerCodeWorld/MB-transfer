@@ -1,0 +1,192 @@
+model AccessKey {
+  key        String 
+  deviceIP   String 
+  
+  employee   Employee  @relation()  
+}
+
+model Routes {
+  name           String
+  geo            String 
+  price          String 
+  from           String 
+  to             String    
+  travelTime     Int 
+  observations   String 
+}
+
+model Zones {
+  name        String 
+  geo         Json   
+}
+
+model AlliedCompany {
+  name             String 
+  website          String 
+  description      Text
+  email            String 
+  customerService  String 
+  observations     String // a list of strings 
+}
+
+model Itinerary {
+  date          Date 
+  notes         Text   
+  services      Service // list of services ??  
+}
+
+model Service {
+  type             ServiceType
+  serviceCode      String
+  clientName       String 
+  flightCode       String  
+  pax              Int 
+  luggage          Int 
+  
+  from             String // should be hotel | airpor 
+  to               String // same here...
+  pickup           Strign // should be 'time' ?
+
+  flier            String // a PDF generated with the service info 
+  notes            Text   
+  
+  company          Companies
+
+  createAt         Data 
+  updatedAt        Data 
+
+  state            ServiceState  
+  
+  price            Int 
+  currency         String // USD, DOP or EUR 
+
+  // relations 
+  route            Route 
+  vehicule         Vehicule 
+  driver           Employee            
+}
+
+model Vehicule {
+  identifier                  String 
+  brand                       String   
+  photo                       String 
+  gasPrice                    Int
+  gasType                     String 
+  luggageCapacity             String 
+  paxCapacity                 String 
+  observations                String 
+  state                       VehiculeState
+  usageNotes                  String 
+  lastTechnicalCheck          date 
+}
+
+model Nofication {
+  from         String 
+  message      Text 
+}
+
+model Preferences {
+  lightMode        Boolean
+  miniSidebar      Boolean
+  accentColor      String 
+
+  user             Employee 
+}
+
+model Employee {
+  name                    String 
+  age                     Int 
+
+  number                  String 
+  emergencyNumber         String 
+  email                   String 
+  photo                   String   
+
+  joined                  Date // 
+  ended                   Date // if applicable 
+  averageWorkHours        Int
+
+  role                    Roles 
+  state                   EmployeeState  
+
+  tasks                   Text 
+  observations            String // again, a list?
+
+  preferences             Preferences // relation 
+}
+
+model Hotel {
+  name          String 
+  geo           String // maybe json?
+  observations  String 
+  accessRules   String 
+}
+
+model Airport {
+  name            String 
+  iata            String 
+
+  geo             String 
+  observations    String   
+}
+
+model Task {}
+
+model Event {}
+
+enum Roles {
+  ADMINISTRATOR
+  COORDINATOR
+  MANAGER
+  DRIVER
+  EMPLOYEE 
+  DEVELOPER
+  PARTNER 
+}
+
+enum VehiculeState {  
+  ONSERVICE
+  OFFSERVICE
+  DAMAGED  
+}
+
+enum EmployeeState {
+  ONLINE 
+  OFFLINE 
+  FIRED 
+  SUSPENED 
+}
+
+enum ServiceType {
+  ARRIVAL 
+  DEPARTURE 
+  TRANSFER 
+}
+
+enum ServiceState {
+  COMPLETED 
+  UPCOMING
+  ONGOING 
+  CANCELED
+  REFUNDED
+}
+
+enum Companies {
+  MBT
+  AT
+  ST
+}
+
+model Documentation {}
+
+model Application {
+  name       String 
+  website    String 
+  email      String
+  logo       String 
+   
+  doc        String // list of Documentation ??
+}
+
+
+

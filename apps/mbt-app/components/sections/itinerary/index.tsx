@@ -18,6 +18,21 @@ export default function Transactions({
     controlledDate ?? new Date().toISOString().slice(0, 10)
   );
 
+  // this could be done dynamically with a DB, but for the moment let's just hard-code it 
+  // there's a model in the db for 'ALLY' that might be useful 
+  /*
+  model Ally {
+    id            String   @id @default(cuid())                   -> KEY
+    name          String   @unique                                
+    website       String?                         
+    logo          String?
+    email         String?                                         -> IMG 
+    contactNumber String?
+    notes         String?
+    observations  Note[]
+    ...
+  }  
+  */
   const items: Array<{
     key: CompanyKey;
     title: string;
