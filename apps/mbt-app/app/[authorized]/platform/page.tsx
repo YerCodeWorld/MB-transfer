@@ -13,6 +13,7 @@ import Accounting from "../../../components/compound/accounting";
 
 import AuthGuard from "../../../components/guards/AuthGuard";
 import { NavigationProvider, useNavigation } from "../../../contexts/NavigationContext";
+import { ServiceProvider } from "../../../contexts/ServiceContext";
 
 import Breadcrumb from "../../../components/single/breadcrumb";
 
@@ -157,7 +158,9 @@ function PlatformContent() {
 export default function Home() {
   return (
     <NavigationProvider>
-      <PlatformContent />
+      <ServiceProvider>
+        <PlatformContent />
+      </ServiceProvider>
     </NavigationProvider>
   );
 }

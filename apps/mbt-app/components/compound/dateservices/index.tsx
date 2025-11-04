@@ -8,16 +8,43 @@ import Schedule from "./components/Schedule";
 import Hours from "./components/Hours";
 import Card from "../../single/card";
 import { useNavigation } from "../../../contexts/NavigationContext";
+import { useServices } from "../../../contexts/ServiceContext";
+
+// Service components
+import AirportTransferService from "../../services/AirportTransferService";
+import SacbeTransferService from "../../services/SacbeTransferService";
+import MBTransferService from "../../services/MBTransferService";
+import AllServicesView from "../../services/AllServicesView";
 
 // Change the default name 
 const Courses = () => {
   const { pushView } = useNavigation();
 
   const handleServiceClick = (serviceType: string, title: string) => {
+    let component;
+    
+    switch (serviceType) {
+      case 'at':
+        component = AirportTransferService;
+        break;
+      case 'st':
+        component = SacbeTransferService;
+        break;
+      case 'mbt':
+        component = MBTransferService;
+        break;
+      case 'all':
+        component = AllServicesView;
+        break;
+      default:
+        component = undefined;
+    }
+
     pushView({
       id: `service-${serviceType}`,
       label: title,
-      data: { serviceType, title }
+      data: { serviceType, title },
+      component
     });
   };
 
