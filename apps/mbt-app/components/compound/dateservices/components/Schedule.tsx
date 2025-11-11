@@ -1,11 +1,25 @@
 // Assets
 import { BsArrowRight } from "react-icons/bs";
-import { useServices } from "../../../../contexts/ServiceContext";
+import { useServiceData } from "../../../../contexts/ServiceDataContext";
 
 // Needs to be attached with DB's data
 const Schedule = () => {
-  const { selectedDate, getServiceStatistics } = useServices();
-  const stats = getServiceStatistics(selectedDate);
+  const { selectedDate, getServicesByDate } = useServiceData();
+  
+  // Get services for selected date and calculate statistics
+  const allServices = getServicesByDate(selectedDate);
+  const atServices = getServicesByDate(selectedDate, 'at');
+  const stServices = getServicesByDate(selectedDate, 'st');
+  const mbtServices = getServicesByDate(selectedDate, 'mbt');
+  
+  const stats = {
+    total: allServices.length,
+    byServiceType: {
+      'at': atServices.length,
+      'st': stServices.length,
+      'mbt': mbtServices.length
+    }
+  };
 
   const eventBg = '';
   const mb = 'mb-2';
@@ -17,62 +31,52 @@ const Schedule = () => {
         <h4 className="leading-1 text-lg font-bold text-navy-700 dark:text-white">
           Cantidad de Servicios 
         </h4>
-        <div className="flex items-center gap-2">
-          <p className="w-max text-sm font-medium text-brand-500 transition-all hover:mr-1 hover:cursor-pointer dark:text-white">
-            Ver Estadísticas 
-          </p>
-          <p className="text-base text-brand-500 hover:cursor-pointer dark:text-white">
-            <BsArrowRight />
-          </p>
-        </div>
+
       </div>
       <div className="mt-8">
         <div className="mb-4 text-center">
           <div className="text-2xl font-bold text-navy-700 dark:text-white">
             {stats.total}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-300">
-            Total Services for {new Date(selectedDate).toLocaleDateString()}
+          <div className="text-sm text-gray-600 dark:text-gray-300">                      
+            Mostrando Itinerario del <i className="text-red-500">{
+              new Date(selectedDate).toLocaleDateString("es-ES", { 
+                year: "numeric", month: "long", day: "numeric"
+              })          
+            }</i>          
           </div>
         </div>
       
+        {/* Airport Transfer */}
         <div
-          className={`flex w-full justify-between dark:!bg-navy-700 ${eventBg} ${mb} rounded-xl py-3 px-4 3xl:p-4 `}
+          className={`flex w-full justify-between bg-blue-50 dark:!bg-blue-900/10 border-l-4 border-l-blue-500 ${mb} rounded-xl py-3 px-4 3xl:p-4 `}
         >
-          <h5 className="text-base font-bold text-navy-700 dark:text-white">
-            {'AirportTransfer'}{" "}
+          <h5 className="text-base font-bold text-blue-700 dark:text-blue-300">
+            {'Airport Transfer'}{" "}
           </h5>
-          <p className="text-sm font-large text-gray-600"> {stats.byAlly['AirportTransfer'] || 0} Services </p>
+          <p className="text-sm font-large text-blue-600 dark:text-blue-400"> {stats.byServiceType.at} Services </p>
         </div>
 
+        {/* Sacbé Transfer */}
         <div
-          className={`flex w-full justify-between dark:!bg-navy-700 ${eventBg} ${mb} rounded-xl py-3 px-4 3xl:p-4 `}
+          className={`flex w-full justify-between bg-green-50 dark:!bg-green-900/10 border-l-4 border-l-green-500 ${mb} rounded-xl py-3 px-4 3xl:p-4 `}
         >
-          <h5 className="text-base font-bold text-navy-700 dark:text-white">
+          <h5 className="text-base font-bold text-green-700 dark:text-green-300">
             {'Sacbé Transfer'}{" "}
           </h5>
-          <p className="text-sm font-large text-gray-600"> {stats.byAlly['Sacbé Transfer'] || 0} Services </p>
+          <p className="text-sm font-large text-green-600 dark:text-green-400"> {stats.byServiceType.st} Services </p>
         </div>
 
+        {/* MB Transfer */}
         <div
-          className={`flex w-full justify-between dark:!bg-navy-700 ${eventBg} ${mb} rounded-xl py-3 px-4 3xl:p-4 `}
+          className={`flex w-full justify-between bg-purple-50 dark:!bg-purple-900/10 border-l-4 border-l-purple-500 ${mb} rounded-xl py-3 px-4 3xl:p-4 `}
         >
-          <h5 className="text-base font-bold text-navy-700 dark:text-white">
+          <h5 className="text-base font-bold text-purple-700 dark:text-purple-300">
             {'MB Transfer'}{" "}
           </h5>
-          <p className="text-sm font-large text-gray-600"> {stats.byAlly['Unassigned'] || 0} Services </p>
+          <p className="text-sm font-large text-purple-600 dark:text-purple-400"> {stats.byServiceType.mbt} Services </p>
         </div>
 
-        {stats.edgeCases > 0 && (
-          <div
-            className={`flex w-full justify-between bg-yellow-50 dark:!bg-yellow-900/20 ${mb} rounded-xl py-3 px-4 3xl:p-4 border border-yellow-200 dark:border-yellow-600`}
-          >
-            <h5 className="text-base font-bold text-yellow-700 dark:text-yellow-300">
-              {'Edge Cases'}{" "}
-            </h5>
-            <p className="text-sm font-large text-yellow-600 dark:text-yellow-400"> {stats.edgeCases} Issues </p>
-          </div>
-        )}
         
       </div>
     </div>

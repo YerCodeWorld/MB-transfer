@@ -20,6 +20,7 @@ import {
   PiCalendarCheckBold
 } from "react-icons/pi";
 import { useNavigation } from "../../../contexts/NavigationContext";
+import { useBottomBar } from "../../../contexts/BottomBarContext";
 
 interface ActionItem {
   key: string;
@@ -36,14 +37,20 @@ interface BottomBarProps {
   className?: string;
 }
 
+// Dynamic bottom bar that receives actions from active components through BottomBarContext
+
 export default function BottomBar({ section, mini = false, className = "" }: BottomBarProps) {
+
   const { navigation, popView } = useNavigation();
+  const { actions: contextActions } = useBottomBar();
   const [showMore, setShowMore] = useState(false);
   
   const isInNestedView = navigation.stack.length > 0;
   const currentView = isInNestedView ? navigation.stack[navigation.stack.length - 1] : null;
 
-  // Base actions for each section
+  // TODO
+  // The components are being updated in such a way that they themselves use a hook to populate the bottom bar instead
+  // remove this useless logic 
   const sectionActions: Record<string, ActionItem[]> = {
     itinerary: [
       { key: "new", label: "New Service", Icon: HiOutlinePlus, variant: "primary" },
@@ -128,7 +135,13 @@ export default function BottomBar({ section, mini = false, className = "" }: Bot
     return baseActions;
   };
 
-  const actions = isInNestedView ? getNestedViewActions() : sectionActions[section] ?? [];
+  // Use context actions if available, otherwise fall back to hardcoded actions
+  const actions = contextActions.length > 0 
+    ? contextActions 
+    : isInNestedView 
+      ? getNestedViewActions() 
+      : sectionActions[section] ?? [];
+
   
   // Split actions for responsive design
   const maxVisibleActions = mini ? 3 : 5;
@@ -139,7 +152,7 @@ export default function BottomBar({ section, mini = false, className = "" }: Bot
     if (action.onClick) {
       action.onClick();
     } else {
-      console.log(`Action clicked: ${action.key} in ${isInNestedView ? 'nested view' : section}`);
+      // ...
     }
   };
 
@@ -161,10 +174,13 @@ export default function BottomBar({ section, mini = false, className = "" }: Bot
   if (actions.length === 0) return null;
 
   return (
-    <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 ${className}`}>
+    <div className={`flex items-center justify-center gap-2 p-1 ${className}`}>
+      {/* THIS DIV SHOWS BELOW MODALS */}
       <div className="flex items-center gap-2">
+      
         {/* Main action bar */}
-        <div className="flex items-center gap-1 rounded-2xl border border-gray-200 bg-white/95 backdrop-blur-lg p-2 shadow-xl dark:border-gray-700 dark:bg-navy-800/95">
+        {/* THESE ONE SHOWS ABOVE */}
+        <div className="flex items-center gap-1 rounded-2xl border border-gray-200 bg-white/95 p-2 shadow-xl dark:border-gray-700 dark:bg-navy-800/95">
           {visibleActions.map((action) => (
             <button
               key={action.key}

@@ -62,6 +62,7 @@ export interface FlightInfo {
 }
 
 export interface ServiceInput {
+  id?: string;
   code?: string;
   kindOf: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER';
   clientName: string;
@@ -74,4 +75,6 @@ export interface ServiceInput {
   notes?: string;
   ally?: string;
   vehicleType?: string;
+  assignedDriver?: string;
+  assignedVehicle?: string;
 }

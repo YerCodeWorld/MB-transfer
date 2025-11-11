@@ -3,11 +3,11 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import "../../css/MiniCalendar.css";
-import { useServices } from "../../../contexts/ServiceContext";
+import { useServiceData } from "../../../contexts/ServiceDataContext";
 
 const MiniCalendar = (props: { width?: string }) => {
   const { width } = props;
-  const { selectedDate, setSelectedDate, getServicesByDate } = useServices();
+  const { selectedDate, setSelectedDate, getServicesByDate } = useServiceData();
   const [value, onChange] = useState<Date | null>(new Date(selectedDate));
 
   const handleDateChange = (value: any) => {

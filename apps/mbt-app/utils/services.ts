@@ -23,6 +23,24 @@ export function convertTo24Hour(time12: string): string {
   return `${hours24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
 
+export function convertIsoStringTo12h(isoString) {
+  const dateObj = new Date(isoString);
+
+  let hours = dateObj.getHours();
+  let minutes = dateObj.getMinutes();
+
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+
+  minutes = minutes < 10 ? '0' + minutes : minutes;
+
+  const timeString = `${hours}:${minutes} ${ampm}`;
+
+  return timeString;
+}
+
 // Fetch flight times from FlightAware API
 export async function fetchFlightTimes(flightCodes: string[], forTomorrow = true): Promise<FlightInfo[]> {
   const apiKey = "FTRH5ucRFrmAxSRV4FExcClLLoM0oGKY";
@@ -83,12 +101,14 @@ export async function fetchFlightTimes(flightCodes: string[], forTomorrow = true
 }
 
 // Fetch AirportTransfer data
-export async function fetchAtData(): Promise<{ bookings: any[], date: string } | null> {
+export async function fetchAtData(date?: string): Promise<{ bookings: any[], date: string } | null> {
+
+  // default 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const yyyyMmDd = tomorrow.toISOString().split("T")[0];
+  const yyyyMmDd = tomorrow.toISOString().split("T")[0];  
 
-  const url = `https://api.airporttransfer.com/api/bookings?filters%5Bselected_date%5D=${yyyyMmDd}&pag`;
+  const url = `https://api.airporttransfer.com/api/bookings?filters%5Bselected_date%5D=${date ?? yyyyMmDd}&pag`;
 
   const headers = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
@@ -99,9 +119,9 @@ export async function fetchAtData(): Promise<{ bookings: any[], date: string } |
   };
 
   try {
-    const res = await fetch(url, { headers });
+    const res = await fetch(url, { headers });    
     if (!res.ok) throw new Error("Request failed");
-    const data = await res.json();
+    const data = await res.json();        
     return { bookings: data, date: yyyyMmDd };
   } catch (err) {
     console.error("❌ Error:", err);

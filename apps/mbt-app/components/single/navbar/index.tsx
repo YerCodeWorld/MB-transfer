@@ -104,7 +104,7 @@ const Navbar = (props: {
           : mini === true && hovered === true
           ? "w-[calc(100vw_-_6%)] md:w-[calc(100vw_-_8%)] lg:w-[calc(100vw_-_6%)] xl:w-[calc(100vw_-_350px)] 2xl:w-[calc(100vw_-_365px)]"
           : "w-[calc(100vw_-_6%)] md:w-[calc(100vw_-_8%)] lg:w-[calc(100vw_-_6%)] xl:w-[calc(100vw_-_180px)] 2xl:w-[calc(100vw_-_195px)]"
-      }  p-2 backdrop-blur-xl dark:bg-[#0b14374d] md:top-4 md:right-[30px] xl:top-[20px] z-50`}
+      }  p-2  dark:bg-[#0b14374d] md:top-4 md:right-[30px] xl:top-[20px] z-50`}
     >
       <div className="ml-[6px]">
       <h2 className="text-accent-500 dark:text-accent-100">{mounted ? `${message}!` : ""}</h2>
@@ -120,7 +120,7 @@ const Navbar = (props: {
           </p>
           <input
             type="text"
-            placeholder="Search..."
+            placeholder="Buscar..."
             className="block h-full w-full rounded-full bg-lightPrimary text-sm font-medium text-navy-700 outline-none placeholder:!text-gray-400 dark:bg-navy-900 dark:text-white dark:placeholder:!text-white sm:w-fit"
           />
         </div>
@@ -142,7 +142,7 @@ const Navbar = (props: {
             <div className="flex w-[360px] flex-col gap-3 rounded-[20px] bg-white p-4 shadow-xl shadow-shadow-500 dark:!bg-navy-700 dark:text-white dark:shadow-none sm:w-[460px]">
               <div className="flex items-center justify-between">
                 <p className="text-base font-bold text-navy-700 dark:text-white">
-                  Notification
+                  Notificación
                 </p>
                 <p className="text-sm font-bold text-navy-700 dark:text-white">
                   Marcar todos como leídos

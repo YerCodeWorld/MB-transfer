@@ -14,10 +14,11 @@ import Accounting from "../../../components/compound/accounting";
 import AuthGuard from "../../../components/guards/AuthGuard";
 import { NavigationProvider, useNavigation } from "../../../contexts/NavigationContext";
 import { ServiceProvider } from "../../../contexts/ServiceContext";
-
-import Breadcrumb from "../../../components/single/breadcrumb";
+import { ServiceDataProvider } from "../../../contexts/ServiceDataContext";
+import { BottomBarProvider } from "../../../contexts/BottomBarContext";
 
 function PlatformContent() {
+
   const { navigation, setCurrentSection } = useNavigation();
   const [open, setOpen] = useState(true);
   const [hovered, setHovered] = useState(false);
@@ -109,13 +110,10 @@ function PlatformContent() {
         onSelect={(k) => setCurrentSection(k)}
       />
 
-      {/* Bottom bar for contextual actions */}
-      <BottomBar section={section} mini={mini && !hovered} />
-
       {/* ... */}
-      <div className="h-full w-full font-dm bg-[url('/bg-globes.jpg')] bg-center bg-no-repeat bg-cover md:pr-2">
+      <div className="h-screen w-full font-dm bg-[url('/bg-globes.jpg')] bg-center bg-no-repeat bg-cover md:pr-2 flex flex-col">
         <main
-          className={` flex-none transition-all ${
+          className={`flex-1 overflow-hidden transition-all ${
               mini === false
                 ? "xl:ml-[313px]"
                 : mini === true && hovered === true
@@ -123,9 +121,7 @@ function PlatformContent() {
                 : "ml-0 xl:ml-[142px]"
             } `}
         >
-          <div className="h-full w-full bg-white/90 dark:bg-dark-700/90">
-          <div>
-            
+          <div className="h-full w-full bg-white/90 dark:bg-dark-700/90 flex flex-col">
             <NavBar
               onOpenSidenav={() => setOpen(!open)}
               brandText={"Example"}
@@ -133,22 +129,27 @@ function PlatformContent() {
               theme={themeApp}
               setTheme={setThemeApp}
               hovered={hovered}        
-              mini={mini}
+              mini={true}
               setMini={setMini}
-            />
-                      
-            <div className="mx-auto min-h-screen p-2 !pt-[100px] md:p-2 z-0">
-            
-              {/* Breadcrumb */}
-              <Breadcrumb className="mb-4" />
+            />                      
+            <div className="flex-1 overflow-y-auto p-2 !pt-[100px] md:p-2 z-0">
               
               {/* MainView */}
               {renderMainView()}
             </div>
-              
-          </div>
           </div>                  
-        </main>        
+        </main>
+        
+        <div className={`transition-all ${
+            mini === false
+              ? "xl:ml-[313px]"
+              : mini === true && hovered === true
+              ? "xl:ml-[313px]"
+              : "ml-0 xl:ml-[142px]"
+          } `}
+        >
+          <BottomBar section={section} mini={mini && !hovered} className="bg-white/95 dark:border-gray-700 dark:bg-navy-800/95 z-0" />
+        </div>        
       </div>        
       </div>
     </AuthGuard>
@@ -159,7 +160,11 @@ export default function Home() {
   return (
     <NavigationProvider>
       <ServiceProvider>
-        <PlatformContent />
+        <ServiceDataProvider>
+          <BottomBarProvider>
+            <PlatformContent />
+          </BottomBarProvider>
+        </ServiceDataProvider>
       </ServiceProvider>
     </NavigationProvider>
   );
