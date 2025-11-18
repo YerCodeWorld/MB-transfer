@@ -1,4 +1,6 @@
 import { MdOutlineTimer } from "react-icons/md";
+import { GoCodescan, GoFileDiff } from "react-icons/go";
+import { PiAddressBookThin, PiAirplaneBold } from "react-icons/pi";
 
 const Course = (props: {
   bgBox: string;
@@ -13,6 +15,22 @@ const Course = (props: {
   onClick?: () => void;
 }) => {
   const { bgBox, icon, title, desc, day, date, topics, time, extra, onClick } = props;
+  const serviceIcon = (compName: string): React.ReactElement => {
+    switch (compName) {
+      case 'MB Transfer':
+        return <PiAddressBookThin/>;
+        
+      case 'AirportTransfer':
+        return <GoCodescan/>;
+        
+      case 'Sacbé Transfer':
+        return <GoFileDiff/>;
+
+      default:
+        return <PiAirplaneBold />;
+    }
+  }
+  
   return (
     <div
       className={`cursor-pointer flex h-fit w-full flex-col rounded-[20px] bg-white bg-clip-border p-4 !pb-10 shadow-3xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none 2xl:flex-row 3xl:h-[310px] ${extra}`}
@@ -22,7 +40,7 @@ const Course = (props: {
         className={`${bgBox} bg-center bg-no-repeat bg-cover object-cover transition duration-300 ease-out group-hover:scale-105 mr-8 flex min-h-[200px] min-w-full items-center justify-center rounded-xl text-[100px] 2xl:h-[270px] 2xl:min-w-[470px]`}
       >
         <span className=" bg-accent-50/80 dark:bg-accent-400/80 text-accent-300 dark:text-accent-50 p-4 rounded-lg">
-          {icon}
+          {serviceIcon(title)}
         </span>
       </div>
 

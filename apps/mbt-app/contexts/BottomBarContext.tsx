@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 export interface BottomBarAction {
   key: string;
@@ -29,30 +29,30 @@ interface BottomBarProviderProps {
 export const BottomBarProvider = ({ children }: BottomBarProviderProps) => {
   const [actions, setActionsState] = useState<BottomBarAction[]>([]);
 
-  const setActions = (newActions: BottomBarAction[]) => {
+  const setActions = useCallback((newActions: BottomBarAction[]) => {
     setActionsState(newActions);
-  };
+  }, []);
 
-  const addAction = (action: BottomBarAction) => {
+  const addAction = useCallback((action: BottomBarAction) => {
     setActionsState(prev => {
       const filtered = prev.filter(a => a.key !== action.key);
       return [...filtered, action];
     });
-  };
+  }, []);
 
-  const removeAction = (key: string) => {
+  const removeAction = useCallback((key: string) => {
     setActionsState(prev => prev.filter(a => a.key !== key));
-  };
+  }, []);
 
-  const updateAction = (key: string, updates: Partial<BottomBarAction>) => {
+  const updateAction = useCallback((key: string, updates: Partial<BottomBarAction>) => {
     setActionsState(prev => prev.map(action => 
       action.key === key ? { ...action, ...updates } : action
     ));
-  };
+  }, []);
 
-  const clearActions = () => {
+  const clearActions = useCallback(() => {
     setActionsState([]);
-  };
+  }, []);
 
   const contextValue: BottomBarContextType = {
     actions,

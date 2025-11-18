@@ -88,6 +88,8 @@ function PlatformContent() {
     "--color-accent-900": "#11047A",
   });
 
+  const [selectedBackground, setSelectedBackground] = useState<string>('bg-globes.jpg');
+
   useEffect(() => {
     let color;
     for (color in themeApp) {
@@ -111,7 +113,12 @@ function PlatformContent() {
       />
 
       {/* ... */}
-      <div className="h-screen w-full font-dm bg-[url('/bg-globes.jpg')] bg-center bg-no-repeat bg-cover md:pr-2 flex flex-col">
+      <div 
+        className="h-screen w-full font-dm bg-center bg-no-repeat bg-cover md:pr-2 flex flex-col transition-all duration-500 ease-in-out"
+        style={{
+          backgroundImage: `url('/${selectedBackground}')`
+        }}
+      >
         <main
           className={`flex-1 overflow-hidden transition-all ${
               mini === false
@@ -129,8 +136,10 @@ function PlatformContent() {
               theme={themeApp}
               setTheme={setThemeApp}
               hovered={hovered}        
-              mini={true}
+              mini={mini}
               setMini={setMini}
+              selectedBackground={selectedBackground}
+              setSelectedBackground={setSelectedBackground}
             />                      
             <div className="flex-1 overflow-y-auto p-2 !pt-[100px] md:p-2 z-0">
               

@@ -1,10 +1,12 @@
 // Assets
-import { BsArrowRight } from "react-icons/bs";
+import { BsCalendarCheck } from "react-icons/bs";
 import { useServiceData } from "../../../../contexts/ServiceDataContext";
+import { useNavigation } from "../../../../contexts/NavigationContext";
 
 // Needs to be attached with DB's data
 const Schedule = () => {
   const { selectedDate, getServicesByDate } = useServiceData();
+  const { pushView } = useNavigation();
   
   // Get services for selected date and calculate statistics
   const allServices = getServicesByDate(selectedDate);
@@ -21,8 +23,21 @@ const Schedule = () => {
     }
   };
 
-  const eventBg = '';
   const mb = 'mb-2';
+
+  const handleDetailedView = () => {
+    // Navigate to detailed calendar view
+    pushView({
+      id: 'detailed-calendar',
+      label: 'Detailed Calendar View',
+      component: undefined, // Will be implemented later
+      data: {
+        selectedDate,
+        services: allServices,
+        stats
+      }
+    });
+  };
 
   return (
     <div className="w-full rounded-[20px] bg-white px-[20px] py-8 font-dm shadow-xl shadow-gray-100 dark:border dark:!border-white/10 dark:!bg-navy-800 dark:shadow-none 3xl:px-[30px]">
@@ -31,7 +46,14 @@ const Schedule = () => {
         <h4 className="leading-1 text-lg font-bold text-navy-700 dark:text-white">
           Cantidad de Servicios 
         </h4>
-
+        <button
+          onClick={handleDetailedView}
+          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-accent-600 hover:text-accent-700 hover:bg-accent-50 dark:text-accent-400 dark:hover:text-accent-300 dark:hover:bg-accent-900/20 rounded-lg transition-colors"
+          title="View Detailed Calendar"
+        >
+          <BsCalendarCheck />
+          <span className="hidden sm:inline">Details</span>
+        </button>
       </div>
       <div className="mt-8">
         <div className="mb-4 text-center">
@@ -41,7 +63,7 @@ const Schedule = () => {
           <div className="text-sm text-gray-600 dark:text-gray-300">                      
             Mostrando Itinerario del <i className="text-red-500">{
               new Date(selectedDate).toLocaleDateString("es-ES", { 
-                year: "numeric", month: "long", day: "numeric"
+                year: "numeric", month: "long", day: "numeric", timeZone: "UTC"
               })          
             }</i>          
           </div>

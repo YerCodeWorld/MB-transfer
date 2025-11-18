@@ -1,66 +1,180 @@
-import React, { useState, useEffect } from "react";
-import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
+import React, { useEffect, useRef, useState } from "react";
+import Calendar, { CalendarTileProperties } from "react-calendar";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import "../../css/MiniCalendar.css";
+
 import { useServiceData } from "../../../contexts/ServiceDataContext";
+import { toYMDLocal, isSameDay, startOfGrid, parseYMDLocal } from "../../../utils/dateUtils";
 
-const MiniCalendar = (props: { width?: string }) => {
-  const { width } = props;
+import "react-calendar/dist/Calendar.css";
+
+type MiniCalendarProps = { width?: string };
+
+const MiniCalendar: React.FC<MiniCalendarProps> = ({ width }) => {
   const { selectedDate, setSelectedDate, getServicesByDate } = useServiceData();
-  const [value, onChange] = useState<Date | null>(new Date(selectedDate));
 
-  const handleDateChange = (value: any) => {
-    onChange(value);
-    if (value instanceof Date) {
-      const dateString = value.toISOString().split('T')[0];
-      setSelectedDate(dateString);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [value, setValue] = useState<Date | null>(parseYMDLocal(selectedDate));
+  const [activeStartDate, setActiveStartDate] = useState<Date | null>(null);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+
+  // Global tooltip state
+  const [tip, setTip] = useState<{
+    text: string;
+    x: number;
+    y: number;
+    show: boolean;
+  }>({ text: "", x: 0, y: 0, show: false });
+
+  const showTip = (tileEl: HTMLElement, text: string, offsetY = 8) => {
+    const parent = containerRef.current;
+    if (!parent) return;
+    const r = tileEl.getBoundingClientRect();
+    const pr = parent.getBoundingClientRect();
+    const x = r.left - pr.left + r.width / 2; // center of tile
+    const y = r.top - pr.top - offsetY; // above tile
+    setTip({ text, x, y, show: true });
+  };
+  const hideTip = () => setTip((t) => ({ ...t, show: false }));
+
+  const handleDateChange = (val: Date | Date[]) => {
+    if (val instanceof Date) {
+      setValue(val);            
+      setSelectedDate(toYMDLocal(val));
     }
   };
 
-  // Update local state when selectedDate changes from outside
   useEffect(() => {
-    onChange(new Date(selectedDate));
+    setValue(parseYMDLocal(selectedDate));
   }, [selectedDate]);
 
-  // Custom tile content to show service count
-  const getTileContent = ({ date, view }: { date: Date; view: string }) => {
-    if (view === 'month') {
-      const dateString = date.toISOString().split('T')[0];
-      const services = getServicesByDate(dateString);
-      
-      if (services.length > 0) {
-        return (
-          <div className="service-indicator">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mx-auto mt-1"></div>
-            <div className="text-xs text-blue-600 font-semibold">
-              {services.length}
-            </div>
-          </div>
-        );
-      }
+  // Precompute visible 6x7 grid counts
+  useEffect(() => {
+    const base =
+      activeStartDate ?? (value instanceof Date ? new Date(value) : new Date());
+    const start = startOfGrid(base);
+    const next: Record<string, number> = {};
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = toYMDLocal(d);
+      const list = getServicesByDate(key) || [];      
+      next[key] = list.length;
     }
-    return null;
+    setCounts(next);
+  }, [activeStartDate, value, getServicesByDate]);
+
+  const badgeClass = (count: number) => {
+    if (count >= 25) return "bg-rose-600 text-white";
+    if (count >= 15) return "bg-orange-500 text-white";
+    if (count >= 10) return "bg-green-300 text-white";
+    if (count >= 5) return "bg-green-600 text-white";
+    if (count >= 0) return "bg-accent-400 text-white";
+    return "bg-emerald-200 text-emerald-900";
+  };
+
+  const tileContent = ({ date, view }: CalendarTileProperties) => {
+    if (view !== "month") return null;
+    const key = toYMDLocal(date);
+    const count = counts[key] ?? 0;    
+    if (!count) return null;
+
+    const label = `${count} service${count === 1 ? "" : "s"} on ${key}`;
+
+    return (
+      <div
+        className="mt-1 items-center"
+        onMouseEnter={(e) => showTip(e.currentTarget as HTMLElement, label)}
+        onMouseLeave={hideTip}
+        onFocus={(e) => showTip(e.currentTarget as HTMLElement, label)}
+        onBlur={hideTip}
+      >
+        <div className={`min-w-[1.5rem] px-1 text-[10px] font-semibold ${badgeClass(count)} text-center`}>
+          {count}
+        </div>        
+      </div>
+    );
+  };
+
+  const tileClassName = ({ date, view }: CalendarTileProperties) => {
+    if (view !== "month") return undefined;
+    const key = toYMDLocal(date);
+    const today = new Date();
+    const selected = value instanceof Date ? value : null;
+    const hasServices = (counts[key] ?? 0) > 0;
+
+    return [
+      hasServices ? "has-services" : "",
+      isSameDay(date, today) ? "!bg-accent-200 !ring-accent-500 !rounded-md" : "",
+      selected && isSameDay(date, selected)
+        ? "!bg-accent-50 dark:!bg-accent-900/20 !rounded-md"
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
   };
 
   return (
-    <div>
-      <div
-        className={`flex ${
-          width ? `w-[${width}]` : "w-full md:w-[320px]"
-        } h-full max-w-full flex-col rounded-[20px] bg-white px-3 z-0 py-4 dark:border dark:!border-white/10 dark:!bg-navy-800`}
-      >
-        <Calendar
-          onChange={handleDateChange}
-          value={value}
-          prevLabel={<MdChevronLeft className="ml-1 h-6 w-6" />}
-          nextLabel={<MdChevronRight className="ml-1 h-6 w-6" />}
-          view={"month"}
-          tileContent={getTileContent}
-        />
+    <div
+      ref={containerRef}
+      className="
+        relative
+        flex h-full max-w-full flex-col rounded-2xl bg-accent-100 px-3 py-4
+        dark:border dark:border-white/10 dark:bg-navy-800
+      "
+      style={width ? { width } : undefined}
+    >
+      {/* Absolute overlay for global tooltip */}
+      <div className="pointer-events-none absolute inset-0 z-50">
+        {tip.show && (
+          <div
+            className="absolute -translate-x-1/2 -translate-y-full rounded-md border border-black/10 bg-white px-2 py-1 text-xs text-gray-800 shadow-lg ring-1 ring-black/5 dark:bg-navy-700 dark:text-gray-200 dark:border-white/10"
+            style={{ left: tip.x, top: tip.y }}
+            role="tooltip"
+          >
+            {tip.text}
+          </div>
+        )}
+      </div>
+
+      <Calendar        
+        onChange={handleDateChange}
+        value={value}
+        view="month"
+        prevLabel={<MdChevronLeft className="ml-1 h-6 w-6" aria-hidden />}
+        nextLabel={<MdChevronRight className="ml-1 h-6 w-6" aria-hidden />}
+        prev2Label={null}
+        next2Label={null}
+        onActiveStartDateChange={({ activeStartDate }) =>
+          setActiveStartDate(activeStartDate)
+        }
+        defaultActiveStartDate={
+          value instanceof Date
+            ? new Date(value.getFullYear(), value.getMonth(), 1)
+            : undefined
+        }
+        tileContent={tileContent}
+        tileClassName={tileClassName}
+        onClickDay={(d) => handleDateChange(d)}
+        formatDay={(locale, date) => `${date.getDate()}`}
+        tileAriaLabel={({ date, view }) =>
+            view === "month"
+              ? `${date.toDateString()}, ${(counts[toYMDLocal(date)] ?? 0)} services`
+              : undefined
+        }
+      />
+
+      <div className="mt-3 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+        <span className="inline-flex h-3 w-3 rounded-sm bg-accent-200" /> 1 to 4
+        <span className="inline-flex h-3 w-3 rounded-sm bg-green-600" /> 5 to 9
+        <span className="inline-flex h-3 w-3 rounded-sm bg-green-300" /> 10 to 14
+        <span className="inline-flex h-3 w-3 rounded-sm bg-orange-500" /> 15 to 24
+        <span className="inline-flex h-3 w-3 rounded-sm bg-rose-600" /> 25+        
       </div>
     </div>
   );
 };
 
 export default MiniCalendar;
+

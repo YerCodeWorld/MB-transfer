@@ -5,11 +5,10 @@ import { useNavigation } from '../../contexts/NavigationContext';
 import { useServiceData } from '../../contexts/ServiceDataContext';
 import { useBottomBar } from '../../contexts/BottomBarContext';
 import { ServiceInput } from '../../types/services';
-import { mockDrivers, mockVehicles } from '../../utils/services';
+import { mockVehicles } from '../../utils/services';
 import ServiceTable from '../shared/ServiceTable';
 
-import Card from '../single/card';
-import { BsArrowLeft, BsPlus, BsTrash, BsCheckCircle, BsList, BsSave } from 'react-icons/bs';
+import { BsArrowLeft, BsPlus, BsTrash, BsList } from 'react-icons/bs';
 import { PiAddressBookThin } from 'react-icons/pi';
 import { HiOutlineDownload, HiOutlineSave, HiClipboardList } from 'react-icons/hi';
 
@@ -21,7 +20,6 @@ interface FormService extends ServiceInput {
 const MBTransferService = () => {
   const { popView } = useNavigation();
   const { 
-    currentServices, 
     setCurrentServices, 
     getCache, 
     setCache, 
@@ -71,7 +69,7 @@ const MBTransferService = () => {
       setCachedServices([]);
       setActiveTab('form');
     }
-  }, [selectedDate]);
+  }, [selectedDate, getCache, setActiveServiceType]);
 
   const addNewService = () => {
     const newService: FormService = {
@@ -287,13 +285,13 @@ const MBTransferService = () => {
     return () => {
       clearActions();
     };
-  }, [activeTab, services, cachedServices]);
+  }, [activeTab, services, cachedServices, clearActions, exportServices, selectedDate, setActions, setCache, submitServices]);
 
   const renderServiceForm = (service: FormService, index: number) => (
     <Card key={service.id} extra="w-full mb-6">
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-semibold text-purple-700 dark:text-purple-300">
+          <h4 className="text-lg font-semibold text-accent-700 dark:text-accent-300">
             Service #{index + 1}
           </h4>
           {services.length > 1 && (
@@ -309,7 +307,7 @@ const MBTransferService = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Service Code */}
           <div>
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+            <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
               Service Code *
             </label>
             <input
@@ -317,8 +315,8 @@ const MBTransferService = () => {
               value={service.code}
               onChange={(e) => updateService(service.id, 'code', e.target.value)}
               placeholder="Enter service code"
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:text-white ${
-                service.errors.code ? 'border-red-500' : 'border-purple-300 dark:border-purple-600'
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:text-white ${
+                service.errors.code ? 'border-red-500' : 'border-accent-300 dark:border-accent-600'
               }`}
             />
             {service.errors.code && (
@@ -328,13 +326,13 @@ const MBTransferService = () => {
 
           {/* Service Type */}
           <div>
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+            <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
               Service Type *
             </label>
             <select
               value={service.kindOf}
               onChange={(e) => updateService(service.id, 'kindOf', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
             >
               <option value="ARRIVAL">Arrival</option>
               <option value="DEPARTURE">Departure</option>
@@ -344,7 +342,7 @@ const MBTransferService = () => {
 
           {/* Passenger Name */}
           <div>
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+            <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
               Passenger Name *
             </label>
             <input
@@ -352,8 +350,8 @@ const MBTransferService = () => {
               value={service.clientName}
               onChange={(e) => updateService(service.id, 'clientName', e.target.value)}
               placeholder="Enter passenger name"
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:text-white ${
-                service.errors.clientName ? 'border-red-500' : 'border-purple-300 dark:border-purple-600'
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:text-white ${
+                service.errors.clientName ? 'border-red-500' : 'border-accent-300 dark:border-accent-600'
               }`}
             />
             {service.errors.clientName && (
@@ -363,7 +361,7 @@ const MBTransferService = () => {
 
           {/* Flight Code */}
           <div>
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+            <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
               Flight Code {service.kindOf === 'ARRIVAL' && '*'}
             </label>
             <input
@@ -371,8 +369,8 @@ const MBTransferService = () => {
               value={service.flightCode || ''}
               onChange={(e) => updateService(service.id, 'flightCode', e.target.value)}
               placeholder="Enter flight code"
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:text-white ${
-                service.errors.flightCode ? 'border-red-500' : 'border-purple-300 dark:border-purple-600'
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:text-white ${
+                service.errors.flightCode ? 'border-red-500' : 'border-accent-300 dark:border-accent-600'
               }`}
             />
             {service.errors.flightCode && (
@@ -382,16 +380,17 @@ const MBTransferService = () => {
 
           {/* Pickup Time */}
           <div>
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+            <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
               Pickup Time *
             </label>
             <div className="mb-2">
-              <div className="text-sm text-purple-600 dark:text-purple-400">
+              <div className="text-sm text-accent-600 dark:text-accent-400">
                 Date: {new Date(selectedDate).toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   year: 'numeric', 
                   month: 'long', 
-                  day: 'numeric' 
+                  day: 'numeric' ,
+                  timeZone: 'UTC'
                 })}
               </div>
             </div>
@@ -399,8 +398,8 @@ const MBTransferService = () => {
               type="time"
               value={service.pickupTime}
               onChange={(e) => updateService(service.id, 'pickupTime', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:text-white ${
-                service.errors.pickupTime ? 'border-red-500' : 'border-purple-300 dark:border-purple-600'
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:text-white ${
+                service.errors.pickupTime ? 'border-red-500' : 'border-accent-300 dark:border-accent-600'
               }`}
             />
             {service.errors.pickupTime && (
@@ -410,7 +409,7 @@ const MBTransferService = () => {
 
           {/* PAX */}
           <div>
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+            <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
               PAX *
             </label>
             <input
@@ -418,8 +417,8 @@ const MBTransferService = () => {
               min="1"
               value={service.pax}
               onChange={(e) => updateService(service.id, 'pax', parseInt(e.target.value) || 0)}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:text-white ${
-                service.errors.pax ? 'border-red-500' : 'border-purple-300 dark:border-purple-600'
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:text-white ${
+                service.errors.pax ? 'border-red-500' : 'border-accent-300 dark:border-accent-600'
               }`}
             />
             {service.errors.pax && (
@@ -429,7 +428,7 @@ const MBTransferService = () => {
 
           {/* Luggage */}
           <div>
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+            <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
               Luggage
             </label>
             <input
@@ -437,19 +436,19 @@ const MBTransferService = () => {
               min="0"
               value={service.luggage || 0}
               onChange={(e) => updateService(service.id, 'luggage', parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
             />
           </div>
 
           {/* Vehicle Type */}
           <div>
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+            <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
               Vehicle Type
             </label>
             <select
               value={service.vehicleType || ''}
               onChange={(e) => updateService(service.id, 'vehicleType', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
             >
               <option value="">Select vehicle type</option>
               {mockVehicles.map(vehicle => (
@@ -462,7 +461,7 @@ const MBTransferService = () => {
 
           {/* Pickup Location */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+            <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
               Pickup Location *
             </label>
             <input
@@ -470,8 +469,8 @@ const MBTransferService = () => {
               value={service.pickupLocation}
               onChange={(e) => updateService(service.id, 'pickupLocation', e.target.value)}
               placeholder="Enter pickup location (hotel/airport)"
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:text-white ${
-                service.errors.pickupLocation ? 'border-red-500' : 'border-purple-300 dark:border-purple-600'
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:text-white ${
+                service.errors.pickupLocation ? 'border-red-500' : 'border-accent-300 dark:border-accent-600'
               }`}
             />
             {service.errors.pickupLocation && (
@@ -481,7 +480,7 @@ const MBTransferService = () => {
 
           {/* Destination */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+            <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
               Destination *
             </label>
             <input
@@ -489,8 +488,8 @@ const MBTransferService = () => {
               value={service.dropoffLocation}
               onChange={(e) => updateService(service.id, 'dropoffLocation', e.target.value)}
               placeholder="Enter destination (hotel/airport)"
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:text-white ${
-                service.errors.dropoffLocation ? 'border-red-500' : 'border-purple-300 dark:border-purple-600'
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:text-white ${
+                service.errors.dropoffLocation ? 'border-red-500' : 'border-accent-300 dark:border-accent-600'
               }`}
             />
             {service.errors.dropoffLocation && (
@@ -500,7 +499,7 @@ const MBTransferService = () => {
 
           {/* Notes */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">
+            <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
               Notes
             </label>
             <textarea
@@ -508,7 +507,7 @@ const MBTransferService = () => {
               onChange={(e) => updateService(service.id, 'notes', e.target.value)}
               placeholder="Enter any additional notes..."
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
             />
           </div>
         </div>
@@ -590,7 +589,7 @@ const MBTransferService = () => {
           onClick={popView}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
         >
-          <BsArrowLeft className="text-xl" />
+          <BsArrowLeft className="text-xl text-white" />
         </button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-navy-700 dark:text-white">
@@ -616,24 +615,24 @@ const MBTransferService = () => {
           <div className="flex gap-3 mt-6">
             <button
               onClick={addNewService}
-              className="px-4 py-2 border border-purple-500 text-purple-500 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-2"
+              className="px-4 py-2 border border-accent-500 text-accent-500 rounded-lg hover:bg-accent-50 dark:hover:bg-accent-900/20 flex items-center gap-2"
             >
               <BsPlus />
-              Add Another Service
+              Añadir Otro Servicio
             </button>
 
             <button
               onClick={submitServices}
-              className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-accent-500 text-white rounded-lg hover:bg-purple-600 flex items-center justify-center gap-2"
             >
               <BsCheckCircle />
-              Submit {services.length} Service{services.length !== 1 ? 's' : ''} to Cache
+              Subir {services.length} Servicio{services.length !== 1 ? 's' : ''} al Almacenamiento Local
             </button>
           </div>
 
-          <div className="mt-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-            <h5 className="font-semibold text-purple-700 dark:text-purple-300 mb-2">Form Guidelines:</h5>
-            <div className="text-sm text-purple-600 dark:text-purple-400 space-y-1">
+          <div className="mt-6 p-4 bg-purple-50 dark:bg-accent-900/20 rounded-lg">
+            <h5 className="font-semibold text-accent-700 dark:text-accent-300 mb-2">Form Guidelines:</h5>
+            <div className="text-sm text-purple-600 dark:text-accent-400 space-y-1">
               <p>• Service code should be unique and follow company format</p>
               <p>• Flight codes are required for arrival services</p>
               <p>• Use 24-hour format for pickup times (will be converted automatically)</p>

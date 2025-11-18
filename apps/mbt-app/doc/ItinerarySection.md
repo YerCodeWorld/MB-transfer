@@ -20,8 +20,10 @@ The platform manages three primary service companies:
 
 - **Service Management** - Individual service-specific interfaces
 - **Unified View** - All Services management interface
+- **Notes Management** - Date-specific annotations and task tracking
 - **Context Management** - Global state and cache management
 - **Dynamic UI** - Context-aware bottom bar and navigation
+- **Modal System** - Portal-based modal rendering with proper layering
 
 ## Service Management Components
 
@@ -429,105 +431,177 @@ const serviceWithAssignments = {
 - **Error Monitoring**: Production error tracking
 - **Performance Monitoring**: Real-time performance metrics
 
-## Troubleshooting
+## Notes Management System
 
-### Common Issues
+### Notes Component (`Notes.tsx`)
 
-**Service Data Not Persisting**:
-- Check localStorage quota
-- Verify date-specific cache key consistency (`mbt_cache_[type]_[date]`)
-- Ensure proper service type and date tracking
-- Confirm selectedDate context is properly passed
+**Purpose**: Complete notes management system for date-specific annotations and reminders
 
-**Edit Operations Affecting Multiple Services**:
-- Verify service ID uniqueness
-- Check date-specific cache isolation implementation
-- Confirm service type and date mapping
-- Ensure getCache calls include selectedDate parameter
+**Features**:
+- **Full CRUD Operations**: Create, read, update, and delete notes
+- **Date-Specific Storage**: Notes are isolated by date using localStorage keys
+- **Priority System**: Three-level priority system (Low, Medium, High) with visual indicators
+- **Tag System**: Categorical organization (General, Important, Reminder, Meeting, To Do)
+- **Modal-Based Editing**: Full-featured modal with form validation
+- **Portal Rendering**: Modals use React Portal for proper z-index layering
 
-**Date-Specific Loading Issues**:
-- Verify all getCache calls include selectedDate
-- Check for duplicate useEffect hooks loading from generic cache
-- Ensure consistent date format (YYYY-MM-DD)
-- Confirm MiniCalendar date changes trigger component updates
-
-**Time Display Issues**:
-- Verify service type conditional rendering
-- Check time format conversion logic for MBT (time-only input + date combination)
-- Ensure timezone consistency
-
-### Debug Tools
-
-**Cache Inspection**:
+**Data Structure**:
 ```javascript
-// Browser console debugging - date-specific caches
-const selectedDate = '2024-11-11'; // Example date
-console.log('AT Cache:', localStorage.getItem(`mbt_cache_at_${selectedDate}`));
-console.log('ST Cache:', localStorage.getItem(`mbt_cache_st_${selectedDate}`));
-console.log('MBT Cache:', localStorage.getItem(`mbt_cache_mbt_${selectedDate}`));
-
-// Check all dates with services
-Object.keys(localStorage)
-  .filter(key => key.startsWith('mbt_cache_'))
-  .forEach(key => console.log(key, localStorage.getItem(key)));
+interface Note {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+  priority?: 'low' | 'medium' | 'high';
+  tag?: 'general' | 'important' | 'reminder' | 'meeting' | 'todo';
+}
 ```
 
-**State Debugging**:
-- React DevTools for component state inspection
-- Context value monitoring
-- Action flow tracing
+**Storage Pattern**:
+- Cache key: `mbt_notes_${selectedDate}`
+- Date-isolated storage ensures notes don't cross-contaminate between dates
+- Real-time localStorage synchronization
 
-## Performance Considerations
+### Notes Widget (`NotesWidget.tsx`)
 
-### Optimization Strategies
+**Purpose**: Compact sidebar widget for notes preview and quick access
 
-- **Lazy Loading**: Component-based code splitting
-- **Memoization**: React.memo for expensive renders
-- **Virtual Scrolling**: Large dataset handling
-- **Cache Optimization**: Efficient localStorage usage
+**Features**:
+- **Notes Counter**: Shows count of notes for current date
+- **Preview Mode**: Displays first 3 notes with truncated content
+- **Quick Navigation**: Direct link to full notes management
+- **Responsive Display**: Adapts to available sidebar space
+- **Tag Color Coding**: Visual distinction for different note types
 
-### Memory Management
+### Tab-Based Interface Architecture
 
-- **State Cleanup**: Proper useEffect cleanup
-- **Event Listener Removal**: Memory leak prevention
-- **Cache Size Limits**: Prevent unlimited cache growth
+The itinerary section now uses a modular tab system with external configuration:
 
-## Security Considerations
+**Tab Configuration** (`constants/itineraryTabs.ts`):
+```javascript
+export const itineraryTabs: ItineraryTab[] = [
+  { key: "itinerary", label: "Itinerario", Icon: BsEye },
+  { key: "webhooks", label: "Webhooks", Icon: FaWhatsapp },
+  { key: "notes", label: "Notes", Icon: FaRegStickyNote },
+  { key: "settings", label: "Configuración", Icon: FaCog }
+];
+```
 
-### Data Protection
+**Service Companies Configuration** (`constants/serviceCompanies.ts`):
+- Extracted large configuration objects to separate files
+- Improved maintainability and reusability
+- Type-safe interfaces for service company definitions
 
-- **Input Validation**: Comprehensive data sanitization
-- **XSS Prevention**: Proper content escaping
-- **Cache Security**: Sensitive data encryption
-- **API Security**: Secure token management
+## Enhanced Schedule Component
 
-### Access Control
+### New Features
 
-- **Authentication**: User session management
-- **Authorization**: Role-based access control
-- **Audit Logging**: Action tracking and logging
-- **Data Privacy**: GDPR/privacy compliance
+**Detail Button**: 
+- Added interactive detail button with accent color theming
+- Navigates to detailed calendar view (placeholder for future enhancement)
+- Provides comprehensive service statistics and information
 
-## Recent Updates (v2.2.0)
+**Improved Theming**:
+- Consistent use of accent colors throughout the component
+- Proper company color theming (AT=blue, ST=green, MBT=purple)
+- Enhanced visual hierarchy and accessibility
 
-### Global Date Management Implementation
-- **Calendar Integration**: MiniCalendar now drives all service operations through global selectedDate
-- **Date-Specific Caching**: All service types now use date-specific cache keys for proper isolation
-- **Component Synchronization**: All service components automatically load/save based on selected calendar date
-- **UI Consistency**: Date displays added to all service interfaces for clarity
+## Modal System Improvements
 
-### Company Theming Standardization  
-- **Individual Sections**: Applied consistent company colors to AT (blue), ST (green), MBT (purple) service interfaces
-- **Form Elements**: Updated all input fields, buttons, and containers with appropriate themed styling
-- **Schedule Component**: Real service count logic with themed display matching company colors
+### React Portal Implementation
 
-### Bug Fixes
-- **AllServices Edit/Remove**: Fixed service isolation issues where editing AT services affected all services
-- **Date Loading Consistency**: Removed duplicate cache loading that caused services from wrong dates to appear
-- **MBT Time Input**: Changed from datetime-local to time-only input, with date from global calendar
+All modals now use React Portal for proper rendering:
+
+**Benefits**:
+- **Z-Index Resolution**: Modals render at document.body level, eliminating header/footer overlap
+- **Event Handling**: Proper click-outside-to-close functionality
+- **Body Scroll Management**: Automatic overflow control when modals are open
+- **Performance**: Reduced stacking context conflicts
+
+**Implementation Pattern**:
+```javascript
+const modalContent = (
+  <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4">
+    {/* Modal content */}
+  </div>
+);
+
+return createPortal(modalContent, document.body);
+```
+
+## Context Optimization
+
+### Bottom Bar Context Enhancements
+
+**Stabilized Functions**:
+- All context functions now use `useCallback` for performance optimization
+- Eliminated infinite re-render loops
+- Improved dependency array management in useEffect hooks
+
+**Action Management**:
+- Dynamic action configuration based on active tab
+- Modular action definitions from external constants
+- Type-safe action interfaces
+
+## Bug Fixes (v2.3.0)
+
+### Critical Issues Resolved
+
+1. **AllServices Cache Isolation**:
+   - Fixed service editing affecting multiple services
+   - Implemented proper service type and date isolation
+   - Enhanced cache key consistency
+
+2. **Modal Z-Index Issues**:
+   - Implemented React Portal for all modals
+   - Eliminated header/footer overlap problems
+   - Proper stacking context management
+
+3. **React Hooks Violations**:
+   - Fixed conditional hook calls in Notes component
+   - Stabilized function references with useCallback
+   - Corrected useEffect dependency arrays
+
+4. **TypeScript Compilation Errors**:
+   - Fixed icon reference issues in service companies configuration
+   - Resolved component prop type mismatches
+   - Enhanced type safety across components
+
+### Performance Improvements
+
+- **Reduced Re-renders**: Optimized context providers and hook dependencies
+- **Memory Management**: Proper cleanup in useEffect hooks
+- **Bundle Optimization**: Removed unused imports and variables
+
+## Recent Updates (v2.3.0)
+
+### Notes Management Implementation
+- **Complete Notes System**: Full CRUD operations with date-specific storage
+- **Priority & Tag System**: Categorization and visual organization
+- **Modal Integration**: Portal-based modals for proper layering
+- **Sidebar Widget**: Compact preview in main calendar view
+
+### Architecture Improvements
+- **External Constants**: Extracted configuration objects to separate files
+- **Portal Modals**: All modals now use React Portal for z-index resolution
+- **Context Optimization**: Stabilized context functions with useCallback
+- **Type Safety**: Enhanced TypeScript coverage and interfaces
+
+### Enhanced Calendar Integration
+- **Improved UX**: Better calendar usage and navigation
+- **Schedule Enhancements**: Detail button and improved theming
+- **Date Management**: Robust date-specific operations across all components
+
+### Code Quality Improvements
+- **Hook Compliance**: Fixed all React hooks rule violations
+- **Performance**: Eliminated infinite render loops and optimized re-renders
+- **Error Handling**: Comprehensive error states and graceful fallbacks
+- **Maintainability**: Modular architecture with clear separation of concerns
 
 ---
 
 *Last Updated: November 2025*
-*Version: 2.2.0*
+*Version: 2.3.0*
 *Platform: MBT Transportation Management System*

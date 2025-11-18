@@ -9,8 +9,7 @@ import { convertTo12Hour } from '../../utils/services';
 import * as XLSX from 'xlsx';
 import ServiceTable from '../shared/ServiceTable';
 
-import Card from '../single/card';
-import { BsArrowLeft, BsFileEarmarkExcel, BsUpload, BsCheckCircle, BsExclamationTriangle } from 'react-icons/bs';
+import { BsArrowLeft, BsFileEarmarkExcel, BsUpload } from 'react-icons/bs';
 import { HiOutlineDownload, HiOutlineSave, HiChevronLeft } from 'react-icons/hi';
 import { GoFileDiff } from 'react-icons/go';
 
@@ -27,15 +26,16 @@ interface ExtractedService extends ServiceInput {
 // Header mapping for Sacbé Transfer XLSX files
 const HEADER_MAPPING = {
   'no': 'rowNumber',
+  'no.': 'rowNumber',
   'tipo': 'kindOf', 
   'código': 'code',
   'codigo': 'code', // Alternative spelling
   'cliente': 'clientName',
+  'pickup': 'pickupTime',  
   'pu': 'pickupTime',
-  'vuelo (código)': 'flightCode',
-  'vuelo': 'flightCode', // Alternative
+  'vuelo': 'flightCode', 
   'vehículo': 'vehicleType',
-  'vehiculo': 'vehicleType', // Alternative spelling
+  'vehiculo': 'vehicleType', // Alternative spelling  
   'pax': 'pax',
   'desde': 'pickupLocation',
   'hacia': 'dropoffLocation',
@@ -47,15 +47,14 @@ const HEADER_MAPPING = {
 const SacbeTransferService = () => {
   const { popView } = useNavigation();
   const { 
-    currentServices, 
     setCurrentServices, 
     getCache, 
     setCache, 
-    exportServices, 
-    hasActiveData,
+    exportServices,
     setActiveServiceType,
     selectedDate 
   } = useServiceData();
+  
   const { setActions, clearActions } = useBottomBar();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -89,7 +88,7 @@ const SacbeTransferService = () => {
       setFile(null);
       setStep('upload');
     }
-  }, [selectedDate]);
+  }, [selectedDate, getCache, setActiveServiceType, setCurrentServices]);
 
   const handleFileSelect = (selectedFile: File) => {
     if (!selectedFile.name.match(/\.(xlsx|xls)$/)) {
@@ -108,13 +107,13 @@ const SacbeTransferService = () => {
       const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
       
-      // Get the last sheet (as requested)
+      // Get the last sheet (as requested by the workflow of the company)
       const sheetNames = workbook.SheetNames;
       const lastSheetName = sheetNames[sheetNames.length - 1];
       const worksheet = workbook.Sheets[lastSheetName];
       
       // Convert to JSON with headers
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
       
       if (jsonData.length < 2) {
         throw new Error('Excel file must have at least a header row and one data row');
@@ -123,12 +122,12 @@ const SacbeTransferService = () => {
       // Get headers (first row) and normalize them
       const headers = (jsonData[0] as string[]).map(h => 
         h.toString().toLowerCase().trim()
-      );
+      );      
       
       // Map headers to our field names
       const fieldMapping: { [key: number]: string } = {};
-      headers.forEach((header, index) => {
-        const mappedField = HEADER_MAPPING[header as keyof typeof HEADER_MAPPING];
+      headers.forEach((header, index) => {        
+        const mappedField = HEADER_MAPPING[header as keyof typeof HEADER_MAPPING];        
         if (mappedField) {
           fieldMapping[index] = mappedField;
         }
@@ -138,8 +137,8 @@ const SacbeTransferService = () => {
       const extractedServices: ExtractedService[] = [];
       
       for (let i = 1; i < jsonData.length; i++) {
-        const row = jsonData[i] as any[];
-        if (!row || row.length === 0) continue;
+        const row = jsonData[i] as any[];        
+        if (!row || row.length === 0) continue;               
         
         // Create service object
         const service: Partial<ServiceInput> = {
@@ -151,7 +150,7 @@ const SacbeTransferService = () => {
         row.forEach((cell, cellIndex) => {
           const field = fieldMapping[cellIndex];
           if (field && cell !== null && cell !== undefined) {
-            const cellValue = cell.toString().trim();
+            const cellValue = cell.toString().trim();            
             
             switch (field) {
               case 'kindOf':
@@ -165,12 +164,10 @@ const SacbeTransferService = () => {
                 }
                 break;
               case 'pax':
-                service.pax = parseInt(cellValue) || 0;
-                console.log(`PAX: ${service.pax} ${service.pickupTime}`);
+                service.pax = parseInt(cellValue) || 0;                
                 break;
               case 'pickupTime':                                
-                service.pickupTime = convertTo12Hour(cellValue);
-                console.log(`TIME: ${service.pickupTime}`);
+                service.pickupTime = convertTo12Hour(cellValue);                
                 break;
               default:
                 (service as any)[field] = cellValue;
@@ -202,7 +199,7 @@ const SacbeTransferService = () => {
         }
         
         // Check if time was in 12-hour format and got converted
-        const originalTime = row[headers.indexOf('pickup')] || '';
+        const originalTime = row[headers.indexOf('pickup')] || '';        
         const wasTime12h = originalTime.toString().match(/\d{1,2}:\d{2}(?::\d{2})?\s*(AM|PM)/i);
         let timeConverted = false;
         if (wasTime12h) {
@@ -245,8 +242,7 @@ const SacbeTransferService = () => {
         ally: s.ally
       }));
       setCurrentServices(serviceInputs);
-    } catch (error) {
-      console.error('Error processing file:', error);
+    } catch (error) {      
       alert(`Error processing Excel file: ${error instanceof Error ? error.message : 'Please check the format.'}`);
     } finally {
       setLoading(false);
@@ -254,8 +250,7 @@ const SacbeTransferService = () => {
   };
 
   const confirmServices = () => {
-    const validServices = services.filter(s => s.validation.isValid);
-    console.log('Services confirmed for review:', validServices);
+    const validServices = services.filter(s => s.validation.isValid);    
     alert(`${validServices.length} services submitted for approval`);
     clearActions();
     popView();
@@ -335,7 +330,7 @@ const SacbeTransferService = () => {
     return () => {
       // Cleanup function
     };
-  }, [step, services, loading, exportServices, setCache, setCurrentServices, popView]);
+  }, [step, services, loading, exportServices, setCache, setCurrentServices, popView, clearActions, setActions, selectedDate]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -381,7 +376,8 @@ const SacbeTransferService = () => {
                 weekday: 'long', 
                 year: 'numeric', 
                 month: 'long', 
-                day: 'numeric' 
+                day: 'numeric',
+                timeZone: 'UTC'
               }).toUpperCase()}
             </p>
             <p className="text-sm text-green-600 dark:text-green-400 mt-1">
@@ -551,7 +547,7 @@ const SacbeTransferService = () => {
           onClick={popView}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
         >
-          <BsArrowLeft className="text-xl" />
+          <BsArrowLeft className="text-xl text-white" />
         </button>
         <div>
           <h1 className="text-2xl font-bold text-navy-700 dark:text-white">

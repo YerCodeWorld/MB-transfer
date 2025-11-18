@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import Card from "../../../single/card";
 import { FiSearch } from "react-icons/fi";
 import { MdChevronRight, MdChevronLeft } from "react-icons/md";
@@ -54,10 +55,12 @@ function CheckTable(props: { tableData: any }) {
       cell: (info: any) => (
         <div className="flex w-full items-center gap-[14px]">
           <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-blue-300">
-            <img
+            <Image
               className="h-full w-full rounded-full"
               src={info.getValue()[1]}
               alt=""
+              width={60}
+              height={60}
             />
           </div>
           <p className="font-medium text-navy-700 dark:text-white">

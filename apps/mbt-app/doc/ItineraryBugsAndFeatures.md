@@ -15,64 +15,40 @@ This likely occurs due to cache isolation issues in the AllServicesView componen
 2. **Cache Key Confusion**: The edit/remove operations might be updating the wrong cache key or affecting multiple cache keys simultaneously
 3. **State Management Issue**: The unified services array in AllServicesView may not properly maintain separation between AT/ST/MBT service origins
 4. **Date-specific Cache Problems**: Edit operations might be affecting the global cache instead of the date-specific cache, causing cross-contamination between service types
-5. **Array Reference Issue**: The services array might be directly mutated rather than using immutable update patterns, causing all components to reflect the same changes
+5. **Array Reference Issue**: The services array might be directly mutated rather than using immutable update patterns, causing all components to reflect the same changes 
 
-## BUG: 2
+You have tried to correct this bug multiple times and being unable to. Now, the most obvious reason is that the object gets corrupted
+and that shows on rerender. I confirmed by seeing the localstorage object being altered like that. Whatever function is doing this
+is not updating the specific service but rather the whole thing somehow. 
 
-The 'detail' modal that can be accessed throught the <ServiceTable /> or even the editing service modal
-in the AllServicesView appear below the header and bottombar. We need to make sure these modals absolute 
-top positioning and anything else is disabled. This apparently cannot be fixed by simply adding more z-index.
+# FEATURE 1
 
-**Analysis Notes:**
-This is a CSS stacking context and positioning issue. Possible causes:
-1. **Stacking Context Isolation**: The header/bottombar may create their own stacking contexts with high z-index values, preventing modals from appearing above them regardless of z-index
-2. **Portal/Rendering Location**: Modals may be rendered within the main page flow instead of being portaled to document.body or a dedicated modal root
-3. **Transform/Position Parent**: A parent element with transform, filter, or certain position values creates a new stacking context that traps the modal
-4. **Fixed Position Conflicts**: Both header/bottombar and modals may be using fixed positioning, causing layering conflicts
-5. **CSS Framework Interference**: Tailwind or other CSS frameworks may be applying conflicting positioning styles
-6. **Overflow Hidden**: A parent container may have overflow: hidden that clips the modal
-7. **Missing Modal Backdrop**: The modal may need a proper backdrop element to establish correct stacking order
+We need to add a 'add new service' in the All Services Subsection. Possibly in the bottom bar most rather. 
+For this, allow a form as we do in MBT and a parser for a message like this:
 
-**Recommended Solutions:**
-- Use React Portal to render modals at document.body level
-- Ensure modals use a z-index higher than header (typically 9999+)
-- Check for parent elements with transform/filter properties that create stacking contexts
-- Implement proper modal backdrop with pointer-events management
+SALIDA 
+PUJ-PCAT-11692 
+Pedro Scala 
+Kia K5 
+2 Pax 
+Desde: Serenade All Suites, Adults Only Resort 
+Fecha: 2025-11-10 
+Hora: 18:30
+Hacia: Punta Cana Airport
 
-## FIX
+Always the same structure, you get the following information:
 
-I found a potential fix (it worked for the bottom bar, 50% through in the header). I removed the backdrop classes
-they had and that was it. For some reason that was interfering, possibly because that class contiains some layering 
-styling. The header still shows the text and search bar enabled though. 
+type -> SALIDA 
+code -> PUJ-PCAT-11692 
+client -> Pedro Scala 
+vehicule -> Kia K5 
+PAX -> 2 Pax 
+FROM -> Desde: Serenade All Suites, Adults Only Resort 
+DATE -> Fecha: 2025-11-10 
+TIME -> Hora: 18:30
+TO -> Hacia: Punta Cana Airport
 
-## BUG: 1
-
-# Styling Bug 
-
-This component [@apps/mbt-app/components/compound/dateservices/components/Schedule.tsx]
-Does not follow the accent color everywhere. It could also benefit from better styling. 
-
-# Lacking Feature
-
-It could benefit if we extended it adding a 'detail' button where when clicked, the current view
-changed to a detailed calendar showing more details for the services of the day.
-
-**What must be done**
-
-Correcting the issues with the styling of the calendar and checking the implementation of the detailed calendar.
-For an idea of more services-specific information to show, consider showing all three companies and the amount
-of services per type, or other stats. 
-
-## FEATURE: 1
-
-The bottom bar populates with Itinerary | Webhooks | Settings -> apply tab logic and implement the settings section.
-As settings as you consider, simple feature + checkboxes/switches.
-
-## FEATURE: 2
-
-In the itinerary main page, which I have already revered to as mainview [@apps/mbt-app/components/compound/dateservices/index.tsx]
-could benefit if the right section had inner overflow or carousel-like navigation. I left some comments in the page.
-------------------------------------------------
-
+The parser should read it and allow to add the service directly, maybe even allowing
+edit-on right there before updating right away (to like add things like the company).
 
 

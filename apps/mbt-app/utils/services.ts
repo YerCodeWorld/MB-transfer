@@ -1,6 +1,7 @@
 import { Service, FlightInfo, ServiceInput } from '../types/services';
+import { toYMDLocal } from './dateUtils';
 
-// Convert 24h time to 12h format
+// get 17:00 | return 05:00 pm
 export function convertTo12Hour(time24: string): string {
   const [hours, minutes] = time24.split(':').map(Number);
   const period = hours >= 12 ? 'PM' : 'AM';
@@ -8,7 +9,8 @@ export function convertTo12Hour(time24: string): string {
   return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
-// Convert 12h time to 24h format
+// I believe we are not using this 
+// get 05:00 pm | return 17:00
 export function convertTo24Hour(time12: string): string {
   const [time, period] = time12.split(' ');
   const [hours, minutes] = time.split(':').map(Number);
@@ -23,90 +25,60 @@ export function convertTo24Hour(time12: string): string {
   return `${hours24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
 
+// Needed for AT API response, where this is how the time is displayed 
 export function convertIsoStringTo12h(isoString) {
-  const dateObj = new Date(isoString);
+  const [datePart, timePart] = isoString.replace("Z", "").split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
 
-  let hours = dateObj.getHours();
-  let minutes = dateObj.getMinutes();
+  // Take only hours/minutes and ignore timezone shifting
+  const [h, m] = timePart.split(":").map(Number);
 
-  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const date = new Date(year, month - 1, day, h, m);
 
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-
-  minutes = minutes < 10 ? '0' + minutes : minutes;
-
-  const timeString = `${hours}:${minutes} ${ampm}`;
-
-  return timeString;
+  return date.toLocaleString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
 }
 
-// Fetch flight times from FlightAware API
-export async function fetchFlightTimes(flightCodes: string[], forTomorrow = true): Promise<FlightInfo[]> {
-  const apiKey = "FTRH5ucRFrmAxSRV4FExcClLLoM0oGKY";
-  const baseUrl = "https://aeroapi.flightaware.com/aeroapi/flights/";
+// TODO
+// Needs to be updated to receive a date parameter instead 
+// set a placeholder parameter 
+// Fetch flight times via API route (server-side to avoid CORS)
+export async function fetchFlightTimes(flightCodes: string[]): Promise<FlightInfo[]> {
+  try {
+    const response = await fetch('/api/flight-times', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        flightCodes
+      })
+    });
 
-  // Calculate the correct date
-  const date = new Date();
-  if (forTomorrow) date.setDate(date.getDate() + 1);
-  
-  const start = new Date(date.setHours(0, 0, 0, 0)).toISOString();
-  const end = new Date(date.setHours(23, 59, 0, 0)).toISOString();
-
-  // Helper to convert ISO to 12h time
-  const to12Hour = (iso: string | null): string | null => {
-    if (!iso) return null;
-    const date = new Date(iso);
-    let h = date.getHours(), m = date.getMinutes();
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    return `${h}:${m.toString().padStart(2, "0")} ${ampm}`;
-  };
-
-  const results: FlightInfo[] = [];
-
-  for (const code of flightCodes) {
-    try {
-      const response = await fetch(`${baseUrl}${code}?start=${start}&end=${end}`, {
-        headers: {
-          "Accept": "application/json",
-          "x-apikey": apiKey
-        }
-      });
-
-      const data = await response.json();
-
-      if (!data.flights || data.flights.length === 0) {
-        results.push({ code, message: "No data found" });
-        continue;
-      }
-
-      // Grab the first flight result for simplicity
-      const flight = data.flights[0];
-
-      results.push({
-        code,
-        departure_airport: flight.origin?.code_iata || undefined,
-        arrival_airport: flight.destination?.code_iata || undefined,
-        scheduled_out: to12Hour(flight.scheduled_out) || undefined,
-        scheduled_in: to12Hour(flight.scheduled_in) || undefined,
-        status: flight.status
-      });
-    } catch (err) {
-      results.push({ code, error: (err as Error).message });
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
     }
-  }
 
-  return results;
+    const results = await response.json();
+    return results;
+  } catch (error) {
+    console.error('Error fetching flight times:', error);
+    return flightCodes.map(code => ({ code, error: 'Failed to fetch flight data' }));
+  }
 }
 
+// TODO
+// USE ENV VARIABLES FOR BOTH headers and URL 
 // Fetch AirportTransfer data
 export async function fetchAtData(date?: string): Promise<{ bookings: any[], date: string } | null> {
 
   // default 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const yyyyMmDd = tomorrow.toISOString().split("T")[0];  
+  const yyyyMmDd = toYMDLocal(tomorrow);  
 
   const url = `https://api.airporttransfer.com/api/bookings?filters%5Bselected_date%5D=${date ?? yyyyMmDd}&pag`;
 

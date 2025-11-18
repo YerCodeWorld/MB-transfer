@@ -1,19 +1,22 @@
 import Course from "../../single/card/Course";
 import MiniCalendar from "../../single/minicalendar";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
-import { GoCodescan, GoFileDiff } from "react-icons/go";
-import { PiAddressBookThin, PiAirplaneBold } from "react-icons/pi";
-import { BsEye, BsChevronLeft, BsChevronRight } from "react-icons/bs";
-import { FaCog, FaWhatsapp, FaRegStickyNote } from "react-icons/fa";
+import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
+import { FaGlobe, FaCog } from "react-icons/fa";
 
 import Schedule from "./components/Schedule";
-import Hours from "./components/Hours";
 import Card from "../../single/card";
+import Notes from "../../shared/Notes";
+import NotesWidget from "../../shared/NotesWidget";
 import { useNavigation } from "../../../contexts/NavigationContext";
 import { useServiceData } from "../../../contexts/ServiceDataContext";
 import { useBottomBar } from '../../../contexts/BottomBarContext';
+
+// Constants
+import { serviceCompanies } from "../../../constants/serviceCompanies";
+import { itineraryTabs } from "../../../constants/itineraryTabs";
 
 // Service components
 import AirportTransferService from "../../services/AirportTransferService";
@@ -30,42 +33,22 @@ const Courses = () => {
   const [activeTab, setActiveTab] = useState<'itinerary' | 'webhooks' | 'settings' | 'notes'>('itinerary');
   const [carouselIndex, setCarouselIndex] = useState(0);
 
+  const updateActions = useCallback(() => {
+    const actions = itineraryTabs.map(tab => ({
+      key: tab.key,
+      label: tab.label,
+      Icon: tab.Icon,
+      variant: activeTab === tab.key ? "primary" : "secondary",
+      onClick: () => setActiveTab(tab.key)
+    }));
+
+    setActions(actions);
+  }, [activeTab, setActions]);
+
   useEffect(() => {
-
-    setActions([
-        {
-          key: "overview-tab",
-          label: "Itinerario",
-          Icon: BsEye,
-          variant: activeTab === 'itinerary' ? "primary" : "secondary",
-          onClick: () => setActiveTab('itinerary')
-        },
-        {
-          key: "webhooks",
-          label: "Webhooks",
-          Icon: FaWhatsapp,
-          variant: activeTab === 'webhooks' ? "primary" : "secondary",
-          onClick: () => setActiveTab('webhooks')
-        },
-        {
-          key: "notes",
-          label: "Notes",
-          Icon: FaRegStickyNote,
-          variant: activeTab === 'notes' ? "primary" : "secondary",
-          onClick: () => setActiveTab('notes')
-        },
-        {
-          key: "check-time",
-          label: "Configuración",
-          Icon: FaCog,
-          variant: activeTab === 'settings' ? "primary" : "secondary",
-          onClick: () => setActiveTab('settings')
-        }        
-      ]);
-
-      return () => { clearActions(); };
-  
-  }, [activeTab]);
+    updateActions();
+    return () => { clearActions(); };
+  }, [updateActions, clearActions]);
 
   const handleServiceClick = (serviceType: string, title: string) => {
     let component;
@@ -127,7 +110,7 @@ const Courses = () => {
                   }`}
                 />
               ))}
-            </div>
+            </div>            
           </div>
           
           <button
@@ -178,7 +161,7 @@ const Courses = () => {
 
         {/* Service Counter */}
         <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-          Showing service {carouselIndex + 1} of {serviceCompanies.length}
+          Mostrando servicios {carouselIndex + 1} de {serviceCompanies.length}
         </div>
       </div>
     );
@@ -187,57 +170,42 @@ const Courses = () => {
   const renderWebhooksTab = () => (
     <div className="rounded-[20px] bg-white p-8 shadow-xl dark:bg-navy-800">
       <div className="text-center">
-        <FaWhatsapp className="mx-auto mb-4 h-16 w-16 text-green-500" />
+        <FaGlobe className="mx-auto mb-4 h-16 w-16 text-accent-500" />
         <h2 className="mb-4 text-2xl font-bold text-navy-700 dark:text-white">
-          Webhook Integrations
+          Integracíon de Webhooks
         </h2>
         <p className="mb-8 text-gray-600 dark:text-gray-300">
-          Configure external webhook integrations for real-time notifications and data synchronization.
+          Configurar las conexiones de mbt platform con plataformas web externas 
         </p>
       </div>
       
       <div className="space-y-6">
         <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-700">
           <h3 className="mb-3 text-lg font-semibold text-navy-700 dark:text-white">
-            WhatsApp Integration
+            Integración Whatapp 
           </h3>
           <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">
-            Send automated notifications to clients and drivers via WhatsApp.
+            Enviar notificaciones automáticas a clientes, PDFs a grupos y notficaciones a números establecidos 
           </p>
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
             <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
-              Coming Soon
+              En Desarrollo 
             </span>
           </div>
         </div>
 
         <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-700">
           <h3 className="mb-3 text-lg font-semibold text-navy-700 dark:text-white">
-            SMS Notifications
+            Integración Email 
           </h3>
           <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">
-            Send SMS updates for pickup confirmations and service status changes.
-          </p>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
-            <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
-              Planned
-            </span>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-700">
-          <h3 className="mb-3 text-lg font-semibold text-navy-700 dark:text-white">
-            Email Integration
-          </h3>
-          <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">
-            Automatically send confirmation emails and itinerary updates.
+            Automáticamente envia correos y notificaciones a los aliados establecidos 
           </p>
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
             <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-              In Development
+              En Planificación 
             </span>
           </div>
         </div>
@@ -245,34 +213,37 @@ const Courses = () => {
     </div>
   );
 
-  const renderNotesTab = null;
+  const renderNotesTab = () => (
+    <div className="p-10">
+      <Notes selectedDate={selectedDate} />
+    </div>
+  );
 
+  // TODO
+  // Can be highly simplified if we just create each row/category based off an object 
   const renderSettingsTab = () => (
     <div className="rounded-[20px] bg-white p-8 shadow-xl dark:bg-navy-800">
       <div className="mb-8">
-        <FaCog className="mx-auto mb-4 h-16 w-16 text-gray-500" />
+        <FaCog className="mx-auto mb-4 h-16 w-16 text-accent-500" />
         <h2 className="mb-4 text-center text-2xl font-bold text-navy-700 dark:text-white">
-          Platform Settings
-        </h2>
-        <p className="text-center text-gray-600 dark:text-gray-300">
-          Customize your MBT platform experience and preferences.
-        </p>
+          Configuración del Itinerario 
+        </h2>        
       </div>
       
       <div className="space-y-8">
         {/* Display Settings */}
         <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-700">
           <h3 className="mb-4 text-lg font-semibold text-navy-700 dark:text-white">
-            Display Preferences
+            Configuaración de Interfáz 
           </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Dark Mode
+                  Posición de calendario 
                 </label>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Toggle dark theme for better visibility
+                  ON: Posición izquierda | OFF: Posición derecha 
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -284,10 +255,10 @@ const Courses = () => {
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Compact View
+                  Temas de Compañías
                 </label>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Show more information in less space
+                  ON: Cada compañía tiene su tema único | OFF: Las tablas de cada compañía tienen colores neutrales 
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -301,16 +272,16 @@ const Courses = () => {
         {/* Notification Settings */}
         <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-700">
           <h3 className="mb-4 text-lg font-semibold text-navy-700 dark:text-white">
-            Notifications
+            Notificaciones 
           </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Service Alerts
+                  Alerta de Servicios 
                 </label>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Get notified about new services and updates
+                  Recibir notificaciones por cualquier mutación de algún servicio 
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -322,10 +293,25 @@ const Courses = () => {
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Auto-refresh Data
+                  Autorecargar Información 
                 </label>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Automatically refresh service data every 5 minutes
+                  Activar un webhook que chequee por mutuaciones en las APIs
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Edición Sincronizada 
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Recibir notificaciones cuando otro usuario está viendo/modificando el itinerario 
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -339,16 +325,16 @@ const Courses = () => {
         {/* Service Settings */}
         <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-700">
           <h3 className="mb-4 text-lg font-semibold text-navy-700 dark:text-white">
-            Service Management
+            Manejo de Servicios 
           </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Auto-assign Vehicles
+                  Asignación Vehículos
                 </label>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Automatically suggest vehicles based on passenger count
+                  Asignar vehículos automáticamente basado en la cantidad de pasajeros y equipaje
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -360,10 +346,48 @@ const Courses = () => {
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Validation Warnings
+                  Chequear Vuelos 
                 </label>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Show warnings for incomplete service data
+                  Automáticamente chequear los códigos de vuelos de las llegadas 
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* PDFs Settings */}
+        <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-700">
+          <h3 className="mb-4 text-lg font-semibold text-navy-700 dark:text-white">
+            Configuración de Diseños
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Generar diseños automáticamente 
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Una vez el diseño sea creado en la plataforma, generar PDF y guardar en la base de datos automáticamente (consume recursos sin confirmar errores)
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Conexión a Whatsapp 
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Automáticamente enviar hacia el número de whatsapp assignado 
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -397,7 +421,7 @@ const Courses = () => {
                   Incluir Metadata
                 </label>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Add creation/modification timestamps to exports
+                  Incluir metadata (invisíble en documento) sobre la fecha y la edición del itinerario exportado
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -411,60 +435,13 @@ const Courses = () => {
         {/* Save Button */}
         <div className="pt-6">
           <button className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-navy-800">
-            Save Settings
+            Guardar Configuración 
           </button>
         </div>
       </div>
     </div>
   );
 
-  // Carousel items for service companies
-  const serviceCompanies = [
-    {
-      id: 'all',
-      bgBox: "bg-[url('/all.jpg')]",
-      icon: <PiAirplaneBold />,
-      title: "All Services",
-      desc: "Visualize, create, edit, remove and manipulate all the services updated beforehand using the other tools.",
-      day: "ALL",
-      date: "Platform",
-      topics: ["Semi-Automatic", "ALL"],
-      time: "~25 minutos de trabajo"
-    },
-    {
-      id: 'at',
-      bgBox: "bg-[url('/at-website.png')]",
-      icon: <GoCodescan />,
-      title: "AirportTransfer",
-      desc: "Get AT's services by simply intercepting a GET request to their open API endpoint, services are automatically added to the itinerary",
-      day: "AT",
-      date: "HTTPS",
-      topics: ["Automatic", "AT"],
-      time: "~10 minutos de trabajo"
-    },
-    {
-      id: 'st',
-      bgBox: "bg-[url('/st-website.png')]",
-      icon: <GoFileDiff />,
-      title: "Sacbé Transfer",
-      desc: "Get ST's services by simply uploading their provided XLSX file, the tools implemented automatically read and manipulate the data to add it into the itinerary.",
-      day: "ST",
-      date: "XLSX",
-      topics: ["Semi-Automatic", "ST"],
-      time: "~15 minutos de trabajo"
-    },
-    {
-      id: 'mbt',
-      bgBox: "bg-[url('/mbt-website.png')]",
-      icon: <PiAddressBookThin />,
-      title: "MB Transfer",
-      desc: "Create MBT's services by using a built-in form to introduce the data and submit to add to the itinerary",
-      day: "MBT",
-      date: "FORM",
-      topics: ["Manual", "MBT", "Individual"],
-      time: "~8 minutos de trabajo"
-    }
-  ];
 
   const nextCarouselItem = () => {
     setCarouselIndex((prev) => (prev + 1) % serviceCompanies.length);
@@ -487,7 +464,15 @@ const Courses = () => {
         {/* Schedule with enhanced design */}
         <Card extra={"w-full mt-4"}>
           <Schedule />
-        </Card>        
+        </Card>
+        
+        {/* Notes Widget */}
+        <div className="w-full mt-4">
+          <NotesWidget 
+            selectedDate={selectedDate}
+            onViewAll={() => setActiveTab('notes')}
+          />
+        </div>        
       </div>
         
       {/* separator */}
@@ -497,6 +482,7 @@ const Courses = () => {
       <div className="h-full w-full m-3">                 
         {activeTab === 'itinerary' && renderItineraryTab()}
         {activeTab === 'webhooks' && renderWebhooksTab()}
+        {activeTab === 'notes' && renderNotesTab()}
         {activeTab === 'settings' && renderSettingsTab()}
       </div>
     

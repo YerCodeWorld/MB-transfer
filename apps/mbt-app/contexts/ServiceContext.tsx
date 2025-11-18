@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Service } from '../types/services';
 import { mockServices, detectEdgeCases } from '../utils/services';
+import { getTodayLocal } from '../utils/dateUtils';
 
 interface ServiceContextType {
   services: Service[];
@@ -28,8 +29,7 @@ const ServiceContext = createContext<ServiceContextType | undefined>(undefined);
 export function ServiceProvider({ children }: { children: ReactNode }) {
   const [services, setServices] = useState<Service[]>([]);
   const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    return getTodayLocal();
   });
 
   useEffect(() => {

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
+import { createPortal } from 'react-dom';
 import ContrastBlockDark from "../../../public/layout/ContrastBlockDark.png";
 import Light from "../../../public/layout/Light.png";
 import Dark from "../../../public/layout/Dark.png";
@@ -18,11 +19,12 @@ import {
   MdFullscreen,
   MdOutlineFullscreenExit,
   MdClose,
+  MdCheckCircle,
 } from "react-icons/md";
 import ConfiguratorRadio from "./ConfiguratorRadio";
 
 export default function HeaderLinks(props: { [x: string]: any }) {
-  const { mini, setMini, theme, setTheme, darkmode, setDarkmode } = props;
+  const { mini, setMini, theme, setTheme, darkmode, setDarkmode, selectedBackground, setSelectedBackground } = props;
 
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState("Purple");
@@ -30,6 +32,17 @@ export default function HeaderLinks(props: { [x: string]: any }) {
   const btnRef = React.useRef<HTMLButtonElement>(null);
 
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [showBackgroundModal, setShowBackgroundModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Available backgrounds
+  const backgrounds = [
+    { name: 'Globos', filename: 'bg-globes.jpg', preview: '/bg-globes.jpg' },
+    { name: 'Bosque', filename: 'bg-forest.jpg', preview: '/bg-forest.jpg' },
+    { name: 'Hojas', filename: 'bg-leaves.jpg', preview: '/bg-leaves.jpg' },
+    { name: 'Montañas', filename: 'bg-mountains.jpg', preview: '/bg-mountains.jpg' },
+    { name: 'Agua', filename: 'bg-water.jpg', preview: '/bg-water.jpg' },
+  ];
 
   // Theme functions remain the same
   const resetTheme = () => {
@@ -170,6 +183,22 @@ export default function HeaderLinks(props: { [x: string]: any }) {
     };
     setTheme(newTheme);
   };
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (showBackgroundModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showBackgroundModal]);
 
   useEffect(() => {
     if (theme["--background-100"] === "#FFFFFF") {
@@ -444,6 +473,22 @@ export default function HeaderLinks(props: { [x: string]: any }) {
                     <div className="flex h-5 w-5 rounded-full bg-teal-500 shadow-[0px_6px_18px_rgba(51,_195,_183,_0.5)] dark:bg-horizonTeal-400 dark:shadow-[0px_6px_18px_rgba(51,_195,_183,_0.5)]" />
                   </button>
                 </div>
+                
+                {/* Background Selector Section */}
+                <div className="my-[30px] h-px w-full bg-gray-200 dark:!bg-navy-700" />
+                
+                <p className="mb-3 font-bold text-gray-900 dark:text-white">
+                  Fondo de Pantalla
+                </p>
+                <button
+                  onClick={() => setShowBackgroundModal(true)}
+                  className="text-md flex h-max w-full items-center justify-center rounded-2xl border-[1px] border-gray-200 bg-[rgba(11,11,11,0)] py-4 font-bold text-gray-900 hover:bg-white hover:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] focus:bg-white focus:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] active:bg-[#F7F9FF] active:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] dark:border-white/20 dark:text-white hover:dark:bg-navy-700 hover:dark:shadow-none focus:dark:bg-navy-700 focus:dark:shadow-none active:dark:bg-white/10 active:dark:shadow-none"
+                >
+                  Cambiar Fondo
+                  <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                    ({backgrounds.find(bg => bg.filename === selectedBackground)?.name || 'Globos'})
+                  </span>
+                </button>
               </div>
               
               <div className="my-[30px] h-px w-full bg-gray-200 dark:!bg-navy-700" />
@@ -452,9 +497,11 @@ export default function HeaderLinks(props: { [x: string]: any }) {
               <button
                 className="text-md flex h-max w-full items-center justify-center rounded-2xl border-[1px] border-gray-200 bg-[rgba(11,11,11,0)] py-4 font-bold text-gray-900 hover:bg-white hover:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] focus:bg-white focus:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] active:bg-[#F7F9FF] active:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] dark:border-white/20 dark:text-white hover:dark:bg-navy-700 hover:dark:shadow-none focus:dark:bg-navy-700 focus:dark:shadow-none active:dark:bg-white/10 active:dark:shadow-none"
                 onClick={() => {
-                  isFullscreen
-                    ? document.exitFullscreen()
-                    : document.body.requestFullscreen();
+                  if (isFullscreen) {
+                    document.exitFullscreen();
+                  } else {
+                    document.body.requestFullscreen();
+                  }
                 }}
               >
                 {isFullscreen ? "Salir Pantalla Completa" : "Pantalla Completa"}
@@ -468,6 +515,77 @@ export default function HeaderLinks(props: { [x: string]: any }) {
           </div>
         </div>
       </div>
+
+      {/* Background Selection Modal */}
+      {showBackgroundModal && mounted && createPortal(
+        <div 
+          className="fixed inset-0 z-[50000] flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowBackgroundModal(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-3xl max-h-[85vh] rounded-xl bg-white dark:bg-navy-800 shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-navy-800">
+              <h3 className="text-lg font-bold text-navy-700 dark:text-white">
+                Seleccionar Fondo de Pantalla
+              </h3>
+              <button
+                onClick={() => setShowBackgroundModal(false)}
+                className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              >
+                <MdClose className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {/* Content with inner scroll */}
+            <div className="overflow-y-auto max-h-[calc(85vh-100px)] p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {backgrounds.map((background) => (
+                  <div
+                    key={background.filename}
+                    className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 hover:scale-[1.02] ${
+                      selectedBackground === background.filename
+                        ? 'border-accent-500 shadow-lg ring-2 ring-accent-500/20'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-accent-300'
+                    }`}
+                    onClick={() => {
+                      setSelectedBackground?.(background.filename);
+                      setShowBackgroundModal(false);
+                    }}
+                  >
+                    <div className="aspect-video w-full relative">
+                      <Image
+                        src={background.preview}
+                        alt={background.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
+                    </div>
+                    
+                    {selectedBackground === background.filename && (
+                      <div className="absolute top-2 right-2 bg-accent-500 text-white rounded-full p-1.5 shadow-lg">
+                        <MdCheckCircle className="h-4 w-4" />
+                      </div>
+                    )}
+                    
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3">
+                      <p className="text-white font-medium text-sm text-center">{background.name}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Additional padding for scroll */}
+              <div className="h-4"></div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
  
    </>
   );

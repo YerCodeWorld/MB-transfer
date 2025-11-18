@@ -1,37 +1,32 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigation } from '../../contexts/NavigationContext';
 import { useServiceData } from '../../contexts/ServiceDataContext';
 import { useBottomBar } from '../../contexts/BottomBarContext';
 import { ServiceInput } from '../../types/services';
-import { convertIsoStringTo12h, mockDrivers, mockVehicles } from '../../utils/services';
+import { convertIsoStringTo12h, convertTo12Hour, mockDrivers, mockVehicles } from '../../utils/services';
+import { 
+  SERVICE_TYPE_OPTIONS, 
+  STATUS_OPTIONS, 
+  SORT_OPTIONS, 
+  SERVICE_KIND_OPTIONS, 
+  SERVICE_TYPE_THEMES, 
+  STATUS_COLORS, 
+  SERVICE_TYPE_LABELS 
+} from '../../constants/allServicesOptions';
+import FlightComparisonModal from '../shared/FlightComparisonModal';
+import AddServiceModal from '../shared/AddServiceModal';
+import PDFGeneratorModal from '../shared/PDFGeneratorModal';
+import { toast } from "sonner";
 
 import Card from '../single/card';
 import { 
-  BsArrowLeft, 
-  BsSearch, 
-  BsFilter, 
-  BsEye, 
-  BsPlay, 
-  BsPencil, 
-  BsTrash,
-  BsCheckCircle,
-  BsExclamationTriangle,
-  BsClock,
-  BsFilePdf
+  BsArrowLeft, BsSearch, BsFilter, BsEye, BsPlay, BsPencil, BsTrash, BsCheckCircle, BsExclamationTriangle, BsClock, BsFilePdf, BsDownload
 } from 'react-icons/bs';
 import { 
-  FaHashtag,
-  FaUser,
-  FaClock,
-  FaUsers,
-  FaRoute,
-  FaMapSigns,
-  FaTags,
-  FaCar,
-  FaUserTie,
-  FaPlus
+  FaHashtag, FaUser, FaClock, FaUsers, FaRoute, FaMapSigns, FaTags, FaCar, FaUserTie, FaPlus
 } from 'react-icons/fa';
 import { HiOutlineViewList } from 'react-icons/hi';
 
@@ -67,6 +62,34 @@ const AllServicesView = () => {
   
   // Edit modal state
   const [editingService, setEditingService] = useState<ExtendedService | null>(null);
+  const [mounted, setMounted] = useState(false);
+  
+  // Flight comparison modal state
+  const [showFlightComparison, setShowFlightComparison] = useState(false);
+  
+  // Add service modal state
+  const [showAddService, setShowAddService] = useState(false);
+  
+  // PDF generator modal state
+  const [showPDFGenerator, setShowPDFGenerator] = useState(false);
+
+  // Handle mounting for portal
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  // Handle body scroll when modal is open
+  useEffect(() => {
+    if (editingService) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [editingService]);
   
   // Load all services from cache for the selected date
   const loadServicesFromCache = () => {
@@ -76,10 +99,10 @@ const AllServicesView = () => {
     
     const services: ExtendedService[] = [];
     
-    // Add AT services
+    // Add AT services with deep cloning
     if (atCache && atCache.data) {
       services.push(...atCache.data.map(service => ({
-        ...service,
+        ...JSON.parse(JSON.stringify(service)), // Deep clone to prevent reference issues
         serviceType: 'at' as const,
         status: (service as any).status || 'pending' as ServiceStatus,
         assignedDriver: (service as any).assignedDriver,
@@ -87,10 +110,10 @@ const AllServicesView = () => {
       })));
     }
     
-    // Add ST services
+    // Add ST services with deep cloning
     if (stCache && stCache.data) {
       services.push(...stCache.data.map(service => ({
-        ...service,
+        ...JSON.parse(JSON.stringify(service)), // Deep clone to prevent reference issues
         serviceType: 'st' as const,
         status: (service as any).status || 'pending' as ServiceStatus,
         assignedDriver: (service as any).assignedDriver,
@@ -98,10 +121,10 @@ const AllServicesView = () => {
       })));
     }
     
-    // Add MBT services
+    // Add MBT services with deep cloning
     if (mbtCache && mbtCache.data) {
       services.push(...mbtCache.data.map(service => ({
-        ...service,
+        ...JSON.parse(JSON.stringify(service)), // Deep clone to prevent reference issues
         serviceType: 'mbt' as const,
         status: (service as any).status || 'pending' as ServiceStatus,
         assignedDriver: (service as any).assignedDriver,
@@ -115,7 +138,7 @@ const AllServicesView = () => {
   // Load services from cache when selectedDate changes
   useEffect(() => {
     loadServicesFromCache();
-  }, [selectedDate]);
+  }, [selectedDate, loadServicesFromCache]);
   
   // Apply filters and sorting
   useEffect(() => {
@@ -219,7 +242,13 @@ const AllServicesView = () => {
           key: "add-service",
           label: "Añadir Servicio",
           Icon: FaPlus,
-          onClick: getPDFs
+          onClick: () => setShowAddService(true)
+        },
+        {
+          key: "export-csv",
+          label: "Exportar CSV",
+          Icon: BsDownload,
+          onClick: exportToCSV
         }
       ]);
     } else {
@@ -243,14 +272,41 @@ const AllServicesView = () => {
     return () => {
       clearActions();
     };
-  }, [activeTab, filteredServices]);
+  }, [activeTab, filteredServices, clearActions, exportToCSV, setActions]);
   
   const checkTimeData = () => {
-    alert('Check Time Data feature will use AeroAPI to verify flight times. This will be implemented in a future update.');
+    setShowFlightComparison(true);
   };
   
   const getPDFs = () => {
-    alert('Get PDFs feature will generate service PDFs. This will be implemented in a future update.');
+    setShowPDFGenerator(true);
+  };
+  
+  const handleAddService = (newService: ServiceInput & { serviceType?: 'at' | 'st' | 'mbt' }) => {
+    // Determine which cache to use based on serviceType
+    const cacheType = newService.serviceType || 'mbt';
+    const cache = getCache(cacheType, selectedDate);
+    const existingData = cache?.data || [];
+    
+    // Clean the service to remove serviceType before saving
+    const { serviceType: _, ...cleanService } = newService;
+    
+    // Add the new service to the existing data
+    const updatedData = [...existingData, cleanService];
+    
+    // Save to the appropriate cache
+    setCache(cacheType, updatedData, selectedDate);
+    
+    // Reload all services to reflect the new addition
+    loadServicesFromCache();
+    
+    setShowAddService(false);
+    
+    const companyName = getCompanyName(cacheType);
+    toast.success('Servicio Agregado', {
+      className: "bg-card text-card-foreground border-border",
+      description: `Servicio añadido a ${companyName}`
+    });
   };
   
   const handleSort = (field: SortField) => {
@@ -267,12 +323,81 @@ const AllServicesView = () => {
   };
   
   const handleSaveEdit = (updatedService: ExtendedService) => {
-    // Update service in the appropriate cache
+    // Check if company has changed
+    const originalService = allServices.find(s => s.code === updatedService.code);
+    const oldCacheKey = originalService?.serviceType;
+    const newCacheKey = updatedService.serviceType;
+    
+    // Create a clean ServiceInput object for cache storage
+    const cleanServiceForCache = {
+      id: updatedService.id,
+      code: updatedService.code,
+      kindOf: updatedService.kindOf,
+      clientName: updatedService.clientName,
+      pickupTime: updatedService.pickupTime,
+      flightCode: updatedService.flightCode,
+      pax: updatedService.pax,
+      luggage: updatedService.luggage,
+      pickupLocation: updatedService.pickupLocation,
+      dropoffLocation: updatedService.dropoffLocation,
+      notes: updatedService.notes,
+      vehicleType: updatedService.vehicleType,
+      ally: updatedService.ally,
+      assignedDriver: updatedService.assignedDriver,
+      assignedVehicle: updatedService.assignedVehicle,
+      pdfData: updatedService.pdfData,
+      // Include status for persistence (extends ServiceInput)
+      status: updatedService.status
+    } as ServiceInput & { status: ServiceStatus };
+
+    if (oldCacheKey && oldCacheKey !== newCacheKey) {
+      // Company has changed - move service to new cache
+      
+      // Remove from old cache
+      const oldCache = getCache(oldCacheKey, selectedDate);
+      if (oldCache) {
+        const oldUpdatedData = oldCache.data.filter(s => s.code !== updatedService.code);
+        setCache(oldCacheKey, oldUpdatedData, selectedDate);
+      }
+      
+      // Add to new cache
+      const newCache = getCache(newCacheKey, selectedDate);
+      const newCacheData = newCache?.data || [];
+      const newUpdatedData = [...newCacheData, cleanServiceForCache];
+      setCache(newCacheKey, newUpdatedData, selectedDate);
+      
+      toast.success('Servicio Movido', {
+        className: "bg-card text-card-foreground border-border",
+        description: `Servicio movido a ${getCompanyName(newCacheKey)}`
+      });
+    } else {
+      // Company hasn't changed - update in same cache
+      const cache = getCache(newCacheKey, selectedDate);
+      
+      if (cache) {
+        // Update only the specific service in the cache with deep cloning to prevent reference issues
+        const updatedData = cache.data.map(s => 
+          s.code === updatedService.code ? cleanServiceForCache : JSON.parse(JSON.stringify(s))
+        );
+        
+        setCache(newCacheKey, updatedData, selectedDate);
+        
+        toast.success('Servicio Actualizado');
+      }
+    }
+    
+    // Reload all services from cache to ensure consistency
+    loadServicesFromCache();
+    setEditingService(null);
+  };
+
+  const handlePDFServiceUpdate = (serviceCode: string, updatedService: ExtendedService) => {
+    // Update service in the appropriate cache including pdfData
     const cacheKey = updatedService.serviceType;
     const cache = getCache(cacheKey, selectedDate);
     
     if (cache) {
-      // Create a clean ServiceInput object for cache storage (including assignments and status)
+      // Create a clean ServiceInput object for cache storage with pdfData included
       const cleanServiceForCache = {
         id: updatedService.id,
         code: updatedService.code,
@@ -289,12 +414,14 @@ const AllServicesView = () => {
         ally: updatedService.ally,
         assignedDriver: updatedService.assignedDriver,
         assignedVehicle: updatedService.assignedVehicle,
+        pdfData: updatedService.pdfData, // Include pdfData for PDF customization
+        // Include status for persistence (extends ServiceInput)
         status: updatedService.status
-      };
+      } as ServiceInput & { status: ServiceStatus };
       
-      // Update only the specific service in the cache
+      // Update only the specific service in the cache with deep cloning to prevent reference issues
       const updatedData = cache.data.map(s => 
-        s.id === updatedService.id ? cleanServiceForCache : s
+        s.code === serviceCode ? cleanServiceForCache : JSON.parse(JSON.stringify(s))
       );
       
       setCache(cacheKey, updatedData, selectedDate);
@@ -302,8 +429,81 @@ const AllServicesView = () => {
       // Reload all services from cache to ensure consistency
       loadServicesFromCache();
     }
+  };
+
+  const exportToCSV = () => {
+    // CSV Headers
+    const headers = [
+      'Empresa',
+      'Código',
+      'Cliente',
+      'Tipo',
+      'Hora',
+      'PAX',
+      'Origen',
+      'Destino',
+      'Vuelo',
+      'Vehículo',
+      'Conductor',
+      'Estado',
+      'Notas'
+    ];
+
+    // Convert services to CSV rows
+    const csvRows = filteredServices.map(service => {
+      const company = getCompanyName(service.serviceType);
+      const time = service.serviceType === 'at' 
+        ? convertIsoStringTo12h(service.pickupTime)  
+        : service.pickupTime;
+      
+      return [
+        company,
+        service.code || '',
+        service.clientName,
+        service.kindOf,
+        time,
+        service.pax.toString(),
+        service.pickupLocation,
+        service.dropoffLocation,
+        service.flightCode || '',
+        service.assignedVehicle || '',
+        service.assignedDriver || '',
+        service.status || 'pending',
+        service.notes || ''
+      ].map(field => `"${field.replace(/"/g, '""')}"`) // Escape quotes
+    });
+
+    // Combine headers and rows
+    const csvContent = [headers, ...csvRows]
+      .map(row => row.join(','))
+      .join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
     
-    setEditingService(null);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `itinerario-${selectedDate}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('CSV Exportado', {
+      className: "bg-card text-card-foreground border-border",
+      description: `Se exportaron ${filteredServices.length} servicios`
+    });
+  };
+
+  const getCompanyName = (serviceType: string) => {
+    switch (serviceType) {
+      case 'at': return 'Airport Transfer';
+      case 'st': return 'Sacbé Transfer';
+      case 'mbt': return 'MB Transfer';
+      default: return serviceType.toUpperCase();
+    }
   };
   
   const handleRemoveService = (service: ExtendedService) => {
@@ -313,7 +513,11 @@ const AllServicesView = () => {
       const cache = getCache(cacheKey, selectedDate);
       
       if (cache) {
-        const updatedData = cache.data.filter(s => s.id !== service.id);
+        // Filter out the specific service and ensure deep cloning for remaining services
+        const updatedData = cache.data
+          .filter(s => s.code !== service.code)
+          .map(s => JSON.parse(JSON.stringify(s)));
+        
         setCache(cacheKey, updatedData, selectedDate);
         
         // Reload all services from cache to ensure consistency
@@ -323,52 +527,15 @@ const AllServicesView = () => {
   };
   
   const getServiceTypeLabel = (serviceType: string) => {
-    switch (serviceType) {
-      case 'at': return 'Airport Transfer';
-      case 'st': return 'Sacbé Transfer';
-      case 'mbt': return 'MB Transfer';
-      default: return serviceType;
-    }
+    return SERVICE_TYPE_LABELS[serviceType] || serviceType;
   };
 
   const getServiceTypeColors = (serviceType: string) => {
-    switch (serviceType) {
-      case 'at': return {
-        bg: 'bg-blue-50 dark:bg-blue-900/10',
-        border: 'border-l-4 border-l-blue-500',
-        text: 'text-blue-700 dark:text-blue-300',
-        badge: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300'
-      };
-      case 'st': return {
-        bg: 'bg-green-50 dark:bg-green-900/10',
-        border: 'border-l-4 border-l-green-500',
-        text: 'text-green-700 dark:text-green-300',
-        badge: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-      };
-      case 'mbt': return {
-        bg: 'bg-purple-50 dark:bg-purple-900/10',
-        border: 'border-l-4 border-l-purple-500',
-        text: 'text-purple-700 dark:text-purple-300',
-        badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300'
-      };
-      default: return {
-        bg: 'bg-gray-50 dark:bg-gray-900/10',
-        border: 'border-l-4 border-l-gray-500',
-        text: 'text-gray-700 dark:text-gray-300',
-        badge: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300'
-      };
-    }
+    return SERVICE_TYPE_THEMES[serviceType] || SERVICE_TYPE_THEMES.default;
   };
   
   const getStatusColor = (status: ServiceStatus) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
-      case 'assigned': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
-      case 'in-progress': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300';
-      case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
-      case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-    }
+    return STATUS_COLORS[status] || STATUS_COLORS.default;
   };
   
   const kindOfElement = (kind: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER') => {
@@ -422,13 +589,11 @@ const AllServicesView = () => {
               onChange={(e) => setFilterType(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
             >
-              <option value="all">All Types</option>
-              <option value="airport">Airport Transfer</option>
-              <option value="sacbe">Sacbé Transfer</option>
-              <option value="mbtransfer">MB Transfer</option>
-              <option value="ARRIVAL">Arrivals Only</option>
-              <option value="DEPARTURE">Departures Only</option>
-              <option value="TRANSFER">Transfers Only</option>
+              {SERVICE_TYPE_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
           
@@ -442,12 +607,11 @@ const AllServicesView = () => {
               onChange={(e) => setFilterStatus(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="assigned">Assigned</option>
-              <option value="in-progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              {STATUS_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
           
@@ -465,16 +629,11 @@ const AllServicesView = () => {
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
             >
-              <option value="time-asc">Time (Earliest)</option>
-              <option value="time-desc">Time (Latest)</option>
-              <option value="client-asc">Client (A-Z)</option>
-              <option value="client-desc">Client (Z-A)</option>
-              <option value="type-asc">Type (A-Z)</option>
-              <option value="type-desc">Type (Z-A)</option>
-              <option value="status-asc">Status (A-Z)</option>
-              <option value="status-desc">Status (Z-A)</option>
-              <option value="code-asc">Code (A-Z)</option>
-              <option value="code-desc">Code (Z-A)</option>
+              {SORT_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -682,10 +841,17 @@ const AllServicesView = () => {
   );
 
   const renderEditModal = () => {
-    if (!editingService) return null;
+    if (!editingService || !mounted) return null;
     
-    return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4">
+    const modalContent = (
+      <div 
+        className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setEditingService(null);
+          }
+        }}
+      >
         <div className="w-full max-w-4xl rounded-xl bg-white dark:bg-navy-800 shadow-2xl max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-navy-700 dark:text-white">
@@ -714,6 +880,22 @@ const AllServicesView = () => {
                 />
               </div>
               
+              {/* Company */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Company
+                </label>
+                <select
+                  value={editingService.serviceType}
+                  onChange={(e) => setEditingService({ ...editingService, serviceType: e.target.value as 'at' | 'st' | 'mbt' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="mbt">MB Transfer</option>
+                  <option value="st">Sacbé Transfer</option>
+                  <option value="at">Airport Transfer</option>
+                </select>
+              </div>
+              
               {/* Client Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -737,9 +919,11 @@ const AllServicesView = () => {
                   onChange={(e) => setEditingService({ ...editingService, kindOf: e.target.value as any })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
                 >
-                  <option value="ARRIVAL">Arrival</option>
-                  <option value="DEPARTURE">Departure</option>
-                  <option value="TRANSFER">Transfer</option>
+                  {SERVICE_KIND_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               
@@ -753,11 +937,11 @@ const AllServicesView = () => {
                   onChange={(e) => setEditingService({ ...editingService, status: e.target.value as ServiceStatus })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
                 >
-                  <option value="pending">Pending</option>
-                  <option value="assigned">Assigned</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
+                  {STATUS_OPTIONS.slice(1).map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               
@@ -766,10 +950,12 @@ const AllServicesView = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Pickup Time
                 </label>
-                <input
-                  type="datetime-local"
+                <input 
+                  type="time"
                   value={editingService.pickupTime}
-                  onChange={(e) => setEditingService({ ...editingService, pickupTime: e.target.value })}
+                  onChange={(e) => {{
+                    setEditingService({ ...editingService, pickupTime: convertTo12Hour(e.target.value) })
+                  }}}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
@@ -897,6 +1083,8 @@ const AllServicesView = () => {
         </div>
       </div>
     );
+
+    return createPortal(modalContent, document.body);
   };
 
   const renderTabButtons = () => (
@@ -968,7 +1156,8 @@ const AllServicesView = () => {
               weekday: 'long', 
               year: 'numeric', 
               month: 'long', 
-              day: 'numeric' 
+              day: 'numeric',
+              timeZone: 'UTC'
             }).toUpperCase()}</i>
           </p>
         </div>
@@ -984,6 +1173,25 @@ const AllServicesView = () => {
           {renderFilters()}
           {renderServicesTable()}
           {renderEditModal()}
+          <FlightComparisonModal
+            isOpen={showFlightComparison}
+            onClose={() => setShowFlightComparison(false)}
+            services={allServices}
+            selectedDate={selectedDate}
+          />
+          <AddServiceModal
+            isOpen={showAddService}
+            onClose={() => setShowAddService(false)}
+            onSave={handleAddService}
+            selectedDate={selectedDate}
+          />
+          <PDFGeneratorModal
+            isOpen={showPDFGenerator}
+            onClose={() => setShowPDFGenerator(false)}
+            services={filteredServices}
+            selectedDate={selectedDate}
+            onServiceUpdate={handlePDFServiceUpdate}
+          />
         </>
       ) : (
         renderLiveMode()

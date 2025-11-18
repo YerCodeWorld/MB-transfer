@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { ServiceInput } from '../types/services';
+import { toYMDLocal, getTodayLocal } from '../utils/dateUtils';
 
 export interface ServiceCache {
   data: ServiceInput[];
@@ -44,8 +45,7 @@ export const ServiceDataProvider = ({ children }: ServiceDataProviderProps) => {
   const [currentServices, setCurrentServicesState] = useState<ServiceInput[]>([]);
   const [activeServiceType, setActiveServiceTypeState] = useState<'at' | 'mbt' | 'st' | null>(null);
   const [selectedDate, setSelectedDateState] = useState<string>(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    return getTodayLocal();
   });
 
   // Load initial data from localStorage
@@ -121,11 +121,14 @@ export const ServiceDataProvider = ({ children }: ServiceDataProviderProps) => {
   };
 
   const setCache = (serviceType: 'at' | 'mbt' | 'st', data: ServiceInput[], date?: string) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayLocal();
     const cacheDate = date || today;
     
+    // Deep clone the data to prevent reference issues
+    const clonedData = JSON.parse(JSON.stringify(data));
+    
     const cache: ServiceCache = {
-      data,
+      data: clonedData,
       timestamp: Date.now(),
       date: cacheDate,
       serviceType

@@ -77,4 +77,11 @@ export interface ServiceInput {
   vehicleType?: string;
   assignedDriver?: string;
   assignedVehicle?: string;
+  pdfData?: {
+    clientName?: string;
+    hotel?: string;
+    pax?: number;
+    time?: string;
+    flightCode?: string;
+  };
 }

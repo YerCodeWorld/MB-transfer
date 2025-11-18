@@ -11,21 +11,17 @@ import {
 } from '../../utils/services';
 import { ServiceInput, FlightInfo } from '../../types/services';
 
-import Card from '../single/card';
 import ServiceTable from '../shared/ServiceTable';
-import { BsArrowLeft, BsCheckCircle, BsExclamationTriangle, BsInfoCircle } from 'react-icons/bs';
+import { BsArrowLeft } from 'react-icons/bs';
 import {
-  FaHashtag,
   FaUser,
   FaClock,
   FaUsers,
   FaRoute,
   FaInfoCircle,
-  FaPlus,
   FaTimes,
   FaCopy,
-  FaMapSigns,
-  FaTags
+  FaMapSigns
 } from "react-icons/fa";
 import { PiAirplaneBold } from 'react-icons/pi';
 import {
@@ -52,15 +48,12 @@ const AirportTransferService = () => {
   const { popView } = useNavigation();
   
   const { 
-    currentServices, 
     setCurrentServices, 
     getCache, 
     setCache, 
-    exportServices, 
-    hasActiveData,
+    exportServices,
     setActiveServiceType,
-    selectedDate,
-    setSelectedDate 
+    selectedDate
   } = useServiceData();
   const { setActions, clearActions } = useBottomBar();
   
@@ -88,7 +81,7 @@ const AirportTransferService = () => {
       setServices([]);
       setStep('fetch');
     }
-  }, [selectedDate]);
+  }, [selectedDate, getCache, setActiveServiceType, setCurrentServices]);
 
   // Update bottom bar actions based on current step
   useEffect(() => {
@@ -173,7 +166,7 @@ const AirportTransferService = () => {
     return () => {
       clearActions();
     };
-  }, [step, loading, services, selectedDate, exportServices, setCache, setCurrentServices, popView]);
+  }, [step, loading, services, selectedDate, exportServices, setCache, setCurrentServices, popView, fetchServices, clearActions, setActions]);
 
   const kindOfElement = (kind: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER') => {
     const base =
@@ -195,6 +188,7 @@ const AirportTransferService = () => {
     setLoading(true);
     try {
 
+      alert(selectedDate);
       const atResponse = await fetchAtData(selectedDate);      
       const atData = atResponse.bookings; 
 
@@ -265,13 +259,15 @@ const AirportTransferService = () => {
     popView();
   };
 
-  // This step is now only shown when there's no cached data available   
-  const renderFetchStep = () => {
+  
+  const renderFetchStep = () => {    
+    
     const formattedDate = new Date(selectedDate).toLocaleDateString("es-ES", {
       weekday: "long",
       month: "long",
       day: "numeric",
       year: "numeric",
+      timeZone: "UTC"
     });
 
     return (
@@ -649,7 +645,7 @@ const AirportTransferService = () => {
           onClick={popView}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
         >
-          <BsArrowLeft className="text-xl" />
+          <BsArrowLeft className="text-xl text-white" />
         </button>
         <div>
           <h1 className="text-2xl font-bold text-navy-700 dark:text-white">

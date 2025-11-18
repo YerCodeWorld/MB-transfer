@@ -2,17 +2,13 @@
 
 import { ServiceInput } from '../../types/services';
 import { convertIsoStringTo12h } from '../../utils/services';
+import { createPortal } from 'react-dom';
+import { useEffect, useState } from 'react';
 import {
-  FaUser,
-  FaClock,
-  FaUsers,
-  FaRoute,
-  FaInfoCircle,
-  FaTimes,
-  FaCopy,
-  FaMapSigns,
+  FaUser, FaClock, FaUsers, FaRoute, FaInfoCircle, FaTimes, FaCopy, FaMapSigns,
 } from "react-icons/fa";
 import { PiAirplaneBold } from 'react-icons/pi';
+import { toast } from "sonner";
 
 interface ServiceDetailModalProps {
   service: ServiceInput | null;
@@ -20,7 +16,25 @@ interface ServiceDetailModalProps {
 }
 
 const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
-  if (!service) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (service) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [service]);
+
+  if (!service || !mounted) return null;
 
   const kindOfElement = (kind: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER') => {
     const base =
@@ -38,8 +52,15 @@ const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4">
+  const modalContent = (
+    <div 
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div className="w-full max-w-2xl rounded-xl bg-white dark:bg-navy-800 shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
@@ -72,7 +93,9 @@ const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(service.code || '');
-                alert(`Service code ${service.code} copied to clipboard!`);
+                toast.success("Código copiano exitosamente", {
+                  className: "bg-card text-card-foreground border-border"
+                });     
               }}
               className="flex items-center gap-2 px-3 py-1 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
             >
@@ -237,7 +260,9 @@ const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
           <button
             onClick={() => {
               navigator.clipboard.writeText(JSON.stringify(service, null, 2));
-              alert('Full service data copied to clipboard!');
+              toast.success("Información Copiada Exitosamente", {
+                className: "bg-card text-card-foreground border-border"
+              });
             }}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
           >
@@ -248,6 +273,8 @@ const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default ServiceDetailModal;
