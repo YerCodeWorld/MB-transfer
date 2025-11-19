@@ -36,6 +36,7 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
   const [messageText, setMessageText] = useState('');
   const [parsedData, setParsedData] = useState<ParsedServiceMessage | null>(null);
   const [parseError, setParsedError] = useState<string | null>(null);
+  const [messageType, setMessageType] = useState<'departure' | 'arrival'>('departure');
   
   // Manual form state
   const [manualService, setManualService] = useState<Partial<ServiceInput>>({
@@ -85,7 +86,7 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
   }, [messageText]);
 
   const handlePasteExample = () => {
-    setMessageText(getExampleMessage());
+    setMessageText(getExampleMessage(messageType));
   };
 
   const handleSaveFromMessage = () => {
@@ -121,6 +122,7 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
     setMessageText('');
     setParsedData(null);
     setParsedError(null);
+    setMessageType('departure');
     setManualService({
       code: '',
       kindOf: 'DEPARTURE',
@@ -189,6 +191,36 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
         <div className="p-6">
           {activeTab === 'message' ? (
             <div className="space-y-6">
+              {/* Structure Type Selector */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Tipo de Estructura</h3>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setMessageType('departure')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                      messageType === 'departure'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Salida (Departure)
+                  </button>
+                  <button
+                    onClick={() => setMessageType('arrival')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                      messageType === 'arrival'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Llegada (Arrival)
+                  </button>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                  Selecciona el tipo de estructura del mensaje que vas a pegar.
+                </p>
+              </div>
+
               {/* Message Input */}
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -207,7 +239,8 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   rows={10}
-                  placeholder="Pega aquí el mensaje con el formato:
+                  placeholder={messageType === 'departure' ? 
+                    `Pega aquí el mensaje con el formato de SALIDA:
 SALIDA
 PUJ-PCAT-11692
 Pedro Scala
@@ -216,7 +249,16 @@ Kia K5
 Desde: Hotel Name
 Fecha: 2025-11-10
 Hora: 18:30
-Hacia: Punta Cana Airport"
+Hacia: Punta Cana Airport` : 
+                    `Pega aquí el mensaje con el formato de LLEGADA:
+LLEGADA
+Takahiro Ohki
+Hyundai H-1
+6 Pax
+Desde: Punta Cana Airport (PUJ)
+Fecha: 2025-11-18 15:30:00
+Vuelo: JETBLUE B6 173
+Hacia: Meliá Caribe Beach Resort`}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white font-mono text-sm"
                 />
               </div>

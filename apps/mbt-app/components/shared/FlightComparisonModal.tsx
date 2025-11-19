@@ -431,7 +431,7 @@ const FlightComparisonModal = ({ isOpen, onClose, services, selectedDate }: Flig
                           </span>
                         </div>
                         <p className="text-lg md:text-2xl font-bold text-sky-900 dark:text-sky-100 leading-tight">
-                          {comparison.service.code.includes('ATC') ? convertIsoStringTo12h(comparison.service.pickupTime) : comparison.service.pickupTime}
+                          {comparison.service.pickupTime}
                         </p>
                       </div>
 

@@ -177,11 +177,9 @@ const AllServicesView = () => {
       let aValue: any, bValue: any;
       
       switch (sortField) {
-        case 'time':        
-          
+        case 'time':                  
           aValue = time12ToMinutes(a.pickupTime);
-          bValue = time12ToMinutes(b.pickupTime);          
-          
+          bValue = time12ToMinutes(b.pickupTime);                    
           break;
         case 'client':
           aValue = a.clientName.toLowerCase();

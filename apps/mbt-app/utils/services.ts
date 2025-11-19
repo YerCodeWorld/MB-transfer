@@ -89,7 +89,8 @@ export async function fetchFlightTimes(flightCodes: string[]): Promise<FlightInf
     });
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+      console.error(`API request failed: ${response.status}`);
+      return;
     }
 
     const results = await response.json();
