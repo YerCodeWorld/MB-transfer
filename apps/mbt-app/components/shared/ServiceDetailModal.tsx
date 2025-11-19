@@ -54,7 +54,7 @@ const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
 
   const modalContent = (
     <div 
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[10000] backdrop-blur-sm flex items-center justify-center bg-black/50 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -97,7 +97,7 @@ const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
                   className: "bg-card text-card-foreground border-border"
                 });     
               }}
-              className="flex items-center gap-2 px-3 py-1 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-200/20 dark:text-purple-100 rounded-lg transition-colors"
             >
               <FaCopy />
               Copiar Código

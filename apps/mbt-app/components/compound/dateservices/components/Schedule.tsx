@@ -2,6 +2,7 @@
 import { BsCalendarCheck } from "react-icons/bs";
 import { useServiceData } from "../../../../contexts/ServiceDataContext";
 import { useNavigation } from "../../../../contexts/NavigationContext";
+import DetailedCalendarView from "../../../views/DetailedCalendarView";
 
 // Needs to be attached with DB's data
 const Schedule = () => {
@@ -30,7 +31,7 @@ const Schedule = () => {
     pushView({
       id: 'detailed-calendar',
       label: 'Detailed Calendar View',
-      component: undefined, // Will be implemented later
+      component: DetailedCalendarView,
       data: {
         selectedDate,
         services: allServices,
@@ -48,11 +49,11 @@ const Schedule = () => {
         </h4>
         <button
           onClick={handleDetailedView}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-accent-600 hover:text-accent-700 hover:bg-accent-50 dark:text-accent-400 dark:hover:text-accent-300 dark:hover:bg-accent-900/20 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-accent-600 hover:text-accent-700 hover:bg-accent-50 dark:text-accent-200 dark:hover:text-accent-300 dark:hover:bg-accent-200/20 rounded-lg transition-colors"
           title="View Detailed Calendar"
         >
           <BsCalendarCheck />
-          <span className="hidden sm:inline">Details</span>
+          <span className="hidden sm:inline">Vista Detallada</span>
         </button>
       </div>
       <div className="mt-8">
@@ -61,7 +62,7 @@ const Schedule = () => {
             {stats.total}
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-300">                      
-            Mostrando Itinerario del <i className="text-red-500">{
+            Mostrando Itinerario del <i className="text-red-400 dark:text-red-200">{
               new Date(selectedDate).toLocaleDateString("es-ES", { 
                 year: "numeric", month: "long", day: "numeric", timeZone: "UTC"
               })          
@@ -76,27 +77,27 @@ const Schedule = () => {
           <h5 className="text-base font-bold text-blue-700 dark:text-blue-300">
             {'Airport Transfer'}{" "}
           </h5>
-          <p className="text-sm font-large text-blue-600 dark:text-blue-400"> {stats.byServiceType.at} Services </p>
+          <p className="text-sm font-large text-blue-600 dark:text-blue-400"> {stats.byServiceType.at} Servicios </p>
         </div>
 
         {/* Sacbé Transfer */}
         <div
-          className={`flex w-full justify-between bg-green-50 dark:!bg-green-900/10 border-l-4 border-l-green-500 ${mb} rounded-xl py-3 px-4 3xl:p-4 `}
+          className={`flex w-full justify-between bg-green-50 dark:!bg-green-600/10 border-l-4 border-l-green-500 ${mb} rounded-xl py-3 px-4 3xl:p-4 `}
         >
-          <h5 className="text-base font-bold text-green-700 dark:text-green-300">
+          <h5 className="text-base font-bold text-green-700 dark:text-green-100">
             {'Sacbé Transfer'}{" "}
           </h5>
-          <p className="text-sm font-large text-green-600 dark:text-green-400"> {stats.byServiceType.st} Services </p>
+          <p className="text-sm font-large text-green-600 dark:text-green-200"> {stats.byServiceType.st} Servicios </p>
         </div>
 
         {/* MB Transfer */}
         <div
-          className={`flex w-full justify-between bg-purple-50 dark:!bg-purple-900/10 border-l-4 border-l-purple-500 ${mb} rounded-xl py-3 px-4 3xl:p-4 `}
+          className={`flex w-full justify-between bg-purple-50 dark:!bg-purple-400/10 border-l-4 border-l-purple-500 ${mb} rounded-xl py-3 px-4 3xl:p-4 `}
         >
-          <h5 className="text-base font-bold text-purple-700 dark:text-purple-300">
+          <h5 className="text-base font-bold text-purple-700 dark:text-purple-100">
             {'MB Transfer'}{" "}
           </h5>
-          <p className="text-sm font-large text-purple-600 dark:text-purple-400"> {stats.byServiceType.mbt} Services </p>
+          <p className="text-sm font-large text-purple-600 dark:text-purple-100"> {stats.byServiceType.mbt} Servicios </p>
         </div>
 
         

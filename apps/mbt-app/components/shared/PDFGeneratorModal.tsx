@@ -117,7 +117,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
       clientName: service.pdfData?.clientName || service.clientName,
       hotel: hotelLocation,
       pax: service.pdfData?.pax || service.pax,
-      time: service.pdfData?.time || voucherData.time,
+      time: voucherData.time,
       flightCode: service.pdfData?.flightCode || service.flightCode || ''
     });
   };
@@ -130,8 +130,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
       pdfData: {
         clientName: editFormData.clientName,
         hotel: editFormData.hotel,
-        pax: editFormData.pax,
-        time: editFormData.time,
+        pax: editFormData.pax,        
         flightCode: editFormData.flightCode
       }
     };
@@ -197,77 +196,6 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
     }
   };
 
-  const handleGenerateAll = async () => {
-    setIsGenerating(true);
-    setGenerationStatus('generating');
-    setProgress({ current: 0, total: filteredServices.length });
-
-    let successCount = 0;
-    let errorCount = 0;
-
-    try {
-      for (let i = 0; i < filteredServices.length; i++) {
-        const service = filteredServices[i];
-        setProgress({ current: i + 1, total: filteredServices.length });
-        
-        try {
-          // Set preview to current service
-          setPreviewService(service);
-          
-          // Wait for render - longer delay to ensure full render
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Generate PDF with error handling
-          await generateServicePDF(service, selectedDate, 'voucher-preview');
-          successCount++;
-          
-          // Delay between PDFs to prevent browser overload
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-        } catch (serviceError) {
-          console.error(`Error generating PDF for ${service.clientName}:`, serviceError);
-          errorCount++;
-          
-          // Continue with next service even if one fails
-          continue;
-        }
-      }
-      
-      if (errorCount === 0) {
-        setGenerationStatus('success');
-      } else if (successCount > 0) {
-        setGenerationStatus('success'); // Partial success
-        console.warn(`Generated ${successCount} PDFs successfully, ${errorCount} failed`);
-      } else {
-        setGenerationStatus('error');
-        setErrorMessage(`No se pudieron generar los PDFs. ${errorCount} errores.`);
-      }
-      
-      setTimeout(() => {
-        setGenerationStatus('idle');
-        setPreviewService(null);
-        setProgress({ current: 0, total: 0 });
-        setErrorMessage('');
-      }, 5000);
-      
-    } catch (error) {
-      console.error('Error generating bulk PDFs:', error);
-      setGenerationStatus('error');
-      if (error.message.includes('popup')) {
-        setErrorMessage('Por favor permite ventanas emergentes para generar PDFs');
-      } else {
-        setErrorMessage(error.message || 'Error desconocido durante la generación masiva');
-      }
-      setTimeout(() => {
-        setGenerationStatus('idle');
-        setProgress({ current: 0, total: 0 });
-        setErrorMessage('');
-      }, 5000);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   const getCompanyColor = (serviceType: string) => {
     switch (serviceType) {
       case 'at': return 'text-blue-600 bg-blue-50';
@@ -290,14 +218,14 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
 
   const modalContent = (
     <div 
-      className="fixed inset-0 z-[50000] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[50000] backdrop-blur-sm flex items-center justify-center bg-black/50 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isGenerating) {
           handleClose();
         }
       }}
     >
-      <div className="w-full max-w-7xl max-h-[90vh] rounded-xl bg-white dark:bg-navy-800 shadow-2xl overflow-hidden">
+      <div className="w-full  max-w-7xl max-h-[90vh] rounded-xl bg-white dark:bg-navy-800 shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
@@ -362,59 +290,14 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
                   </div>
                 </div>
               </div>
-              {/* Bulk Actions */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Acciones en Lote</h3>
-                <div className="mb-3">
-                  <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                    ℹ️ Cada PDF se abrirá en una ventana de impresión separada. Selecciona "Guardar como PDF" en cada diálogo.
-                  </div>
-                </div>
-                <button
-                  onClick={handleGenerateAll}
-                  disabled={isGenerating || filteredServices.length === 0}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isGenerating ? (
-                    <>
-                      <FaSpinner className="animate-spin" />
-                      Abriendo PDF... ({progress.current}/{progress.total})
-                    </>
-                  ) : (
-                    <>
-                      <BsDownload />
-                      Imprimir {filteredServices.length} PDFs
-                    </>
-                  )}
-                </button>
-                
-                {generationStatus === 'success' && (
-                  <div className="mt-3 flex items-center gap-2 text-green-600 text-sm">
-                    <BsCheckCircle />
-                    Ventanas de impresión abiertas exitosamente
-                  </div>
-                )}
-                
-                {generationStatus === 'error' && (
-                  <div className="mt-3 flex items-start gap-2 text-red-600 text-sm">
-                    <BsExclamationTriangle className="flex-shrink-0 mt-0.5" />
-                    <div>
-                      <div className="font-medium">Error al generar PDFs</div>
-                      {errorMessage && (
-                        <div className="text-xs text-red-500 mt-1">{errorMessage}</div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
+              
               {/* Individual Services */}
               <div>
                 <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Servicios Individuales</h3>
                 <div className="space-y-2">
                   {filteredServices.map((service) => (
                     <div
-                      key={service.id}
+                      key={service.code}
                       className="flex items-center justify-between p-3 bg-white dark:bg-navy-700 rounded-lg border border-gray-200 dark:border-gray-600"
                     >
                       <div className="flex-1">
@@ -427,7 +310,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
                           </span>
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-300">
-                          {service.code} • {service.kindOf} • {service.pax} PAX
+                          {service.code} • {service.kindOf} • {service.pax} PAX 
                         </div>
                       </div>
                       
@@ -470,17 +353,9 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
               <h3 className="font-semibold text-gray-800 dark:text-white mb-4">Vista Previa del Voucher</h3>
               
               {previewService ? (
-                <div className="bg-white m-0 rounded-lg shadow-lg overflow-hidden">
+                <div className="">
                   <div 
-                    id="voucher-preview"
-                    style={{    
-                      margin: '0',                        
-                      padding: '0',
-                      backgroundColor: '#FFFFFE',
-                      fontFamily: 'Arial, sans-serif',
-                      maxHeight: '100%',
-                      maxWidth: '100%'                                                                                        
-                    }}
+                    id="voucher-preview"                    
                   >
                     <VoucherTemplate
                       {...serviceToVoucherData(previewService, selectedDate)}
@@ -611,10 +486,10 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
   );
 
   return (
-    <>
-      {createPortal(modalContent, document.body)}
-      {editModalContent && createPortal(editModalContent, document.body)}
-    </>
+    <React.Fragment>
+      {createPortal(<div key="main-modal">{modalContent}</div>, document.body)}
+      {editModalContent && createPortal(<div key="edit-modal">{editModalContent}</div>, document.body)}
+    </React.Fragment>
   );
 };
 

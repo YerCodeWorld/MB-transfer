@@ -7,7 +7,11 @@ import { useBottomBar } from '../../contexts/BottomBarContext';
 import { ServiceInput } from '../../types/services';
 import { convertTo12Hour } from '../../utils/services';
 import * as XLSX from 'xlsx';
+
 import ServiceTable from '../shared/ServiceTable';
+import Card from "../single/card";
+
+import { toast } from 'sonner';
 
 import { BsArrowLeft, BsFileEarmarkExcel, BsUpload } from 'react-icons/bs';
 import { HiOutlineDownload, HiOutlineSave, HiChevronLeft } from 'react-icons/hi';
@@ -51,6 +55,7 @@ const SacbeTransferService = () => {
     getCache, 
     setCache, 
     exportServices,
+    activeServiceType,
     setActiveServiceType,
     selectedDate 
   } = useServiceData();
@@ -63,10 +68,14 @@ const SacbeTransferService = () => {
   const [services, setServices] = useState<ExtractedService[]>([]);
   const [step, setStep] = useState<'upload' | 'review'>('upload');
 
-  // Load cached data on component mount and set up service type
+  
   useEffect(() => {
-    setActiveServiceType('st');
-    
+    if (activeServiceType !== 'st') {
+      setActiveServiceType('st');
+    }
+  }, [activeServiceType, setActiveServiceType]);
+  
+  useEffect(() => {      
     // Check specifically for 'st' service type cache for the selected date
     const cache = getCache('st', selectedDate);
     if (cache && cache.data.length > 0) {
@@ -88,7 +97,7 @@ const SacbeTransferService = () => {
       setFile(null);
       setStep('upload');
     }
-  }, [selectedDate, getCache, setActiveServiceType, setCurrentServices]);
+  }, [selectedDate, getCache]);
 
   const handleFileSelect = (selectedFile: File) => {
     if (!selectedFile.name.match(/\.(xlsx|xls)$/)) {
@@ -243,7 +252,7 @@ const SacbeTransferService = () => {
       }));
       setCurrentServices(serviceInputs);
     } catch (error) {      
-      alert(`Error processing Excel file: ${error instanceof Error ? error.message : 'Please check the format.'}`);
+      toast.error(`Error processing Excel file: ${error instanceof Error ? error.message : 'Please check the format.'}`);
     } finally {
       setLoading(false);
     }
@@ -251,13 +260,11 @@ const SacbeTransferService = () => {
 
   const confirmServices = () => {
     const validServices = services.filter(s => s.validation.isValid);    
-    alert(`${validServices.length} services submitted for approval`);
+    toast.info(`${validServices.length} services submitted for approval`);
     clearActions();
     popView();
   };
-
-
-  // Update bottom bar actions based on current step
+  
   useEffect(() => {
     if (step === 'upload') {
       setActions([
@@ -294,7 +301,7 @@ const SacbeTransferService = () => {
             if (validServices.length > 0) {
               exportServices(validServices, 'csv');
             } else {
-              alert('No valid services to export');
+              toast.error('No valid services to export');
             }
           }
         },
@@ -321,14 +328,14 @@ const SacbeTransferService = () => {
             }));
             setCurrentServices(serviceInputs);
             setCache('st', serviceInputs, selectedDate);
-            alert('Services saved successfully!');
+            toast.success(`${ServiceInputs.length} services saved successfully!`);
           }
         }
       ]);
     }
 
     return () => {
-      // Cleanup function
+      clearActions();
     };
   }, [step, services, loading, exportServices, setCache, setCurrentServices, popView, clearActions, setActions, selectedDate]);
 
@@ -547,7 +554,7 @@ const SacbeTransferService = () => {
           onClick={popView}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
         >
-          <BsArrowLeft className="text-xl text-white" />
+          <BsArrowLeft className="text-xl dark:text-white" />
         </button>
         <div>
           <h1 className="text-2xl font-bold text-navy-700 dark:text-white">

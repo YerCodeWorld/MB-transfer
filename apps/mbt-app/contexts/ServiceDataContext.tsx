@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react';
 import { ServiceInput } from '../types/services';
 import { toYMDLocal, getTodayLocal } from '../utils/dateUtils';
 
@@ -76,14 +76,23 @@ export const ServiceDataProvider = ({ children }: ServiceDataProviderProps) => {
     localStorage.setItem('mbt_current_services', JSON.stringify(services));
   };
 
-  const setActiveServiceType = (type: 'at' | 'mbt' | 'st' | null) => {
-    setActiveServiceTypeState(type);
-    if (type) {
-      localStorage.setItem('mbt_active_service_type', type);
-    } else {
-      localStorage.removeItem('mbt_active_service_type');
-    }
-  };
+  const setActiveServiceType = useCallback(
+    (type: 'at' | 'mbt' | 'st' | null) => {
+      setActiveServiceTypeState(prev => {
+        // avoid re-setting the same value
+        if (prev === type) return prev;
+
+        if (type) {
+          localStorage.setItem('mbt_active_service_type', type);
+        } else {
+          localStorage.removeItem('mbt_active_service_type');
+        }
+
+        return type;
+      });
+    },
+    []
+  );
 
   const setSelectedDate = (date: string) => {
     setSelectedDateState(date);
@@ -104,21 +113,24 @@ export const ServiceDataProvider = ({ children }: ServiceDataProviderProps) => {
     return services;
   };
 
-  const getCache = (serviceType: 'at' | 'mbt' | 'st', date?: string): ServiceCache | null => {
-    const key = date ? 
-      `mbt_cache_${serviceType}_${date}` : 
-      `mbt_cache_${serviceType}_latest`;
-    
-    const cached = localStorage.getItem(key);
-    if (cached) {
-      try {
-        return JSON.parse(cached);
-      } catch (error) {
-        console.error('Error parsing cached data:', error);
+  const getCache = useCallback( 
+    (serviceType: 'at' | 'mbt' | 'st', date?: string): ServiceCache | null => {
+      const key = date ? 
+        `mbt_cache_${serviceType}_${date}` : 
+        `mbt_cache_${serviceType}_latest`;
+      
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (error) {
+          console.error('Error parsing cached data:', error);
+        }
       }
-    }
-    return null;
-  };
+      return null;
+    }, 
+    []
+  );
 
   const setCache = (serviceType: 'at' | 'mbt' | 'st', data: ServiceInput[], date?: string) => {
     const today = getTodayLocal();

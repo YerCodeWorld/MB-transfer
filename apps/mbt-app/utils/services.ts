@@ -12,21 +12,33 @@ export function convertTo12Hour(time24: string): string {
 // I believe we are not using this 
 // get 05:00 pm | return 17:00
 export function convertTo24Hour(time12: string): string {
-  const [time, period] = time12.split(' ');
-  const [hours, minutes] = time.split(':').map(Number);
-  let hours24 = hours;
-  
-  if (period.toUpperCase() === 'PM' && hours !== 12) {
-    hours24 += 12;
-  } else if (period.toUpperCase() === 'AM' && hours === 12) {
-    hours24 = 0;
+  if (!time12) return "";
+
+  // Normalize input like "3:45pm", "3:45 pm", "03:45 PM"
+  const normalized = time12.trim().toUpperCase().replace(/\s+/g, " ");
+
+  const [time, period] = normalized.split(" ");
+  if (!time || !period) return "";
+
+  const [hStr, mStr] = time.split(":");
+  if (!hStr || !mStr) return "";
+
+  let hours = Number(hStr);
+  const minutes = Number(mStr);
+
+  if (period === "PM" && hours !== 12) {
+    hours += 12;
+  } else if (period === "AM" && hours === 12) {
+    hours = 0;
   }
-  
-  return `${hours24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 }
+
 
 // Needed for AT API response, where this is how the time is displayed 
 export function convertIsoStringTo12h(isoString) {
+  console.log(isoString);
   const [datePart, timePart] = isoString.replace("Z", "").split("T");
   const [year, month, day] = datePart.split("-").map(Number);
 
@@ -41,6 +53,24 @@ export function convertIsoStringTo12h(isoString) {
     hour12: true
   });
 }
+
+export function time12ToMinutes(time12: string): number {
+  console.log(time12);
+  const [time, rawPeriod] = time12.trim().split(/\s+/); // "9:12", "AM"
+  const [hStr, mStr] = time.split(":");
+
+  if (!rawPeriod) return 0;
+  
+  let hours = Number(hStr);
+  const minutes = Number(mStr);
+  const period = rawPeriod.toUpperCase();
+
+  if (period === "PM" && hours !== 12) hours += 12;
+  if (period === "AM" && hours === 12) hours = 0;
+
+  return hours * 60 + minutes;
+}
+
 
 // TODO
 // Needs to be updated to receive a date parameter instead 

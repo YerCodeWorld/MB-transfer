@@ -36,7 +36,7 @@ function PlatformContent() {
       }
       
       return (
-        <div className="rounded-[20px] bg-white p-6 shadow-3xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none">
+        <div className="rounded-[20px] bg-background-100 p-6 shadow-3xl shadow-shadow-100 dark:!bg-background-900 dark:shadow-none">
           <h2 className="text-2xl font-bold text-navy-700 dark:text-white mb-4">
             {currentView.label}
           </h2>

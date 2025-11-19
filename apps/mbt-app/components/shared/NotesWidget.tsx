@@ -54,7 +54,7 @@ const NotesWidget = ({ selectedDate, onViewAll, className = "" }: NotesWidgetPro
         <div className="flex items-center gap-2">
           <FaStickyNote className="text-accent-500" />
           <h3 className="text-sm font-semibold text-navy-700 dark:text-white">
-            Notes ({notes.length})
+            Notas ({notes.length})
           </h3>
         </div>
         <button
@@ -62,7 +62,7 @@ const NotesWidget = ({ selectedDate, onViewAll, className = "" }: NotesWidgetPro
           className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-accent-600 hover:text-accent-700 hover:bg-accent-50 dark:text-accent-400 dark:hover:text-accent-300 dark:hover:bg-accent-900/20 rounded transition-colors"
         >
           <FaEye />
-          View All
+          Ver todas 
         </button>
       </div>
 
@@ -71,13 +71,13 @@ const NotesWidget = ({ selectedDate, onViewAll, className = "" }: NotesWidgetPro
         {notes.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-              No notes for this date
+              Aún no hay notas para esta fecha
             </p>
             <button
               onClick={onViewAll}
               className="text-xs text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300"
             >
-              Add your first note
+              Añade una primera nota
             </button>
           </div>
         ) : (

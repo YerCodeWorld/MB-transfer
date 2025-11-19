@@ -11,6 +11,8 @@ import {
 } from '../../utils/services';
 import { ServiceInput, FlightInfo } from '../../types/services';
 
+import { toast } from 'sonner';
+
 import ServiceTable from '../shared/ServiceTable';
 import { BsArrowLeft } from 'react-icons/bs';
 import {
@@ -36,14 +38,6 @@ interface ServicePreview extends ServiceInput {
   status: 'pending' | 'checking' | 'validated' | 'error';
 }
 
-/*  
-  We must keep the global stack (or rather current object, since that's what it is) mentioned in the TODOs saved in localstorage with some key.
-  This object must be accessible through different sections of the site to test some functionalities, since we are not yet connecting the system
-  to the database.  
-  
-  DEBUGGING: Testing if edits persist - timestamp: 2024-11-10T15:30:00Z
-*/
-
 const AirportTransferService = () => {
   const { popView } = useNavigation();
   
@@ -52,6 +46,7 @@ const AirportTransferService = () => {
     getCache, 
     setCache, 
     exportServices,
+    activeServiceType,
     setActiveServiceType,
     selectedDate
   } = useServiceData();
@@ -62,11 +57,13 @@ const AirportTransferService = () => {
   const [services, setServices] = useState<ServicePreview[]>([]);
   const [step, setStep] = useState<'fetch' | 'review' | 'confirm'>('fetch');
 
-  // Load cached data on component mount and set up service type
   useEffect(() => {
-    setActiveServiceType('at');
-    
-    // Check specifically for 'at' service type cache for the selected date
+    if (activeServiceType !== 'at') {
+      setActiveServiceType('at');
+    }
+  }, [activeServiceType, setActiveServiceType]);
+
+  useEffect(() => {    
     const cache = getCache('at', selectedDate);
     if (cache && cache.data.length > 0) {
       const cachedServicesWithStatus: ServicePreview[] = cache.data.map(service => ({
@@ -81,7 +78,7 @@ const AirportTransferService = () => {
       setServices([]);
       setStep('fetch');
     }
-  }, [selectedDate, getCache, setActiveServiceType, setCurrentServices]);
+  }, [selectedDate, getCache]);
 
   // Update bottom bar actions based on current step
   useEffect(() => {
@@ -157,7 +154,7 @@ const AirportTransferService = () => {
             }));
             setCurrentServices(serviceInputs);
             setCache('at', serviceInputs, selectedDate);
-            alert('Services cached successfully!');
+            toast.success(`${serviceInputs.length} Services cached successfully!`);
           }
         }
       ]);
@@ -166,7 +163,7 @@ const AirportTransferService = () => {
     return () => {
       clearActions();
     };
-  }, [step, loading, services, selectedDate, exportServices, setCache, setCurrentServices, popView, fetchServices, clearActions, setActions]);
+  }, [step, loading, services, selectedDate, exportServices, setCache, setCurrentServices, setStep, popView, clearActions, setActions]);
 
   const kindOfElement = (kind: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER') => {
     const base =
@@ -222,28 +219,33 @@ const AirportTransferService = () => {
       const servicesWithStatus: ServicePreview[] = extractedServices.map(service => ({
         ...service,
         status: 'pending' as const
-      }));
-
-      setServices(servicesWithStatus);
-      setStep('review');
+      }));      
       
       // Update global state with fetched services
-      const serviceInputs: ServiceInput[] = servicesWithStatus.map(s => ({
-        id: s.id,
-        code: s.code,
-        kindOf: s.kindOf,
-        clientName: s.clientName,
-        pickupTime: s.pickupTime,
-        flightCode: s.flightCode,
-        pax: s.pax,
-        luggage: s.luggage,
-        pickupLocation: s.pickupLocation,
-        dropoffLocation: s.dropoffLocation,
-        notes: s.notes,
-        vehicleType: s.vehicleType,
-        ally: s.ally
-      }));
+      const serviceInputs: ServiceInput[] = servicesWithStatus.map(s => {
+      
+        return {
+          id: s.id,
+          code: s.code,
+          kindOf: s.kindOf,
+          clientName: s.clientName,
+          pickupTime: convertIsoStringTo12h(s.pickupTime),
+          flightCode: s.flightCode,
+          pax: s.pax,
+          luggage: s.luggage,
+          pickupLocation: s.pickupLocation,
+          dropoffLocation: s.dropoffLocation,
+          notes: s.notes,
+          vehicleType: s.vehicleType,
+          ally: s.ally        
+        };
+        
+      });      
+      
       setCurrentServices(serviceInputs);
+      setServices(serviceInputs);
+      setStep('review');
+      
     } catch (error) {
       console.error('Error fetching AT services:', error);
     } finally {
@@ -645,7 +647,7 @@ const AirportTransferService = () => {
           onClick={popView}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
         >
-          <BsArrowLeft className="text-xl text-white" />
+          <BsArrowLeft className="text-xl dark:text-white" />
         </button>
         <div>
           <h1 className="text-2xl font-bold text-navy-700 dark:text-white">

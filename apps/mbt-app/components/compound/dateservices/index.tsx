@@ -24,6 +24,9 @@ import SacbeTransferService from "../../services/SacbeTransferService";
 import MBTransferService from "../../services/MBTransferService";
 import AllServicesView from "../../services/AllServicesView";
 
+import { GoCodescan, GoFileDiff } from "react-icons/go";
+import { PiAddressBookThin, PiAirplaneBold } from "react-icons/pi";
+
 // Change the default name 
 const Courses = () => {
 
@@ -77,6 +80,24 @@ const Courses = () => {
       component
     });
   };
+
+  const companies: string[] = ['All', 'AirportTransfer', 'Sacbé Transfer', 'MB Transfer'];
+
+  const serviceIcon = (compName: string): React.ReactElement => {
+    switch (compName) {
+      case 'MB Transfer':
+        return <PiAddressBookThin/>;
+        
+      case 'AirportTransfer':
+        return <GoCodescan/>;
+        
+      case 'Sacbé Transfer':
+        return <GoFileDiff/>;
+
+      default:
+        return <PiAirplaneBold />;
+    }
+  }
 
   const renderItineraryTab = () => {
     const currentService = serviceCompanies[carouselIndex];
@@ -151,7 +172,7 @@ const Courses = () => {
               }`}
             >
               <div className="mb-1 flex justify-center">
-                <span className="text-lg">{service.icon}</span>
+                <span className="text-lg">{serviceIcon(companies[index])}</span>
               </div>
               <div className="font-medium">{service.day}</div>
               <div className="text-xs opacity-75">{service.date}</div>
@@ -163,6 +184,14 @@ const Courses = () => {
         <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
           Mostrando servicios {carouselIndex + 1} de {serviceCompanies.length}
         </div>
+        
+        {/* Notes Widget */}
+        <div className="w-full mt-4">
+          <NotesWidget 
+            selectedDate={selectedDate}
+            onViewAll={() => setActiveTab('notes')}
+          />
+        </div>   
       </div>
     );
   };
@@ -465,25 +494,18 @@ const Courses = () => {
         <Card extra={"w-full mt-4"}>
           <Schedule />
         </Card>
-        
-        {/* Notes Widget */}
-        <div className="w-full mt-4">
-          <NotesWidget 
-            selectedDate={selectedDate}
-            onViewAll={() => setActiveTab('notes')}
-          />
-        </div>        
+                
       </div>
         
       {/* separator */}
       <div className="h-0 w-0 bg-gray-300 dark:!bg-navy-700 lg:h-[1050px] lg:w-px" />
 
       {/* LEFT SECTION: Tab-based content with overflow support */}
-      <div className="h-full w-full m-3">                 
+      <div className="h-full w-full">                 
         {activeTab === 'itinerary' && renderItineraryTab()}
         {activeTab === 'webhooks' && renderWebhooksTab()}
         {activeTab === 'notes' && renderNotesTab()}
-        {activeTab === 'settings' && renderSettingsTab()}
+        {activeTab === 'settings' && renderSettingsTab()}     
       </div>
     
     </main>        

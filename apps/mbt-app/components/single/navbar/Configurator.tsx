@@ -3,6 +3,7 @@
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { createPortal } from 'react-dom';
+
 import ContrastBlockDark from "../../../public/layout/ContrastBlockDark.png";
 import Light from "../../../public/layout/Light.png";
 import Dark from "../../../public/layout/Dark.png";
@@ -46,120 +47,120 @@ export default function HeaderLinks(props: { [x: string]: any }) {
 
   // Theme functions remain the same
   const resetTheme = () => {
-    const newTheme = {
+  const newTheme = {
       "--shadow-100": "rgba(112, 144, 176, 0.08)",
       "--background-100": "#FFFFFF",
       "--background-900": "#0b1437",
-      "--color-accent-50": "#E9E3FF",
-      "--color-accent-100": "#C0B8FE",
-      "--color-accent-200": "#A195FD",
-      "--color-accent-300": "#8171FC",
-      "--color-accent-400": "#7551FF",
-      "--color-accent-500": "#422AFB",
-      "--color-accent-600": "#3311DB",
-      "--color-accent-700": "#2111A5",
-      "--color-accent-800": "#190793",
-      "--color-accent-900": "#11047A",
+      "--color-accent-50": "#EEEAFB",
+      "--color-accent-100": "#D8D2F5",
+      "--color-accent-200": "#B4ABEE",
+      "--color-accent-300": "#9085E0",
+      "--color-accent-400": "#7267D4",
+      "--color-accent-500": "#5047C2",
+      "--color-accent-600": "#3E36A5",
+      "--color-accent-700": "#2E287F",
+      "--color-accent-800": "#201C5A",
+      "--color-accent-900": "#141238",
     };
     setTheme(newTheme);
   };
 
   const changeThemeGreen = () => {
     const newTheme = {
-      "--color-accent-50": "#E1FFF4",
-      "--color-accent-100": "#BDFFE7",
-      "--color-accent-200": "#7BFECE",
-      "--color-accent-300": "#39FEB6",
-      "--color-accent-400": "#01F99E",
-      "--color-accent-500": "#01B574",
-      "--color-accent-600": "#01935D",
-      "--color-accent-700": "#016B44",
-      "--color-accent-800": "#00472D",
-      "--color-accent-900": "#002417",
+      "--color-accent-50": "#ECF6F1",
+      "--color-accent-100": "#D7EDE0",
+      "--color-accent-200": "#B0DAC1",
+      "--color-accent-300": "#87C5A1",
+      "--color-accent-400": "#63AF86",
+      "--color-accent-500": "#438F6C",
+      "--color-accent-600": "#337055",
+      "--color-accent-700": "#245140",
+      "--color-accent-800": "#17352B",
+      "--color-accent-900": "#0C1F18",
     };
     setTheme(newTheme);
   };
 
   const changeThemeOrange = () => {
     const newTheme = {
-      "--color-accent-50": "#FFF7EB",
-      "--color-accent-100": "#FFF1DB",
-      "--color-accent-200": "#FFE2B8",
-      "--color-accent-300": "#FFD28F",
-      "--color-accent-400": "#FFC46B",
-      "--color-accent-500": "#FFB547",
-      "--color-accent-600": "#FF9B05",
-      "--color-accent-700": "#C27400",
-      "--color-accent-800": "#855000",
-      "--color-accent-900": "#422800",
-      "--color-accent-950": "#1F1200",
+      "--color-accent-50": "#FFF4EA",
+      "--color-accent-100": "#FFE6CC",
+      "--color-accent-200": "#FDD1A3",
+      "--color-accent-300": "#F9B871",
+      "--color-accent-400": "#F39E4A",
+      "--color-accent-500": "#DB7F2F",
+      "--color-accent-600": "#B56223",
+      "--color-accent-700": "#8D4A1B",
+      "--color-accent-800": "#5C3011",
+      "--color-accent-900": "#341C09",
+      "--color-accent-950": "#1C0F05",
     };
     setTheme(newTheme);
   };
 
   const changeThemeRed = () => {
     const newTheme = {
-      "--color-accent-50": "#FCE8E8",
-      "--color-accent-100": "#FAD1D1",
-      "--color-accent-200": "#F4A4A4",
-      "--color-accent-300": "#EF7676",
-      "--color-accent-400": "#EA4848",
-      "--color-accent-500": "#E31A1A",
-      "--color-accent-600": "#B71515",
-      "--color-accent-700": "#891010",
-      "--color-accent-800": "#5B0B0B",
-      "--color-accent-900": "#2E0505",
-      "--color-accent-950": "#170303",
+      "--color-accent-50": "#FDECEC",
+      "--color-accent-100": "#FAD5D5",
+      "--color-accent-200": "#F4ABAB",
+      "--color-accent-300": "#EB8080",
+      "--color-accent-400": "#DE5A5A",
+      "--color-accent-500": "#C63D3D",
+      "--color-accent-600": "#A13030",
+      "--color-accent-700": "#782424",
+      "--color-accent-800": "#501818",
+      "--color-accent-900": "#301010",
+      "--color-accent-950": "#1A0909",
     };
     setTheme(newTheme);
   };
 
   const changeThemeBlue = () => {
     const newTheme = {
-      "--color-accent-50": "#EBEFFF",
-      "--color-accent-100": "#D6DFFF",
-      "--color-accent-200": "#ADBFFF",
-      "--color-accent-300": "#8AA3FF",
-      "--color-accent-400": "#6183FF",
-      "--color-accent-500": "#3965FF",
-      "--color-accent-600": "#0036FA",
-      "--color-accent-700": "#0029BD",
-      "--color-accent-800": "#001B7A",
-      "--color-accent-900": "#000D3D",
-      "--color-accent-950": "#00071F",
+      "--color-accent-50": "#ECF3FF",
+      "--color-accent-100": "#D7E4FF",
+      "--color-accent-200": "#B3CCFF",
+      "--color-accent-300": "#8FAFEE",
+      "--color-accent-400": "#6D92DF",
+      "--color-accent-500": "#4B74C5",
+      "--color-accent-600": "#355CA4",
+      "--color-accent-700": "#28457C",
+      "--color-accent-800": "#1B2E52",
+      "--color-accent-900": "#101C33",
+      "--color-accent-950": "#070E1A",
     };
     setTheme(newTheme);
   };
 
   const changeThemeTeal = () => {
     const newTheme = {
-      "--color-accent-50": "#EBFAF8",
-      "--color-accent-100": "#D7F4F2",
-      "--color-accent-200": "#AAE9E4",
-      "--color-accent-300": "#82DED6",
-      "--color-accent-400": "#59D4C9",
-      "--color-accent-500": "#33C3B7",
-      "--color-accent-600": "#299E94",
-      "--color-accent-700": "#1F756E",
-      "--color-accent-800": "#144D48",
-      "--color-accent-900": "#0B2826",
-      "--color-accent-950": "#051413",
+      "--color-accent-50": "#EAF6F6",
+      "--color-accent-100": "#D4ECEB",
+      "--color-accent-200": "#A9D9D7",
+      "--color-accent-300": "#7CC4C1",
+      "--color-accent-400": "#56AEAA",
+      "--color-accent-500": "#3A8E8A",
+      "--color-accent-600": "#2D706C",
+      "--color-accent-700": "#215352",
+      "--color-accent-800": "#153736",
+      "--color-accent-900": "#0C2020",
+      "--color-accent-950": "#061010",
     };
     setTheme(newTheme);
   };
 
   const changeThemeBrand = () => {
     const newTheme = {
-      "--color-accent-50": "#EFEBFF",
-      "--color-accent-100": "#E9E3FF",
-      "--color-accent-200": "#422AFB",
-      "--color-accent-300": "#422AFB",
-      "--color-accent-400": "#7551FF",
-      "--color-accent-500": "#422AFB",
-      "--color-accent-600": "#3311DB",
-      "--color-accent-700": "#02044A",
-      "--color-accent-800": "#190793",
-      "--color-accent-900": "#11047A",
+      "--color-accent-50": "#F1ECFF",
+      "--color-accent-100": "#E2D9FF",
+      "--color-accent-200": "#C3B5FF",
+      "--color-accent-300": "#A391FF",
+      "--color-accent-400": "#8470F5",
+      "--color-accent-500": "#6554E0",
+      "--color-accent-600": "#4E40BF",
+      "--color-accent-700": "#3A3194",
+      "--color-accent-800": "#282263",
+      "--color-accent-900": "#181536",
     };
     setTheme(newTheme);
   };
@@ -243,7 +244,7 @@ export default function HeaderLinks(props: { [x: string]: any }) {
         <div className="drawer-side">
                     
           {/* Drawer Content */}
-          <div className="max-w-[90vw] rounded-[40px] bg-white dark:bg-navy-800 shadow-[-20px_17px_40px_4px_rgba(112,_144,_176,_0.18)]">
+          <div className="max-w-[25vw] rounded-[40px] bg-white dark:bg-navy-800 shadow-[-20px_17px_40px_4px_rgba(112,_144,_176,_0.18)]">
             
             {/* Header */}
             <div className="p-4 w-full">
@@ -257,7 +258,7 @@ export default function HeaderLinks(props: { [x: string]: any }) {
                     <p className="text-md flex font-medium text-gray-600 dark:text-accent-50/80">
                       Plataforma MBT
                       <span className="ml-1.5 flex items-center rounded-3xl bg-brand-50 px-2 text-sm font-semibold text-brand-500 dark:bg-white/10 dark:text-white">
-                        v1.0.0
+                        v3.1.0
                       </span>
                     </p>
                   </div>
@@ -482,18 +483,26 @@ export default function HeaderLinks(props: { [x: string]: any }) {
                 </p>
                 <button
                   onClick={() => setShowBackgroundModal(true)}
-                  className="text-md flex h-max w-full items-center justify-center rounded-2xl border-[1px] border-gray-200 bg-[rgba(11,11,11,0)] py-4 font-bold text-gray-900 hover:bg-white hover:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] focus:bg-white focus:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] active:bg-[#F7F9FF] active:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] dark:border-white/20 dark:text-white hover:dark:bg-navy-700 hover:dark:shadow-none focus:dark:bg-navy-700 focus:dark:shadow-none active:dark:bg-white/10 active:dark:shadow-none"
-                >
-                  Cambiar Fondo
+                  className="text-md flex h-max w-full bg-center bg-no-repeat bg-cover items-center justify-center rounded-2xl border-[1px] border-gray-200 bg-[rgba(11,11,11,0)] py-2 font-bold text-gray-900 hover:bg-white hover:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] focus:bg-white focus:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] active:bg-[#F7F9FF] active:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] dark:border-white/20 dark:text-white hover:dark:bg-navy-700 hover:dark:shadow-none focus:dark:bg-navy-700 focus:dark:shadow-none active:dark:bg-white/10 active:dark:shadow-none"
+                  style={{
+                    backgroundImage: `url('/${selectedBackground}')`
+                  }}
+                >  
+                  <div className="bg-white/80 dark:bg-navy-900/50 ounded p-1">
+                  Fondo Actual:
                   <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                    ({backgrounds.find(bg => bg.filename === selectedBackground)?.name || 'Globos'})
+                    {backgrounds.find(bg => bg.filename === selectedBackground)?.name || 'Globos'}
                   </span>
+                  </div>
                 </button>
               </div>
               
               <div className="my-[30px] h-px w-full bg-gray-200 dark:!bg-navy-700" />
 
               {/* Full Screen Mode */}
+              <p className="mb-3 font-bold text-gray-900 dark:text-white">
+                Tamaño
+              </p>
               <button
                 className="text-md flex h-max w-full items-center justify-center rounded-2xl border-[1px] border-gray-200 bg-[rgba(11,11,11,0)] py-4 font-bold text-gray-900 hover:bg-white hover:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] focus:bg-white focus:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] active:bg-[#F7F9FF] active:shadow-[0px_18px_40px_rgba(112,_144,_176,_0.22)] dark:border-white/20 dark:text-white hover:dark:bg-navy-700 hover:dark:shadow-none focus:dark:bg-navy-700 focus:dark:shadow-none active:dark:bg-white/10 active:dark:shadow-none"
                 onClick={() => {

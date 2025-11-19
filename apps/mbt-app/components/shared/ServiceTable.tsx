@@ -217,7 +217,7 @@ const ServiceTable = ({
                 <tbody className={theme.tableBodyBg}>
                   {services.map((s, idx) => (
                     <tr
-                      key={s.id}
+                      key={s.code}
                       className={`border-t border-gray-100 dark:border-gray-800 transition ${theme.rowHover} ${
                         idx % 2 === 1
                           ? "bg-gray-50/60 dark:bg-slate-900/40"
@@ -258,9 +258,7 @@ const ServiceTable = ({
                           className={`inline-flex items-center gap-2 px-2 py-1 rounded-full ${theme.accentSoft} text-[0.75rem] font-semibold text-gray-800 dark:text-gray-100`}
                         >
                           <FaClock className="text-[0.8rem]" />
-                          {company === "AT"
-                            ? convertIsoStringTo12h(s.pickupTime)
-                            : s.pickupTime}
+                             {s.pickupTime}
                         </span>
                       </td>
 

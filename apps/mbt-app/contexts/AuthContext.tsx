@@ -35,7 +35,7 @@ const users: User[] = [
 ];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   useEffect(() => {
     const authStatus = sessionStorage.getItem('mbt-auth');

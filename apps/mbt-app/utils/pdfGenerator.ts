@@ -23,32 +23,6 @@ export function serviceToVoucherData(service: ExtendedService, selectedDate: str
     return `${day}/${month}/${year}`;
   };
 
-  // Format time for display
-  const formatTime = (isoTime: string): string => {
-    if (service.serviceType === 'at') {
-      // For AT services, convert from ISO time
-      const date = new Date(isoTime);
-      return date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-        timeZone: 'America/Santo_Domingo'
-      });
-    } else {
-      // For ST/MBT services, time might already be formatted
-      if (isoTime.includes('T')) {
-        const date = new Date(isoTime);
-        return date.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: 'America/Santo_Domingo'
-        });
-      }
-      return isoTime; // Already formatted
-    }
-  };
-
   // Smart hotel/location logic
   let hotelLocation = 'Hotel';
   if (service.pdfData?.hotel) {
@@ -81,7 +55,7 @@ export function serviceToVoucherData(service: ExtendedService, selectedDate: str
     clientName: service.pdfData?.clientName || service.clientName,
     hotel: hotelLocation,
     pax: service.pdfData?.pax || service.pax,
-    time: service.pdfData?.time || formatTime(service.pickupTime),
+    time: service.pickupTime,
     date: formatDate(selectedDate),
     company: service.serviceType || 'mbt',
     serviceType: service.kindOf,

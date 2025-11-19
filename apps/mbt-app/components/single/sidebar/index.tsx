@@ -10,6 +10,7 @@ import {
   HiOutlineBriefcase,
   HiOutlineChartBar,
 } from "react-icons/hi";
+import { BsPlay } from "react-icons/bs";
 
 type ItemKey =
   | "itinerary"
@@ -40,7 +41,8 @@ function Sidebar(props: {
   }, [mini, hovered]);
 
   const menu: Array<{ key: ItemKey; label: string; Icon: any; title?: string }> = [
-    { key: "itinerary", label: "Itinerary of Services", Icon: HiOutlineCalendar, title: "Drives / services" },
+    { key: 'live', label: "Itinerary", Icon: BsPlay },
+    { key: "itinerary", label: "Services", Icon: HiOutlineCalendar, title: "Drives / services" },
     { key: "notes",     label: "Agenda", Icon: HiOutlinePencilAlt },
     { key: "employees", label: "Personal", Icon: HiOutlineUsers },
     { key: "accounting",label: "Accounting", Icon: HiOutlineBriefcase },
@@ -64,7 +66,7 @@ function Sidebar(props: {
     >
       <Card extra="ml-3 w-full h-[96.5vh] sm:mr-4 sm:my-4 m-7 !rounded-[20px] flex flex-col">
         {/* Header */}
-        <header className="m-2 flex items-center justify-between rounded-xl border-b-2 border-r-2 border-accent-700 dark:border-accent-700 px-3 py-2">
+        <header className="m-2 flex items-center justify-between border-b-2 border-navy-700 dark:border-white px-3 py-2">
           <div className={`flex items-center gap-2 ${expanded ? "justify-start" : "mx-auto"}`}>
             <Image src={logo} alt="App logo" className={`${expanded ? "h-full w-full" : "h-12 w-auto"}`} />
           </div>

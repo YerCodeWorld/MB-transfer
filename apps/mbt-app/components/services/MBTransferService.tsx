@@ -8,9 +8,13 @@ import { ServiceInput } from '../../types/services';
 import { mockVehicles } from '../../utils/services';
 import ServiceTable from '../shared/ServiceTable';
 
-import { BsArrowLeft, BsPlus, BsTrash, BsList } from 'react-icons/bs';
+import Card from "../single/card";
+import { toast } from 'sonner';
+
+import { BsArrowLeft, BsCheckCircle, BsPlus, BsTrash, BsList } from 'react-icons/bs';
 import { PiAddressBookThin } from 'react-icons/pi';
 import { HiOutlineDownload, HiOutlineSave, HiClipboardList } from 'react-icons/hi';
+
 
 interface FormService extends ServiceInput {
   id: string;
@@ -205,13 +209,11 @@ const MBTransferService = () => {
         errors: {}
       }]);
       
-      alert(`${serviceInputs.length} services added to cache successfully!`);
+      toast.success(`${serviceInputs.length} services added to cache successfully!`);
       setActiveTab('services'); // Switch to services view to show the added services
     }
   };
-
-
-  // Update bottom bar actions based on active tab
+  
   useEffect(() => {
     if (activeTab === 'form') {
       setActions([
@@ -265,7 +267,7 @@ const MBTransferService = () => {
             if (cachedServices.length > 0) {
               exportServices(cachedServices, 'csv');
             } else {
-              alert('No services to export');
+              toast.warning('No services to export');
             }
           }
         },
@@ -276,16 +278,16 @@ const MBTransferService = () => {
           variant: "primary",
           onClick: () => {
             setCache('mbt', cachedServices, selectedDate);
-            alert('Services saved successfully!');
+            toast.success('Services saved successfully!');
           }
         }
       ]);
     }
 
     return () => {
-      clearActions();
+      
     };
-  }, [activeTab, services, cachedServices, clearActions, exportServices, selectedDate, setActions, setCache, submitServices]);
+  }, [activeTab, cachedServices, clearActions, selectedDate]);
 
   const renderServiceForm = (service: FormService, index: number) => (
     <Card key={service.id} extra="w-full mb-6">

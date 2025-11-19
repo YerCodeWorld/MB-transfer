@@ -140,14 +140,14 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
 
   const modalContent = (
     <div 
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[10000] flex items-center backdrop-blur-sm justify-center bg-black/50 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           handleClose();
         }
       }}
     >
-      <div className="w-full max-w-4xl rounded-xl bg-white dark:bg-navy-800 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-4xl rounded-xl bg-white dark:bg-navy-800  shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-bold text-navy-700 dark:text-white">
             Añadir Nuevo Servicio
@@ -305,7 +305,7 @@ Hacia: Punta Cana Airport"
                 {/* Service Code */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Código del Servicio *
+                    Código del Servicio 
                   </label>
                   <input
                     type="text"
@@ -319,7 +319,7 @@ Hacia: Punta Cana Airport"
                 {/* Company Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Empresa *
+                    Empresa 
                   </label>
                   <select
                     value={selectedCompany}
@@ -335,7 +335,7 @@ Hacia: Punta Cana Airport"
                 {/* Client Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nombre del Cliente *
+                    Nombre del Cliente 
                   </label>
                   <input
                     type="text"
@@ -379,27 +379,14 @@ Hacia: Punta Cana Airport"
                 {/* Pickup Time */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Hora de Recogida *
+                    Hora de Recogida 
                   </label>
                   <input
-                    type="datetime-local"
+                    type="time"
                     value={manualService.pickupTime}
                     onChange={(e) => setManualService({ ...manualService, pickupTime: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
                     required
-                  />
-                </div>
-
-                {/* Vehicle Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Tipo de Vehículo
-                  </label>
-                  <input
-                    type="text"
-                    value={manualService.vehicleType}
-                    onChange={(e) => setManualService({ ...manualService, vehicleType: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
 

@@ -117,7 +117,7 @@ const NoteModal = ({ note, isOpen, onClose, onSave, selectedDate }: NoteModalPro
 
   const modalContent = (
     <div 
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[10000] flex items-center backdrop-blur-sm justify-center bg-black/50 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -131,10 +131,10 @@ const NoteModal = ({ note, isOpen, onClose, onSave, selectedDate }: NoteModalPro
             <FaStickyNote className="text-2xl text-accent-500" />
             <div>
               <h2 className="text-xl font-bold text-navy-700 dark:text-white">
-                {note ? 'Edit Note' : 'New Note'}
+                {note ? 'Edición' : 'Nueva Nota'}
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                For {new Date(selectedDate).toLocaleDateString('es-ES', { 
+                Para el {new Date(selectedDate).toLocaleDateString('es-ES', { 
                   weekday: 'long', 
                   year: 'numeric', 
                   month: 'long', 
@@ -156,7 +156,7 @@ const NoteModal = ({ note, isOpen, onClose, onSave, selectedDate }: NoteModalPro
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Title
+              Título
             </label>
             <input
               type="text"
@@ -172,21 +172,21 @@ const NoteModal = ({ note, isOpen, onClose, onSave, selectedDate }: NoteModalPro
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Priority
+                Prioridad
               </label>
               <select
                 value={formData.priority}
                 onChange={(e) => handleFormChange('priority', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
+                <option value="low">Baja</option>
+                <option value="medium">Media</option>
+                <option value="high">Alta</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Tag
+                Etiqueta
               </label>
               <select
                 value={formData.tag}
@@ -194,10 +194,10 @@ const NoteModal = ({ note, isOpen, onClose, onSave, selectedDate }: NoteModalPro
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="general">General</option>
-                <option value="important">Important</option>
-                <option value="reminder">Reminder</option>
-                <option value="meeting">Meeting</option>
-                <option value="todo">To Do</option>
+                <option value="important">Importante</option>
+                <option value="reminder">Recordatorio</option>
+                <option value="meeting">Reunión</option>
+                <option value="todo">Por Hacer</option>
               </select>
             </div>
           </div>
@@ -205,14 +205,14 @@ const NoteModal = ({ note, isOpen, onClose, onSave, selectedDate }: NoteModalPro
           {/* Content */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Content
+              Contenido
             </label>
             <textarea
               value={formData.content}
               onChange={(e) => handleFormChange('content', e.target.value)}
               rows={8}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
-              placeholder="Write your note here..."
+              placeholder="Escribe tu nota aquí..."
               required
             />
           </div>
@@ -224,14 +224,14 @@ const NoteModal = ({ note, isOpen, onClose, onSave, selectedDate }: NoteModalPro
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              Cancel
+              Cancelar
             </button>
             <button
               type="submit"
               className="px-4 py-2 text-sm font-medium text-white bg-accent-600 hover:bg-accent-700 rounded-lg transition-colors flex items-center gap-2"
             >
               <FaSave />
-              {note ? 'Update Note' : 'Save Note'}
+              {note ? 'Actualizar' : 'Guardar'}
             </button>
           </div>
         </form>
@@ -346,7 +346,7 @@ const Notes = ({ selectedDate, className = "" }: NotesProps) => {
             <FaStickyNote className="text-xl text-accent-500" />
             <div>
               <h3 className="text-lg font-semibold text-navy-700 dark:text-white">
-                Notes
+                Notas
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 {new Date(selectedDate).toLocaleDateString('es-ES', { 
@@ -362,7 +362,7 @@ const Notes = ({ selectedDate, className = "" }: NotesProps) => {
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-accent-600 hover:bg-accent-700 rounded-lg transition-colors"
           >
             <FaPlus />
-            New Note
+            Nueva Nota
           </button>
         </div>
 
@@ -372,7 +372,7 @@ const Notes = ({ selectedDate, className = "" }: NotesProps) => {
             <div className="text-center py-8">
               <FaCalendarAlt className="text-4xl text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600 dark:text-gray-300">
-                No notes for this date. Click &quot;New Note&quot; to get started.
+                No hay notas para esta fecha. Haga click en &quot;Nueva Nota&quot; para empezar.
               </p>
             </div>
           ) : (
@@ -408,7 +408,7 @@ const Notes = ({ selectedDate, className = "" }: NotesProps) => {
                     {note.content}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {note.updatedAt !== note.createdAt ? 'Updated' : 'Created'} {' '}
+                    {note.updatedAt !== note.createdAt ? 'Actualizada' : 'Creada'} {' el '}
                     {new Date(note.updatedAt).toLocaleString('es-ES')}
                   </p>
                 </div>

@@ -6,7 +6,7 @@ import { useNavigation } from '../../contexts/NavigationContext';
 import { useServiceData } from '../../contexts/ServiceDataContext';
 import { useBottomBar } from '../../contexts/BottomBarContext';
 import { ServiceInput } from '../../types/services';
-import { convertIsoStringTo12h, convertTo12Hour, mockDrivers, mockVehicles } from '../../utils/services';
+import { convertIsoStringTo12h, convertTo12Hour, convertTo24Hour, time12ToMinutes, mockDrivers, mockVehicles } from '../../utils/services';
 import { 
   SERVICE_TYPE_OPTIONS, 
   STATUS_OPTIONS, 
@@ -138,7 +138,7 @@ const AllServicesView = () => {
   // Load services from cache when selectedDate changes
   useEffect(() => {
     loadServicesFromCache();
-  }, [selectedDate, loadServicesFromCache]);
+  }, [selectedDate]);
   
   // Apply filters and sorting
   useEffect(() => {
@@ -177,9 +177,11 @@ const AllServicesView = () => {
       let aValue: any, bValue: any;
       
       switch (sortField) {
-        case 'time':
-          aValue = new Date(a.pickupTime);
-          bValue = new Date(b.pickupTime);
+        case 'time':        
+          
+          aValue = time12ToMinutes(a.pickupTime);
+          bValue = time12ToMinutes(b.pickupTime);          
+          
           break;
         case 'client':
           aValue = a.clientName.toLowerCase();
@@ -272,7 +274,7 @@ const AllServicesView = () => {
     return () => {
       clearActions();
     };
-  }, [activeTab, filteredServices, clearActions, exportToCSV, setActions]);
+  }, [activeTab, clearActions, setActions]);
   
   const checkTimeData = () => {
     setShowFlightComparison(true);
@@ -647,10 +649,10 @@ const AllServicesView = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-xl font-bold text-navy-700 dark:text-white">
-              All Services ({filteredServices.length})
+              Todos los Servicios ({filteredServices.length})
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Manage services from all sources: Airport Transfer, Sacbé Transfer, and MB Transfer
+              Maneja los servicios de todas las fuentes: Airport Transfer, Sacbé Transfer, y MB Transfer
             </p>
           </div>
         </div>
@@ -659,7 +661,7 @@ const AllServicesView = () => {
           <div className="text-center py-12">
             <HiOutlineViewList className="text-6xl text-gray-400 mx-auto mb-4" />
             <h4 className="text-lg font-semibold text-navy-700 dark:text-white mb-2">
-              No Services Found
+              No se encontraron servicios 
             </h4>
             <p className="text-gray-600 dark:text-gray-300">
               {allServices.length === 0 
@@ -683,7 +685,7 @@ const AllServicesView = () => {
                       onClick={() => handleSort('code')}
                       className="flex items-center gap-1 text-xs font-semibold uppercase text-gray-500 hover:text-blue-600"
                     >
-                      <FaHashtag /> Code
+                      <FaHashtag /> Código 
                     </button>
                   </th>
                   <th className="px-4 py-3 text-left">
@@ -691,7 +693,7 @@ const AllServicesView = () => {
                       onClick={() => handleSort('client')}
                       className="flex items-center gap-1 text-xs font-semibold uppercase text-gray-500 hover:text-blue-600"
                     >
-                      <FaUser /> Client
+                      <FaUser /> Cliente
                     </button>
                   </th>
                   <th className="px-4 py-3 text-left">
@@ -699,7 +701,7 @@ const AllServicesView = () => {
                       onClick={() => handleSort('time')}
                       className="flex items-center gap-1 text-xs font-semibold uppercase text-gray-500 hover:text-blue-600"
                     >
-                      <FaClock /> Time
+                      <FaClock /> Hora 
                     </button>
                   </th>
                   <th className="px-4 py-3 text-center">
@@ -709,7 +711,7 @@ const AllServicesView = () => {
                   </th>
                   <th className="px-4 py-3 text-left">
                     <span className="flex items-center gap-1 text-xs font-semibold uppercase text-gray-500">
-                      <FaRoute /> Route
+                      <FaRoute /> Ruta
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left">
@@ -717,7 +719,7 @@ const AllServicesView = () => {
                       onClick={() => handleSort('type')}
                       className="flex items-center gap-1 text-xs font-semibold uppercase text-gray-500 hover:text-blue-600"
                     >
-                      <FaTags /> Type
+                      <FaTags /> Tipo 
                     </button>
                   </th>
                   <th className="px-4 py-3 text-left">
@@ -725,22 +727,22 @@ const AllServicesView = () => {
                       onClick={() => handleSort('status')}
                       className="flex items-center gap-1 text-xs font-semibold uppercase text-gray-500 hover:text-blue-600"
                     >
-                      <BsCheckCircle /> Status
+                      <BsCheckCircle /> Estado 
                     </button>
                   </th>
                   <th className="px-4 py-3 text-left">
                     <span className="flex items-center gap-1 text-xs font-semibold uppercase text-gray-500">
-                      <FaCar /> Vehicle
+                      <FaCar /> Vehículo 
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left">
                     <span className="flex items-center gap-1 text-xs font-semibold uppercase text-gray-500">
-                      <FaUserTie /> Driver
+                      <FaUserTie /> Conductor 
                     </span>
                   </th>
                   <th className="px-4 py-3 text-center">
                     <span className="text-xs font-semibold uppercase text-gray-500">
-                      Actions
+                      Acciones 
                     </span>
                   </th>
                 </tr>
@@ -749,7 +751,7 @@ const AllServicesView = () => {
                 {filteredServices.map((service, index) => {
                   const colors = getServiceTypeColors(service.serviceType);
                   return (
-                    <tr key={service.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${colors.bg} ${colors.border}`}>
+                    <tr key={service.code} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${colors.bg} ${colors.border}`}>
                       <td className="px-4 py-4 text-center">
                         <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${colors.badge}`}>
                           {index + 1}
@@ -772,7 +774,7 @@ const AllServicesView = () => {
                     </td>
                     <td className="px-4 py-4">
                       <span className="text-sm text-gray-900 dark:text-gray-100">
-                        {service.serviceType === 'at' ? convertIsoStringTo12h(service.pickupTime) : service.pickupTime}
+                        {service.pickupTime}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
@@ -787,8 +789,8 @@ const AllServicesView = () => {
                         </button>
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-sm text-white bg-gray-800 rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-10">
                           <div className="space-y-1">
-                            <div><strong>FROM:</strong> {service.pickupLocation}</div>
-                            <div><strong>TO:</strong> {service.dropoffLocation}</div>
+                            <div><strong>DESDE:</strong> {service.pickupLocation}</div>
+                            <div><strong>HASTA:</strong> {service.dropoffLocation}</div>
                           </div>
                         </div>
                       </div>
@@ -815,14 +817,14 @@ const AllServicesView = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleEditService(service)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="p-2 text-blue-300 dark:text-blue-100 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                           title="Edit Service"
                         >
                           <BsPencil />
                         </button>
                         <button
                           onClick={() => handleRemoveService(service)}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          className="p-2 bg-red-100 text-red-400 hover:bg-red-50 dark:text-red-900 dark:bg-red-200 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           title="Remove Service"
                         >
                           <BsTrash />
@@ -855,7 +857,7 @@ const AllServicesView = () => {
         <div className="w-full max-w-4xl rounded-xl bg-white dark:bg-navy-800 shadow-2xl max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-navy-700 dark:text-white">
-              Edit Service - {editingService.code}
+              Edición de Servicio: {editingService.clientName}
             </h2>
             <button
               onClick={() => setEditingService(null)}
@@ -870,7 +872,7 @@ const AllServicesView = () => {
               {/* Service Code */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Service Code
+                  Código
                 </label>
                 <input
                   type="text"
@@ -883,7 +885,7 @@ const AllServicesView = () => {
               {/* Company */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Company
+                  Compañía
                 </label>
                 <select
                   value={editingService.serviceType}
@@ -899,7 +901,7 @@ const AllServicesView = () => {
               {/* Client Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Client Name
+                  Nombre del Cliente
                 </label>
                 <input
                   type="text"
@@ -912,7 +914,7 @@ const AllServicesView = () => {
               {/* Service Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Service Type
+                  Tipo del Servicio 
                 </label>
                 <select
                   value={editingService.kindOf}
@@ -930,7 +932,7 @@ const AllServicesView = () => {
               {/* Status */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Status
+                  Estado 
                 </label>
                 <select
                   value={editingService.status}
@@ -948,13 +950,13 @@ const AllServicesView = () => {
               {/* Pickup Time */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Pickup Time
+                  Hora de Recogida 
                 </label>
                 <input 
                   type="time"
-                  value={editingService.pickupTime}
-                  onChange={(e) => {{
-                    setEditingService({ ...editingService, pickupTime: convertTo12Hour(e.target.value) })
+                  value={convertTo24Hour(editingService.pickupTime)}
+                  onChange={(e) => {{                                        
+                    setEditingService({ ...editingService, pickupTime: convertTo12Hour(e.target.value) });
                   }}}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
                 />
@@ -977,7 +979,7 @@ const AllServicesView = () => {
               {/* Flight Code */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Flight Code
+                  Código de Vuelo 
                 </label>
                 <input
                   type="text"
@@ -990,7 +992,7 @@ const AllServicesView = () => {
               {/* Assigned Vehicle */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Assigned Vehicle
+                  Vehículo Asignado 
                 </label>
                 <select
                   value={editingService.assignedVehicle || ''}
@@ -1009,7 +1011,7 @@ const AllServicesView = () => {
               {/* Assigned Driver */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Assigned Driver
+                  Conductor Asignado 
                 </label>
                 <select
                   value={editingService.assignedDriver || ''}
@@ -1028,7 +1030,7 @@ const AllServicesView = () => {
               {/* Pickup Location */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Pickup Location
+                  Lugar de Recogida 
                 </label>
                 <input
                   type="text"
@@ -1041,7 +1043,7 @@ const AllServicesView = () => {
               {/* Destination */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Destination
+                  Destino 
                 </label>
                 <input
                   type="text"
@@ -1054,7 +1056,7 @@ const AllServicesView = () => {
               {/* Notes */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Notes
+                  Notas
                 </label>
                 <textarea
                   value={editingService.notes || ''}
@@ -1071,13 +1073,13 @@ const AllServicesView = () => {
               onClick={() => setEditingService(null)}
               className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              Cancel
+              Cancelar
             </button>
             <button
               onClick={() => handleSaveEdit(editingService)}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
             >
-              Save Changes
+              Guardar
             </button>
           </div>
         </div>
@@ -1139,7 +1141,7 @@ const AllServicesView = () => {
           onClick={popView}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
         >
-          <BsArrowLeft className="text-xl" />
+          <BsArrowLeft className="text-xl text-black dark:text-white" />
         </button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-navy-700 dark:text-white">

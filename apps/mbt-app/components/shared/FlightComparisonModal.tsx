@@ -345,7 +345,7 @@ const FlightComparisonModal = ({ isOpen, onClose, services, selectedDate }: Flig
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-4">
               <div className="relative">
-                <div className="h-16 w-16 rounded-full border-4 border-sky-200 dark:border-sky-900/40 border-t-sky-500 animate-spin" />
+                <div className="h-16 w-16 rounded-full border-4 border-sky-200 dark:border-sky-900/40 dark:border-t-sky-200 border-t-sky-500 animate-spin" />
                 <FaPlane className="absolute inset-0 m-auto text-sky-500 text-xl rotate-6" />
               </div>
               <div className="text-center space-y-1">
@@ -431,7 +431,7 @@ const FlightComparisonModal = ({ isOpen, onClose, services, selectedDate }: Flig
                           </span>
                         </div>
                         <p className="text-lg md:text-2xl font-bold text-sky-900 dark:text-sky-100 leading-tight">
-                          {comparison.service.pickupTime}
+                          {comparison.service.code.includes('ATC') ? convertIsoStringTo12h(comparison.service.pickupTime) : comparison.service.pickupTime}
                         </p>
                       </div>
 

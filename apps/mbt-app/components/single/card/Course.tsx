@@ -37,7 +37,7 @@ const Course = (props: {
       onClick={onClick}
     >
       <div
-        className={`${bgBox} bg-center bg-no-repeat bg-cover object-cover transition duration-300 ease-out group-hover:scale-105 mr-8 flex min-h-[200px] min-w-full items-center justify-center rounded-xl text-[100px] 2xl:h-[270px] 2xl:min-w-[470px]`}
+        className={`${bgBox} bg-center bg-no-repeat bg-cover object-cover transition duration-300 ease-out group-hover:scale-105 mr-8 flex min-h-[200px] min-w-full items-center justify-center rounded-xl text-[100px] 2xl:min-w-[470px]`}
       >
         <span className=" bg-accent-50/80 dark:bg-accent-400/80 text-accent-300 dark:text-accent-50 p-4 rounded-lg">
           {serviceIcon(title)}
@@ -52,40 +52,17 @@ const Course = (props: {
                 {title}
               </h2>
               <p className="mt-6 mb-[10vh] text-base text-gray-600 dark:text-white">{desc} </p>
-            </div>
-            <div className="flex w-max justify-end gap-1 font-medium">
-              <p className="mt-2 w-max text-gray-600"> {day} •</p>
-              <p className="mt-2 w-max text-base text-navy-700 dark:text-white">
-                {" "}
-                {date}{" "}
-              </p>
-            </div>
+            </div>            
           </div>
 
-          {/* marketing button */}
-          <div className="mt-4 flex flex-col flex-wrap items-center gap-2 md:flex-row">
-            <div className="flex h-7 w-max items-center justify-center rounded-lg bg-neutral-200 px-2 text-xs font-bold uppercase tracking-wide text-brand-500 dark:bg-white/5 dark:text-white">
-              {topics[0]}
-            </div>
-            <div className="flex h-7 w-max items-center justify-center rounded-lg bg-neutral-200 px-2 text-xs font-bold uppercase tracking-wide text-brand-500 dark:bg-white/5 dark:text-white">
-              {topics[1]}
-            </div>
-            <div
-              className={`flex h-7 w-max items-center justify-center rounded-lg px-2 text-xs font-bold uppercase tracking-wide ${
-                topics[2]
-                  ? "bg-neutral-200 text-brand-500 dark:bg-white/5 dark:text-white"
-                  : "!hidden"
-              } `}
-            >
-              {topics[2]}
-            </div>
-            <div className="flex items-center gap-1 text-sm font-medium text-navy-700 dark:text-white 2xl:ml-auto">
-              <p>
-                <MdOutlineTimer />
-              </p>
-              <p> {time} </p>
-            </div>
+          <div className="flex flex-col gap-1 text-sm font-medium text-navy-700 dark:text-white">
+            <p className="flex items-center gap-2">              
+              <MdOutlineTimer />
+              <i>Time</i>              
+            </p>
+            <p> {time} </p>
           </div>
+          
         </div>
       </div>
     </div>

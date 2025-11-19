@@ -54,7 +54,16 @@ const Navbar = (props: {
       setDarkmode(true);
     }
     setNow(new Date());
-    const id = setInterval(() => setNow(new Date()), 1000);
+    const id = setInterval(() => {
+      setNow(prevNow => {
+        const newDate = new Date();
+        // Only update if the second has actually changed
+        if (!prevNow || newDate.getSeconds() !== prevNow.getSeconds()) {
+          return newDate;
+        }
+        return prevNow;
+      });
+    }, 1000);
     return () => clearInterval(id);
   }, []);
 

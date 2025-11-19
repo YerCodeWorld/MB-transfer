@@ -55,6 +55,7 @@ function CheckTable(props: { tableData: any }) {
       cell: (info: any) => (
         <div className="flex w-full items-center gap-[14px]">
           <div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-blue-300">
+            {/**
             <Image
               className="h-full w-full rounded-full"
               src={info.getValue()[1]}
@@ -62,6 +63,7 @@ function CheckTable(props: { tableData: any }) {
               width={60}
               height={60}
             />
+            **/}
           </div>
           <p className="font-medium text-navy-700 dark:text-white">
             {info.getValue()[0]}
