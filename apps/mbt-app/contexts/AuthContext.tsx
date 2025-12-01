@@ -31,6 +31,12 @@ const users: User[] = [
     image: "airplane.jpg",
     accessKey: "0b?Bcm#u60i!bzz",
     role: "DEVELOPPER"
+  },
+  {
+    name: "Elizabeth Moses",
+    image: "airplane.jpg",
+    accessKey: "2240b?Bcm#u60i!bzz",
+    role: "DEVELOPPER"
   }
 ];
 
