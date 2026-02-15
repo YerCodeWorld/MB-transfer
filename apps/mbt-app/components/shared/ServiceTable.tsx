@@ -258,7 +258,9 @@ const ServiceTable = ({
                           className={`inline-flex items-center gap-2 px-2 py-1 rounded-full ${theme.accentSoft} text-[0.75rem] font-semibold text-gray-800 dark:text-gray-100`}
                         >
                           <FaClock className="text-[0.8rem]" />
-                             {s.pickupTime}
+                          {company === "AT" && s.pickupTime?.includes("T")
+                            ? convertIsoStringTo12h(s.pickupTime)
+                            : s.pickupTime}
                         </span>
                       </td>
 
@@ -349,4 +351,3 @@ const ServiceTable = ({
 };
 
 export default ServiceTable;
-

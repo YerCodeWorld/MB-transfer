@@ -6,16 +6,20 @@ import NavBar from "../../../components/single/navbar";
 import Sidebar from "../../../components/single/sidebar";
 import BottomBar from "../../../components/single/bottombar";
 
-import ItinerarySection from "../../../components/compound/dateservices";
 import UsersOverview from "../../../components/compound/users";
 import CalendarManager from "../../../components/compound/calendar";
 import Accounting from "../../../components/compound/accounting";
+// will be collocating here as I place in views
+import ItineraryView from "../../../views/itinerary";
+import PersonnelView from "../../../views/personnel";
 
 import AuthGuard from "../../../components/guards/AuthGuard";
+
 import { NavigationProvider, useNavigation } from "../../../contexts/NavigationContext";
+import { BottomBarProvider } from "../../../contexts/BottomBarContext";
+
 import { ServiceProvider } from "../../../contexts/ServiceContext";
 import { ServiceDataProvider } from "../../../contexts/ServiceDataContext";
-import { BottomBarProvider } from "../../../contexts/BottomBarContext";
 
 function PlatformContent() {
 
@@ -32,7 +36,7 @@ function PlatformContent() {
       
       if (currentView.component) {
         const Component = currentView.component;
-        return <Component data={currentView.data} />;
+        return <Component {...currentView.data} />;
       }
       
       return (
@@ -52,8 +56,8 @@ function PlatformContent() {
     return (
       <>
         {
-          section === 'itinerary' ? <ItinerarySection /> :
-          section === 'employees' ? <UsersOverview /> : 
+          section === 'itinerary' ? <ItineraryView /> :
+          section === 'employees' ? <PersonnelView /> :
           section === 'notes' ? <CalendarManager /> :
           section === 'stats' ? <Accounting /> :
           <div className="rounded-[20px] bg-white p-6 shadow-3xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none">
@@ -166,17 +170,17 @@ function PlatformContent() {
 }
 
 export default function Home() {
-  return (
-    <NavigationProvider>
-      <ServiceProvider>
-        <ServiceDataProvider>
-          <BottomBarProvider>
-            <PlatformContent />
-          </BottomBarProvider>
-        </ServiceDataProvider>
-      </ServiceProvider>
-    </NavigationProvider>
-  );
+	return (
+		<NavigationProvider>
+			<ServiceProvider>
+				<ServiceDataProvider>
+					<BottomBarProvider>
+						<PlatformContent />
+					</BottomBarProvider>
+				</ServiceDataProvider>
+			</ServiceProvider>
+		</NavigationProvider>
+	);
 }
 
 

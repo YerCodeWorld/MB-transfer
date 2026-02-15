@@ -4,10 +4,8 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { createPortal } from 'react-dom';
 
-import ContrastBlockDark from "../../../public/layout/ContrastBlockDark.png";
 import Light from "../../../public/layout/Light.png";
 import Dark from "../../../public/layout/Dark.png";
-import ContrastBlock from "../../../public/layout/ContrastBlock.png";
 import DefaultSidebar from "../../../public/layout/DefaultSidebar.png";
 import DefaultSidebarDark from "../../../public/layout/DefaultSidebarDark.png";
 import MiniSidebar from "../../../public/layout/MiniSidebar.png";
@@ -29,7 +27,6 @@ export default function HeaderLinks(props: { [x: string]: any }) {
 
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState("Purple");
-  const [contrast, setContrast] = useState(false);
   const btnRef = React.useRef<HTMLButtonElement>(null);
 
   const [isDialogOpen, setDialogOpen] = useState(false);
@@ -175,16 +172,6 @@ export default function HeaderLinks(props: { [x: string]: any }) {
     setTheme(newTheme);
   };
 
-  const changeBgContrast = () => {
-    let newTheme = theme;
-    newTheme = {
-      "--shadow-100": "transparent",
-      "--background-100": "#F4F7FE",
-      "--background-900": "#070f2e",
-    };
-    setTheme(newTheme);
-  };
-
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
@@ -200,14 +187,6 @@ export default function HeaderLinks(props: { [x: string]: any }) {
       document.body.style.overflow = 'unset';
     };
   }, [showBackgroundModal]);
-
-  useEffect(() => {
-    if (theme["--background-100"] === "#FFFFFF") {
-      setContrast(false);
-    } else {
-      setContrast(true);
-    }
-  }, [theme]);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -318,47 +297,6 @@ export default function HeaderLinks(props: { [x: string]: any }) {
                     }
                   >
                     <Image className="max-w-[130px] rounded-lg" alt="" src={Dark} />
-                  </ConfiguratorRadio>
-                </div>
-
-                <p className="mb-3 font-bold text-gray-900 dark:text-white">
-                  Contraste
-                </p>
-                <div className="mb-7 flex w-full justify-between gap-5">
-                  <ConfiguratorRadio
-                    onClick={() => changeBgDefault()}
-                    active={contrast === true ? false : true}
-                    label={
-                      <p className="font-bold text-gray-900 dark:text-white">
-                        Transparent
-                      </p>
-                    }
-                  >
-                    <div className={`flex max-w-[144px] overflow-hidden rounded-[10px] border-[1px] border-gray-100 `}>
-                      <Image
-                        className="mt-auto shadow-[0px_6px_14px_rgba(200,_207,_215,_0.6)] dark:shadow-none"
-                        src={darkmode ? ContrastBlockDark : ContrastBlock}
-                        alt=""
-                      />
-                    </div>
-                  </ConfiguratorRadio>
-                  
-                  <ConfiguratorRadio
-                    onClick={() => changeBgContrast()}
-                    active={contrast === false ? false : true}
-                    label={
-                      <p className="font-bold text-gray-900 dark:text-white">
-                        Relleno
-                      </p>
-                    }
-                  >
-                    <div className={`flex max-w-[144px] overflow-hidden rounded-[10px] border-[1px] border-gray-200 bg-dark-100 bg-repeat pt-2.5 pl-2.5 dark:border-[#323B5D] dark:bg-dark-900`}>
-                      <Image
-                        className="mt-auto shadow-[0px_6px_14px_rgba(200,_207,_215,_0.6)] dark:shadow-none"
-                        alt=""
-                        src={darkmode ? ContrastBlockDark : ContrastBlock}
-                      />
-                    </div>
                   </ConfiguratorRadio>
                 </div>
 

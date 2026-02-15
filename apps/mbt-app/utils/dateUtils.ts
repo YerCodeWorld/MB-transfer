@@ -30,6 +30,18 @@ export const toYMDLocal = (date: Date): string => {
   return `${y}-${m}-${d}`;
 };
 
+export const toDDMMYY = (isoDate: string): string => {
+	const [y, m, d] = isoDate.split("-").map(Number);
+
+	const date = new Date(Date.UTC(y, m - 1, d));
+
+	const dd = String(date.getUTCDate()).padStart(2, "0");
+	const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+	const yy = String(date.getUTCFullYear()).slice(-2);
+
+	return `${dd}${mm}${yy}`;
+}
+
 /**
  * Gets today's date in YYYY-MM-DD format in local timezone
  */
@@ -64,3 +76,5 @@ export const startOfGrid = (date: Date): Date => {
   start.setDate(firstOfMonth.getDate() - dayOfWeek);
   return start;
 };
+
+

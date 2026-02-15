@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { BsFilePdf, BsDownload, BsEye, BsX, BsCheckCircle, BsExclamationTriangle, BsPencil } from 'react-icons/bs';
-import { FaSpinner } from 'react-icons/fa';
-import VoucherTemplate from './VoucherTemplate';
-import { generateServicePDF, serviceToVoucherData, VoucherData } from '../../utils/pdfGenerator';
+import { apiClient } from '../../utils/api';
 import { ServiceInput } from '../../types/services';
+
+import { BsFilePdf, BsDownload, BsX, BsCheckCircle, BsExclamationTriangle, BsPencil } from 'react-icons/bs';
+import { FaSpinner } from 'react-icons/fa';
 import { toast } from "sonner";
 
 interface ExtendedService extends ServiceInput {
@@ -29,11 +29,8 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
   onServiceUpdate
 }) => {
   const [mounted, setMounted] = useState(false);
-  const [previewService, setPreviewService] = useState<ExtendedService | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [generationStatus, setGenerationStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [generatingService, setGeneratingService] = useState<string | null>(null);
   const [editingService, setEditingService] = useState<ExtendedService | null>(null);
   const [editFormData, setEditFormData] = useState({
     clientName: '',
@@ -70,10 +67,6 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
 
   const handleClose = () => {
     if (!isGenerating) {
-      setPreviewService(null);
-      setProgress({ current: 0, total: 0 });
-      setGenerationStatus('idle');
-      setErrorMessage('');
       setEditingService(null);
       onClose();
     }
@@ -81,17 +74,14 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
 
   const handleEditService = (service: ExtendedService) => {
     setEditingService(service);
-    
-    // Populate form with existing data or defaults
-    const voucherData = serviceToVoucherData(service, selectedDate);
-    
+
     // Smart hotel/location logic
     let hotelLocation = 'Hotel';
     if (service.pdfData?.hotel) {
       hotelLocation = service.pdfData.hotel;
     } else {
       // For arrival services, use dropoff location (hotel)
-      // For departure services, use pickup location (hotel)  
+      // For departure services, use pickup location (hotel)
       // For transfers, prefer the non-airport location
       if (service.kindOf === 'ARRIVAL') {
         hotelLocation = service.dropoffLocation || service.pickupLocation || 'Hotel';
@@ -101,7 +91,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
         // For transfers, try to pick the non-airport location
         const pickup = service.pickupLocation?.toLowerCase() || '';
         const dropoff = service.dropoffLocation?.toLowerCase() || '';
-        
+
         if (pickup.includes('airport') || pickup.includes('aeropuerto')) {
           hotelLocation = service.dropoffLocation || service.pickupLocation || 'Hotel';
         } else if (dropoff.includes('airport') || dropoff.includes('aeropuerto')) {
@@ -112,12 +102,12 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
         }
       }
     }
-    
+
     setEditFormData({
       clientName: service.pdfData?.clientName || service.clientName,
       hotel: hotelLocation,
       pax: service.pdfData?.pax || service.pax,
-      time: voucherData.time,
+      time: service.pickupTime,
       flightCode: service.pdfData?.flightCode || service.flightCode || ''
     });
   };
@@ -130,18 +120,13 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
       pdfData: {
         clientName: editFormData.clientName,
         hotel: editFormData.hotel,
-        pax: editFormData.pax,        
+        pax: editFormData.pax,
         flightCode: editFormData.flightCode
       }
     };
 
     onServiceUpdate(editingService.code || '', updatedService);
     setEditingService(null);
-    
-    // Update preview if this service is being previewed
-    if (previewService?.code === editingService.code) {
-      setPreviewService(updatedService);
-    }
 
     toast.success("Información Actualizada", {
       className: "bg-card text-card-foreground border-border",
@@ -153,46 +138,92 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
     setEditingService(null);
     toast.warning("El servicio no fue actualizado", {
       className: "bg-card text-card-foreground border-border"
-    });     
+    });
   };
 
-  const handlePreview = (service: ExtendedService) => {
-    setPreviewService(service);
+  const formatDateForAPI = (dateStr: string): string => {
+    // Convert YYYY-MM-DD to YYYY-MM-DD (API expects this format)
+    return dateStr;
   };
 
-  const handleGenerateSingle = async (service: ExtendedService) => {
+  const handleDownloadPDF = async (service: ExtendedService) => {
     setIsGenerating(true);
-    setGenerationStatus('generating');
-    
+    setGeneratingService(service.code);
+
     try {
-      // Set preview to show the voucher
-      setPreviewService(service);
-      
-      // Wait a bit for the element to render
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      await generateServicePDF(service, selectedDate, 'voucher-preview');
-      setGenerationStatus('success');
-      
-      setTimeout(() => {
-        setGenerationStatus('idle');
-        setPreviewService(null);
-      }, 2000);
-      
+      // Determine service type for API
+      let serviceType: 'arrivals' | 'departures';
+      if (service.kindOf === 'ARRIVAL') {
+        serviceType = 'arrivals';
+      } else if (service.kindOf === 'DEPARTURE') {
+        serviceType = 'departures';
+      } else {
+        // Default to arrivals for transfers
+        serviceType = 'arrivals';
+      }
+
+      // Map company (mbt not supported by PDF service, default to at)
+      const company: 'at' | 'st' = service.serviceType === 'st' ? 'st' : 'at';
+
+      // Smart hotel/location logic
+      let hotelLocation = 'Hotel';
+      if (service.pdfData?.hotel) {
+        hotelLocation = service.pdfData.hotel;
+      } else {
+        if (service.kindOf === 'ARRIVAL') {
+          hotelLocation = service.dropoffLocation || service.pickupLocation || 'Hotel';
+        } else if (service.kindOf === 'DEPARTURE') {
+          hotelLocation = service.pickupLocation || service.dropoffLocation || 'Hotel';
+        } else {
+          const pickup = service.pickupLocation?.toLowerCase() || '';
+          const dropoff = service.dropoffLocation?.toLowerCase() || '';
+
+          if (pickup.includes('airport') || pickup.includes('aeropuerto')) {
+            hotelLocation = service.dropoffLocation || service.pickupLocation || 'Hotel';
+          } else if (dropoff.includes('airport') || dropoff.includes('aeropuerto')) {
+            hotelLocation = service.pickupLocation || service.dropoffLocation || 'Hotel';
+          } else {
+            hotelLocation = service.pickupLocation || service.dropoffLocation || 'Hotel';
+          }
+        }
+      }
+
+      // Call API to generate PDF (API expects YYYY-MM-DD format)
+      const pdfBlob = await apiClient.generatePDF({
+        name: service.pdfData?.clientName || service.clientName,
+        hotel: hotelLocation,
+        pax: service.pdfData?.pax || service.pax,
+        time: service.pickupTime.toUpperCase(),
+        date: selectedDate, // Send in YYYY-MM-DD format, Python will format for display
+        company: company,
+        service_type: serviceType,
+        flight_code: service.pdfData?.flightCode || service.flightCode || undefined
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `voucher_${service.clientName.replace(/[^a-zA-Z0-9]/g, '_')}_${selectedDate}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("PDF Generado", {
+        className: "bg-card text-card-foreground border-border",
+        description: `PDF descargado para ${service.clientName}`
+      });
+
     } catch (error) {
       console.error('Error generating PDF:', error);
-      setGenerationStatus('error');
-      if (error.message.includes('popup')) {
-        setErrorMessage('Por favor permite ventanas emergentes para generar PDFs');
-      } else {
-        setErrorMessage(error.message || 'Error desconocido al generar PDF');
-      }
-      setTimeout(() => {
-        setGenerationStatus('idle');
-        setErrorMessage('');
-      }, 5000);
+      toast.error("Error al generar PDF", {
+        className: "bg-card text-card-foreground border-border",
+        description: error instanceof Error ? error.message : 'Error desconocido'
+      });
     } finally {
       setIsGenerating(false);
+      setGeneratingService(null);
     }
   };
 
@@ -217,7 +248,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
   if (!mounted || !isOpen) return null;
 
   const modalContent = (
-    <div 
+    <div
       className="fixed inset-0 z-[50000] backdrop-blur-sm flex items-center justify-center bg-black/50 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isGenerating) {
@@ -225,7 +256,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
         }
       }}
     >
-      <div className="w-full  max-w-7xl max-h-[90vh] rounded-xl bg-white dark:bg-navy-800 shadow-2xl overflow-hidden">
+      <div className="w-full max-w-4xl max-h-[90vh] rounded-xl bg-white dark:bg-navy-800 shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
@@ -239,7 +270,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
               </p>
             </div>
           </div>
-          
+
           {!isGenerating && (
             <button
               onClick={handleClose}
@@ -250,126 +281,110 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
           )}
         </div>
 
-        <div className="flex h-[calc(90vh-120px)]">
-          {/* Services List */}
-          <div className="w-1/2 border-r border-gray-200 dark:border-gray-700 overflow-y-auto p-6">
-            <div className="space-y-4">
-              {/* Filters */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Filtros</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
-                      Empresa
-                    </label>
-                    <select
-                      value={filterCompany}
-                      onChange={(e) => setFilterCompany(e.target.value as any)}
-                      className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-navy-700 text-navy-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="all">Todas</option>
-                      <option value="at">Airport Transfer</option>
-                      <option value="st">Sacbé Transfer</option>
-                      <option value="mbt">MB Transfer</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
-                      Tipo de Servicio
-                    </label>
-                    <select
-                      value={filterType}
-                      onChange={(e) => setFilterType(e.target.value as any)}
-                      className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-navy-700 text-navy-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="all">Todos</option>
-                      <option value="ARRIVAL">Llegadas</option>
-                      <option value="DEPARTURE">Salidas</option>
-                      <option value="TRANSFER">Transfers</option>
-                    </select>
-                  </div>
+        <div className="overflow-y-auto p-6" style={{ maxHeight: 'calc(90vh - 120px)' }}>
+          <div className="space-y-4">
+            {/* Filters */}
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Filtros</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                    Empresa
+                  </label>
+                  <select
+                    value={filterCompany}
+                    onChange={(e) => setFilterCompany(e.target.value as any)}
+                    className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-navy-700 text-navy-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="all">Todas</option>
+                    <option value="at">Airport Transfer</option>
+                    <option value="st">Sacbé Transfer</option>
+                    <option value="mbt">MB Transfer</option>
+                  </select>
                 </div>
-              </div>
-              
-              {/* Individual Services */}
-              <div>
-                <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Servicios Individuales</h3>
-                <div className="space-y-2">
-                  {filteredServices.map((service) => (
-                    <div
-                      key={service.code}
-                      className="flex items-center justify-between p-3 bg-white dark:bg-navy-700 rounded-lg border border-gray-200 dark:border-gray-600"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-navy-700 dark:text-white">
-                            {service.clientName}
-                          </span>
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${getCompanyColor(service.serviceType)}`}>
-                            {getCompanyName(service.serviceType)}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-300">
-                          {service.code} • {service.kindOf} • {service.pax} PAX 
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEditService(service)}
-                          disabled={isGenerating}
-                          className="p-2 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                          title="Editar datos PDF"
-                        >
-                          <BsPencil />
-                        </button>
-                        <button
-                          onClick={() => handlePreview(service)}
-                          disabled={isGenerating}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                          title="Vista Previa"
-                        >
-                          <BsEye />
-                        </button>
-                        <button
-                          onClick={() => handleGenerateSingle(service)}
-                          disabled={isGenerating}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          title="Imprimir PDF"
-                        >
-                          <BsDownload />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                    Tipo de Servicio
+                  </label>
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value as any)}
+                    className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-navy-700 text-navy-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="ARRIVAL">Llegadas</option>
+                    <option value="DEPARTURE">Salidas</option>
+                    <option value="TRANSFER">Transfers</option>
+                  </select>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Preview Panel */}
-          <div className="w-1/2 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-            <div className="p-6">
-              <h3 className="font-semibold text-gray-800 dark:text-white mb-4">Vista Previa del Voucher</h3>
-              
-              {previewService ? (
-                <div className="">
-                  <div 
-                    id="voucher-preview"                    
-                  >
-                    <VoucherTemplate
-                      {...serviceToVoucherData(previewService, selectedDate)}
-                    />
+            {/* Services List */}
+            <div>
+              <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Servicios</h3>
+              <div className="space-y-2">
+                {filteredServices.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <BsFilePdf className="text-4xl mx-auto mb-2 opacity-50" />
+                    <p>No hay servicios que coincidan con los filtros</p>
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-                  <div className="text-center">
-                    <BsEye className="text-4xl mx-auto mb-2 opacity-50" />
-                    <p>Selecciona un servicio para ver la vista previa</p>
-                  </div>
-                </div>
-              )}
+                ) : (
+                  filteredServices.map((service) => {
+                    const isCurrentlyGenerating = generatingService === service.code;
+
+                    return (
+                      <div
+                        key={service.code}
+                        className="flex items-center justify-between p-4 bg-white dark:bg-navy-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-navy-700 dark:text-white">
+                              {service.clientName}
+                            </span>
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${getCompanyColor(service.serviceType)}`}>
+                              {getCompanyName(service.serviceType)}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-300">
+                            {service.code} • {service.kindOf} • {service.pax} PAX • {service.pickupTime}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditService(service)}
+                            disabled={isGenerating}
+                            className="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
+                            title="Editar datos PDF"
+                          >
+                            <BsPencil />
+                          </button>
+                          <button
+                            onClick={() => handleDownloadPDF(service)}
+                            disabled={isGenerating}
+                            className="flex items-center gap-2 px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Descargar PDF"
+                          >
+                            {isCurrentlyGenerating ? (
+                              <>
+                                <FaSpinner className="animate-spin" />
+                                <span className="text-sm">Generando...</span>
+                              </>
+                            ) : (
+                              <>
+                                <BsDownload />
+                                <span className="text-sm">Descargar</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -379,7 +394,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
 
   // Edit Form Modal
   const editModalContent = editingService && (
-    <div 
+    <div
       className="fixed inset-0 z-[60000] flex items-center justify-center bg-black/50 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -399,7 +414,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
             <BsX className="h-5 w-5" />
           </button>
         </div>
-        
+
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -413,7 +428,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
               placeholder="Nombre del cliente"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Hotel
@@ -426,7 +441,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
               placeholder="Hotel o ubicación"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               PAX
@@ -439,7 +454,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
               className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-navy-700 text-navy-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Hora
@@ -452,7 +467,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
               placeholder="Ej: 2:30 PM"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Código de Vuelo (opcional)
@@ -466,7 +481,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
             />
           </div>
         </div>
-        
+
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={handleCancelEdit}

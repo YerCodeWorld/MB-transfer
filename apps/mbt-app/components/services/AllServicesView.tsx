@@ -7,6 +7,7 @@ import { useServiceData } from '../../contexts/ServiceDataContext';
 import { useBottomBar } from '../../contexts/BottomBarContext';
 import { ServiceInput } from '../../types/services';
 import { convertIsoStringTo12h, convertTo12Hour, convertTo24Hour, time12ToMinutes, mockDrivers, mockVehicles } from '../../utils/services';
+
 import { 
   SERVICE_TYPE_OPTIONS, 
   STATUS_OPTIONS, 
@@ -16,20 +17,20 @@ import {
   STATUS_COLORS, 
   SERVICE_TYPE_LABELS 
 } from '../../constants/allServicesOptions';
+
 import FlightComparisonModal from '../shared/FlightComparisonModal';
 import AddServiceModal from '../shared/AddServiceModal';
 import PDFGeneratorModal from '../shared/PDFGeneratorModal';
-import { toast } from "sonner";
 
 import Card from '../single/card';
-import { 
-  BsArrowLeft, BsSearch, BsFilter, BsEye, BsPlay, BsPencil, BsTrash, BsCheckCircle, BsExclamationTriangle, BsClock, BsFilePdf, BsDownload
-} from 'react-icons/bs';
-import { 
-  FaHashtag, FaUser, FaClock, FaUsers, FaRoute, FaMapSigns, FaTags, FaCar, FaUserTie, FaPlus
-} from 'react-icons/fa';
+
+import {  BsArrowLeft, BsSearch, BsFilter, BsEye, BsPlay, BsPencil, BsTrash, BsCheckCircle, BsExclamationTriangle, BsClock, BsFilePdf, BsDownload } from 'react-icons/bs';
+import { FaHashtag, FaUser, FaClock, FaUsers, FaRoute, FaMapSigns, FaTags, FaCar, FaUserTie, FaPlus } from 'react-icons/fa';
 import { HiOutlineViewList } from 'react-icons/hi';
 
+import { toast } from "sonner";
+
+// ===========================
 type ServiceStatus = 'pending' | 'assigned' | 'in-progress' | 'completed' | 'cancelled';
 type SortField = 'time' | 'client' | 'type' | 'status' | 'code';
 type SortDirection = 'asc' | 'desc';
@@ -214,19 +215,6 @@ const AllServicesView = () => {
     if (activeTab === 'overview') {
       setActions([
         {
-          key: "overview-tab",
-          label: "Vista General",
-          Icon: BsEye,
-          variant: "primary",
-          onClick: () => setActiveTab('overview')
-        },
-        {
-          key: "live-tab",
-          label: "En Vivo",
-          Icon: BsPlay,
-          onClick: () => setActiveTab('live')
-        },
-        {
           key: "check-time",
           label: "Confirmar Vuelos",
           Icon: BsClock,
@@ -273,7 +261,7 @@ const AllServicesView = () => {
       clearActions();
     };
   }, [activeTab, clearActions, setActions]);
-  
+
   const checkTimeData = () => {
     setShowFlightComparison(true);
   };
@@ -431,6 +419,40 @@ const AllServicesView = () => {
     }
   };
 
+  const handleFlightTimeUpdate = (serviceId: string, formattedTime: string) => {
+    const targetService = allServices.find((service) => service.id === serviceId);
+
+    if (!targetService) {
+      throw new Error('Service not found for cache update');
+    }
+
+    const cacheKey = targetService.serviceType;
+    const cache = getCache(cacheKey, selectedDate);
+
+    if (!cache) {
+      throw new Error(`No cache found for service type ${cacheKey}`);
+    }
+
+    const updatedData = cache.data.map((service) => {
+      if (service.id !== serviceId) {
+        return JSON.parse(JSON.stringify(service));
+      }
+
+      return {
+        ...JSON.parse(JSON.stringify(service)),
+        pickupTime: formattedTime,
+      };
+    });
+
+    setCache(cacheKey, updatedData, selectedDate);
+    loadServicesFromCache();
+
+    toast.success('Hora de servicio actualizada', {
+      className: 'bg-card text-card-foreground border-border',
+      description: `Servicio ${targetService.code} actualizado en caché local`,
+    });
+  };
+
   const exportToCSV = () => {
     // CSV Headers
     const headers = [
@@ -543,13 +565,13 @@ const AllServicesView = () => {
     
     switch (kind) {
       case 'ARRIVAL':
-        return <span className={`${base} bg-green-500`}>ARRIVAL</span>;
+        return <span className={`${base} bg-green-500`}>LLEGADA</span>;
       case 'DEPARTURE':
-        return <span className={`${base} bg-blue-500`}>DEPARTURE</span>;
+        return <span className={`${base} bg-blue-500`}>SALIDA</span>;
       case 'TRANSFER':
-        return <span className={`${base} bg-yellow-500 text-black`}>TRANSFER</span>;
+        return <span className={`${base} bg-yellow-500 text-black`}>TRANSFERENCIA</span>;
       default:
-        return <span className={`${base} bg-gray-400`}>UNKNOWN</span>;
+        return <span className={`${base} bg-gray-400`}>DESCONOCIDO</span>;
     }
   };
 
@@ -558,14 +580,14 @@ const AllServicesView = () => {
       <div className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <BsFilter className="text-accent" />
-          <h3 className="text-lg font-semibold text-navy-700 dark:text-white">Filters & Search</h3>
+          <h3 className="text-lg font-semibold text-navy-700 dark:text-white">Filtros y Búsquedas</h3>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Search
+              Buscar
             </label>
             <div className="relative">
               <BsSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -573,7 +595,7 @@ const AllServicesView = () => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Client, code, location..."
+                placeholder="Cliente, código, ubicación..."
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
               />
             </div>
@@ -582,7 +604,7 @@ const AllServicesView = () => {
           {/* Service Type Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Service Type
+              Tipo del Servicio
             </label>
             <select
               value={filterType}
@@ -600,7 +622,7 @@ const AllServicesView = () => {
           {/* Status Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Status
+              Estado
             </label>
             <select
               value={filterStatus}
@@ -618,7 +640,7 @@ const AllServicesView = () => {
           {/* Sort */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Sort By
+              Organizar Por
             </label>
             <select
               value={`${sortField}-${sortDirection}`}
@@ -675,7 +697,7 @@ const AllServicesView = () => {
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <th className="px-4 py-3 text-center w-16">
                     <span className="text-xs font-semibold uppercase text-gray-500">
-                      #
+                      No.
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left">
@@ -720,24 +742,6 @@ const AllServicesView = () => {
                       <FaTags /> Tipo 
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-left">
-                    <button
-                      onClick={() => handleSort('status')}
-                      className="flex items-center gap-1 text-xs font-semibold uppercase text-gray-500 hover:text-blue-600"
-                    >
-                      <BsCheckCircle /> Estado 
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left">
-                    <span className="flex items-center gap-1 text-xs font-semibold uppercase text-gray-500">
-                      <FaCar /> Vehículo 
-                    </span>
-                  </th>
-                  <th className="px-4 py-3 text-left">
-                    <span className="flex items-center gap-1 text-xs font-semibold uppercase text-gray-500">
-                      <FaUserTie /> Conductor 
-                    </span>
-                  </th>
                   <th className="px-4 py-3 text-center">
                     <span className="text-xs font-semibold uppercase text-gray-500">
                       Acciones 
@@ -772,7 +776,9 @@ const AllServicesView = () => {
                     </td>
                     <td className="px-4 py-4">
                       <span className="text-sm text-gray-900 dark:text-gray-100">
-                        {service.pickupTime}
+                        {service.serviceType === 'at' && service.pickupTime?.includes('T')
+                          ? convertIsoStringTo12h(service.pickupTime)
+                          : service.pickupTime}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
@@ -795,21 +801,6 @@ const AllServicesView = () => {
                     </td>
                     <td className="px-4 py-4">
                       {kindOfElement(service.kindOf)}
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(service.status)}`}>
-                        {service.status.replace('-', ' ').toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {service.assignedVehicle || 'Unassigned'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {service.assignedDriver || 'Unassigned'}
-                      </span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
@@ -1087,33 +1078,6 @@ const AllServicesView = () => {
     return createPortal(modalContent, document.body);
   };
 
-  const renderTabButtons = () => (
-    <div className="flex rounded-lg bg-gray-100 dark:bg-gray-700 p-1 mb-6">
-      <button
-        onClick={() => setActiveTab('overview')}
-        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-          activeTab === 'overview'
-            ? 'bg-white dark:bg-navy-800 text-accent-600 dark:text-accent-400 shadow-sm'
-            : 'text-gray-600 dark:text-gray-300 hover:text-accent-600 dark:hover:text-accent-400'
-        }`}
-      >
-        <BsEye />
-        Overview
-      </button>
-      <button
-        onClick={() => setActiveTab('live')}
-        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-          activeTab === 'live'
-            ? 'bg-white dark:bg-navy-800 text-accent-600 dark:text-accent-400 shadow-sm'
-            : 'text-gray-600 dark:text-gray-300 hover:text-accent-600 dark:hover:text-accent-400'
-        }`}
-      >
-        <BsPlay />
-        Live Mode
-      </button>
-    </div>
-  );
-
   const renderLiveMode = () => (
     <Card extra="w-full">
       <div className="p-8 text-center">
@@ -1131,7 +1095,7 @@ const AllServicesView = () => {
       </div>
     </Card>
   );
-
+	
   return (
     <div className="m-10">
       <div className="flex items-center gap-4 mb-6">
@@ -1165,9 +1129,7 @@ const AllServicesView = () => {
           <HiOutlineViewList className="text-3xl text-accent-500" />
         </div>
       </div>
-
-      {renderTabButtons()}
-
+      
       {activeTab === 'overview' ? (
         <>
           {renderFilters()}
@@ -1178,6 +1140,7 @@ const AllServicesView = () => {
             onClose={() => setShowFlightComparison(false)}
             services={allServices}
             selectedDate={selectedDate}
+            onUpdateServiceTime={handleFlightTimeUpdate}
           />
           <AddServiceModal
             isOpen={showAddService}

@@ -2,23 +2,20 @@
 
 import React from "react";
 import { useState, useEffect, useMemo } from "react";
+import { useAuth } from "../../../contexts/AuthContext";
+
 import Image from "next/image";
 import Dropdown from "../../../components/single/dropdown";
 import Link from "next/link";
+import Configurator from "./Configurator";
 
-import { FiAlignJustify } from "react-icons/fi";
-
-import navbarimage from  "../../../public/airplane1.jpg";
 import { BsArrowBarUp } from "react-icons/bs";
 import { FiSearch } from "react-icons/fi";
-import Configurator from "./Configurator";
 import { RiMoonFill, RiSunFill } from 'react-icons/ri';
+import { FiAlignJustify } from "react-icons/fi";
+import { IoMdNotificationsOutline, IoMdInformationCircleOutline } from "react-icons/io";
 
-// import Configurator from './Configurator';
-import {
-  IoMdNotificationsOutline,
-  IoMdInformationCircleOutline,
-} from "react-icons/io";
+import navbarimage from  "../../../public/airplane1.jpg";
 import avatar from  "../../../public/airplane1.jpg";
 
 const Navbar = (props: {
@@ -38,6 +35,8 @@ const Navbar = (props: {
     selectedBackground,
     setSelectedBackground,
   } = props;
+
+	const { employee } = useAuth();
 
   function capitalize(s: string): string {
     if (s.length < 2) return "";
@@ -118,12 +117,15 @@ const Navbar = (props: {
           : "w-[calc(100vw_-_6%)] md:w-[calc(100vw_-_8%)] lg:w-[calc(100vw_-_6%)] xl:w-[calc(100vw_-_180px)] 2xl:w-[calc(100vw_-_195px)]"
       }  p-2 backdrop-blur-xl dark:bg-[#0b14374d] md:top-4 md:right-[30px] xl:top-[20px] z-50`}
     >
+
+	{/** TIME INFO, GREETING **/}
       <div className="ml-[6px]">
       <h2 className="text-accent-500 dark:text-accent-100">{mounted ? `${message}!` : ""}</h2>
         <p className="flex items-center gap-2 rounded-x1 text-[1.3rem] text-accent-800 dark:text-accent-50 tabular-nums">          
           <span>{timeData.dayName} {timeData.dayNum} de {timeData.month} | {timeData.time} </span>
         </p>        
       </div>
+		
 
       <div className="relative mt-[3px] flex h-[61px] w-[355px] flex-grow items-center justify-around gap-2 rounded-full bg-white px-2 py-2 shadow-xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none md:w-[365px] md:flex-grow-0 md:gap-1 xl:w-[365px] xl:gap-2">
         <div className="flex h-full items-center rounded-full bg-lightPrimary text-navy-700 dark:bg-navy-900 dark:text-white xl:w-[225px]">
@@ -267,7 +269,7 @@ const Navbar = (props: {
         <Dropdown
           button={
             <Image
-              src={avatar}
+              src={employee.photo}
               alt="Profile"
               width={40}
               height={40}
@@ -281,7 +283,7 @@ const Navbar = (props: {
             <div className="mt-3 ml-4">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-bold text-navy-700 dark:text-white">
-                  👋 Hey, Yahir!
+                  👋 Hey, {employee.name.split(" ")[0]}!
                 </p>{" "}
               </div>
             </div>

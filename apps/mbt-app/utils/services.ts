@@ -38,9 +38,10 @@ export function convertTo24Hour(time12: string): string {
 
 // Needed for AT API response, where this is how the time is displayed 
 export function convertIsoStringTo12h(isoString) {
-  console.log(isoString);
   const [datePart, timePart] = isoString.replace("Z", "").split("T");
   const [year, month, day] = datePart.split("-").map(Number);
+
+	if (!timePart) return;
 
   // Take only hours/minutes and ignore timezone shifting
   const [h, m] = timePart.split(":").map(Number);
@@ -72,11 +73,8 @@ export function time12ToMinutes(time12: string): number {
 }
 
 
-// TODO
-// Needs to be updated to receive a date parameter instead 
-// set a placeholder parameter 
 // Fetch flight times via API route (server-side to avoid CORS)
-export async function fetchFlightTimes(flightCodes: string[]): Promise<FlightInfo[]> {
+export async function fetchFlightTimes(flightCodes: string[], date: string): Promise<FlightInfo[]> {
   try {
     const response = await fetch('/api/flight-times', {
       method: 'POST',
@@ -84,7 +82,8 @@ export async function fetchFlightTimes(flightCodes: string[]): Promise<FlightInf
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        flightCodes
+        flightCodes,
+        date
       })
     });
 

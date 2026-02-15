@@ -104,3 +104,33 @@
   --color-dark-700: #1B254B;
   --color-dark-900: #0b1437;
 }
+
+:root {
+  color-scheme: light;
+  background-color: var(--background-100);
+  color: #0f172a;
+}
+
+html,
+body {
+  min-height: 100%;
+  background-color: var(--background-100);
+  color: #0f172a;
+}
+
+.dark {
+  color-scheme: dark;
+  --background-100: #121b31;
+  --background-900: #0a1020;
+  --color-dark-700: #121b31;
+  --color-dark-900: #0a1020;
+  --color-navy-700: #16213a;
+  --color-navy-800: #111a2f;
+  --color-navy-900: #0a1020;
+  --shadow-100: rgba(0, 0, 0, 0.35);
+}
+
+.dark body {
+  background-color: var(--background-900);
+  color: #e2e8f0;
+}

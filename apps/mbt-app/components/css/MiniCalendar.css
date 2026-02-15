@@ -107,25 +107,33 @@ abbr[title] {
 /* DARK MODE */
 html.dark .react-calendar {
 	border-radius: 20px;
-	background-color: var(--color-accent-200);
+	background-color: #111a2f;
+	border: 1px solid rgba(255, 255, 255, 0.08);
 }
 html.dark .react-calendar__navigation__prev-button {
-	background-color: #7551ff !important;
+	background-color: #1a2542 !important;
+	color: #e2e8f0;
 }
 html.dark .react-calendar__navigation__next-button {
-	background-color: #7551ff !important;
+	background-color: #1a2542 !important;
+	color: #e2e8f0;
+}
+html.dark .react-calendar__navigation__label {
+	font-weight: 800 !important;
+	font-size: 18px;
 	color: white;
 }
+
 html.dark .react-calendar__tile {
-	color: black;
+	color: #e2e8f0;
 }
 html.dark .react-calendar__tile:enabled:hover,
 html.dark .react-calendar__tile:enabled:focus {
-	background-color: var(--color-accent-200);
+	background-color: #1a2647;
 }
 html.dark .react-calendar__month-view__weekdays {
-	background-color: var(--color-accent-400);
-	color: black;
+	background-color: #0f172a;
+	color: #cbd5f1;
 }
 html.dark .react-calendar__tile--now,
 html.dark .react-calendar__tile--now:enabled:hover,
@@ -138,24 +146,24 @@ html.dark .react-calendar__month-view__days__day--neighboringMonth {
 html.dark .react-calendar__tile--active,
 html.dark .react-calendar__tile--active:enabled:hover,
 html.dark .react-calendar__tile--active:enabled:focus {
-	background: #7551ff;
+	background: var(--color-accent-500);
 	color: white;
 }
 html.dark .react-calendar__tile--range,
 html.dark .react-calendar__tile--range:enabled:hover,
 html.dark .react-calendar__tile--range:enabled:focus {
 	background: rgba(255, 255, 255, 0.1);
-	color: #7551ff;
+	color: var(--color-accent-300);
 }
 html.dark .react-calendar__tile--rangeStart,
 html.dark .react-calendar__tile--rangeStart:enabled:hover,
 html.dark .react-calendar__tile--rangeStart:enabled:focus {
-	background: #7551ff;
+	background: var(--color-accent-500);
 	color: white;
 }
 html.dark .react-calendar__tile--rangeEnd,
 html.dark .react-calendar__tile--rangeEnd:enabled:hover,
 html.dark .react-calendar__tile--rangeEnd:enabled:focus {
-	background: #7551ff;
+	background: var(--color-accent-500);
 	color: white;
 }

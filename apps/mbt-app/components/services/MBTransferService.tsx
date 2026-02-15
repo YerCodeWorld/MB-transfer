@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 
 import { BsArrowLeft, BsCheckCircle, BsPlus, BsTrash, BsList } from 'react-icons/bs';
 import { PiAddressBookThin } from 'react-icons/pi';
-import { HiOutlineDownload, HiOutlineSave, HiClipboardList } from 'react-icons/hi';
+import { HiOutlineDownload, HiOutlineSave, HiClipboardList, HiChevronLeft } from 'react-icons/hi';
 
 
 interface FormService extends ServiceInput {
@@ -217,28 +217,35 @@ const MBTransferService = () => {
   useEffect(() => {
     if (activeTab === 'form') {
       setActions([
+	{
+		key: "back",
+		label: "Atrás",
+		Icon: HiChevronLeft,
+		variant: "secondary",
+		onClick: () => popView() // Go back to main itinerary
+	},
         {
           key: "form-tab",
-          label: "Form",
+          label: "Formulario",
           Icon: HiClipboardList,
           variant: "primary",
           onClick: () => setActiveTab('form')
         },
         {
           key: "services-tab",
-          label: "View Services",
+          label: "Ver Servicios",
           Icon: BsList,
           onClick: () => setActiveTab('services')
         },
         {
           key: "add",
-          label: "Add Service",
+          label: "Añadir Servicio",
           Icon: BsPlus,
           onClick: addNewService
         },
         {
           key: "submit",
-          label: "Submit",
+          label: "Guardar",
           Icon: BsCheckCircle,
           variant: "primary",
           onClick: submitServices
@@ -246,22 +253,29 @@ const MBTransferService = () => {
       ]);
     } else {
       setActions([
+	{
+		key: "back",
+		label: "Atrás",
+		Icon: HiChevronLeft,
+		variant: "secondary",
+		onClick: () => popView() // Go back to main itinerary
+	},
         {
           key: "form-tab",
-          label: "Form",
+          label: "Formulario",
           Icon: HiClipboardList,
           onClick: () => setActiveTab('form')
         },
         {
           key: "services-tab",
-          label: "View Services",
+          label: "Ver Servicios",
           Icon: BsList,
           variant: "primary",
           onClick: () => setActiveTab('services')
         },
         {
           key: "export",
-          label: "Export",
+          label: "Exportar",
           Icon: HiOutlineDownload,
           onClick: () => {
             if (cachedServices.length > 0) {
@@ -273,7 +287,7 @@ const MBTransferService = () => {
         },
         {
           key: "save",
-          label: "Save",
+          label: "Guardar",
           Icon: HiOutlineSave,
           variant: "primary",
           onClick: () => {
@@ -557,33 +571,6 @@ const MBTransferService = () => {
     </div>
   );
 
-  const renderTabButtons = () => (
-    <div className="flex rounded-lg bg-gray-100 dark:bg-gray-700 p-1 mb-6">
-      <button
-        onClick={() => setActiveTab('form')}
-        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-          activeTab === 'form'
-            ? 'bg-white dark:bg-navy-800 text-blue-600 dark:text-blue-400 shadow-sm'
-            : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
-        }`}
-      >
-        <HiClipboardList />
-        Service Form
-      </button>
-      <button
-        onClick={() => setActiveTab('services')}
-        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-          activeTab === 'services'
-            ? 'bg-white dark:bg-navy-800 text-blue-600 dark:text-blue-400 shadow-sm'
-            : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
-        }`}
-      >
-        <BsList />
-        View Services ({cachedServices.length})
-      </button>
-    </div>
-  );
-
   return (
     <div className="w-full">
       <div className="flex items-center gap-4 mb-6">
@@ -591,14 +578,14 @@ const MBTransferService = () => {
           onClick={popView}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
         >
-          <BsArrowLeft className="text-xl text-white" />
+          <BsArrowLeft className="text-xl text-brand dark:text-white" />
         </button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-navy-700 dark:text-white">
-            MB Transfer Service Management
+		Manejo de los Servicios de MBT
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
-            {activeTab === 'form' ? 'Manually enter service details using the form' : 'View and manage cached MBTransfer services'}
+            {activeTab === 'form' ? 'Manualmente llena el formulario para añadir el servicio' : 'Ver y manejar los servicios cacheados de MBT'}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -606,30 +593,10 @@ const MBTransferService = () => {
         </div>
       </div>
 
-      {renderTabButtons()}
-
       {activeTab === 'form' ? (
         <>
           <div className="space-y-6">
             {services.map((service, index) => renderServiceForm(service, index))}
-          </div>
-
-          <div className="flex gap-3 mt-6">
-            <button
-              onClick={addNewService}
-              className="px-4 py-2 border border-accent-500 text-accent-500 rounded-lg hover:bg-accent-50 dark:hover:bg-accent-900/20 flex items-center gap-2"
-            >
-              <BsPlus />
-              Añadir Otro Servicio
-            </button>
-
-            <button
-              onClick={submitServices}
-              className="flex-1 px-4 py-2 bg-accent-500 text-white rounded-lg hover:bg-purple-600 flex items-center justify-center gap-2"
-            >
-              <BsCheckCircle />
-              Subir {services.length} Servicio{services.length !== 1 ? 's' : ''} al Almacenamiento Local
-            </button>
           </div>
 
           <div className="mt-6 p-4 bg-purple-50 dark:bg-accent-900/20 rounded-lg">
