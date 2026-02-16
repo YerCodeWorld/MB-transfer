@@ -24,7 +24,7 @@ import {
 interface AddServiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (service: ServiceInput & { serviceType?: 'at' | 'st' | 'mbt' }) => void;
+  onSave: (service: ServiceInput & { serviceType?: 'at' | 'st' | 'mbt' }) => Promise<boolean> | boolean;
   selectedDate: string;
 }
 
@@ -89,15 +89,18 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
     setMessageText(getExampleMessage(messageType));
   };
 
-  const handleSaveFromMessage = () => {
+  const handleSaveFromMessage = async () => {
     if (parsedData) {
-      const service = convertParsedToServiceInput(parsedData, selectedDate);
-      onSave(service);
-      handleClose();
+      const service = {
+        ...convertParsedToServiceInput(parsedData, selectedDate),
+        serviceType: selectedCompany,
+      };
+      const saved = await onSave(service);
+      if (saved) handleClose();
     }
   };
 
-  const handleSaveFromManual = () => {
+  const handleSaveFromManual = async () => {
     if (manualService.clientName && manualService.code && manualService.pickupTime) {
       const service = {
         id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -113,8 +116,8 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
         notes: `Manually created on ${new Date().toISOString()}`,
         serviceType: selectedCompany
       };
-      onSave(service);
-      handleClose();
+      const saved = await onSave(service);
+      if (saved) handleClose();
     }
   };
 

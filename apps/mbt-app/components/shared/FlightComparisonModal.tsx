@@ -6,6 +6,7 @@ import { BsClock, BsCheckCircle, BsExclamationTriangle, BsXCircle, BsArrowRepeat
 import { FaPlane } from 'react-icons/fa';
 import { fetchFlightTimes } from '../../utils/services';
 import { FlightInfo } from '../../types/services';
+import { convertIsoStringTo12h, convertTo12Hour } from '../../utils/services';
 
 type ComparisonStatus = 'loading' | 'found' | 'not_found' | 'error' | 'no_discrepancy' | 'discrepancy';
 type ResultTab = 'no_discrepancy' | 'discrepancy' | 'error';
@@ -46,74 +47,89 @@ const getComparisonCacheKey = (services: any[], selectedDate: string): string =>
   return `${selectedDate}::${arrivalSignature}`;
 };
 
-const parse12HourTime = (rawTime: string, selectedDate: string): Date => {
-  const match = rawTime.trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-  if (!match) {
-    throw new Error('Invalid 12-hour time format');
+const isIsoLikeDateTime = (value?: string) =>
+  typeof value === 'string' && (/^\d{4}-\d{2}-\d{2}[T\s]/.test(value) || value.endsWith('Z'));
+
+const formatServiceDisplayTime = (value: string | undefined, serviceType?: string): string => {
+  if (!value) return 'N/A';
+  const input = String(value).trim();
+
+  if (isIsoLikeDateTime(input)) {
+    // Keep same clock semantics used by service tables to avoid cross-view drifts.
+    return convertIsoStringTo12h(input);
   }
+
+  if (/(\d{1,2}):(\d{2})\s*(AM|PM)/i.test(input)) {
+    return input.toUpperCase().replace(/\s+/g, ' ');
+  }
+
+  if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(input)) {
+    return convertTo12Hour(input);
+  }
+
+  return input;
+};
+
+const displayTimeToMinutes = (displayTime: string): number => {
+  const input = String(displayTime || '').trim();
+  const ampm = input.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (ampm) {
+    let hours = Number(ampm[1]);
+    const minutes = Number(ampm[2]);
+    const period = ampm[3].toUpperCase();
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  }
+
+  const hhmm = input.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (hhmm) {
+    return Number(hhmm[1]) * 60 + Number(hhmm[2]);
+  }
+
+  throw new Error('Invalid display time');
+};
+
+const normalizeServiceTimeFormat = (service: any, newTime: string, selectedDate: string): string => {
+  const normalizedDisplay = formatServiceDisplayTime(newTime, service?.serviceType);
+  const match = normalizedDisplay.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) return newTime;
 
   let hours = parseInt(match[1], 10);
   const minutes = parseInt(match[2], 10);
   const period = match[3].toUpperCase();
-
-  if (period === 'PM' && hours !== 12) hours += 12;
-  if (period === 'AM' && hours === 12) hours = 0;
-
-  const [selectedYear, selectedMonth, selectedDay] = selectedDate.split('-').map(Number);
-  return new Date(selectedYear, selectedMonth - 1, selectedDay, hours, minutes);
-};
-
-const parseServiceTime = (serviceTimeString: string, selectedDate: string): Date => {
-  const [selectedYear, selectedMonth, selectedDay] = selectedDate.split('-').map(Number);
-
-  if (serviceTimeString.includes('T')) {
-    const [datePart, timePart] = serviceTimeString.replace('Z', '').split('T');
-    const [year, month, day] = datePart.split('-').map(Number);
-    const [h, m] = timePart.split(':').map(Number);
-    return new Date(year, month - 1, day, h, m);
-  }
-
-  if (serviceTimeString.includes('AM') || serviceTimeString.includes('PM')) {
-    return parse12HourTime(serviceTimeString, selectedDate);
-  }
-
-  const timeParts = serviceTimeString.split(':');
-  if (timeParts.length >= 2) {
-    const hours = parseInt(timeParts[0], 10);
-    const minutes = parseInt(timeParts[1], 10);
-    return new Date(selectedYear, selectedMonth - 1, selectedDay, hours, minutes);
-  }
-
-  throw new Error('Invalid service time format');
-};
-
-const normalizeServiceTimeFormat = (service: any, newTime: string): string => {
-  const match = newTime.trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-  if (!match) {
-    return newTime;
-  }
-
-  let hours = parseInt(match[1], 10);
-  const minutes = parseInt(match[2], 10);
-  const period = match[3].toUpperCase();
-
   if (period === 'PM' && hours !== 12) hours += 12;
   if (period === 'AM' && hours === 12) hours = 0;
 
   const serviceType = (service.serviceType || '').toLowerCase();
 
-  if (serviceType === 'at' || service.pickupTime?.includes('T')) {
+  if (serviceType === 'at') {
+    // AT flow in this project has been handled with clock-preserving ISO.
+    const [y, m, d] = selectedDate.split('-');
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    return `${y}-${m}-${d}T${hh}:${mm}:00.000Z`;
+  }
+
+  if (serviceType === 'st' || serviceType === 'mbt') {
+    const [y, m, d] = selectedDate.split('-');
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    return `${y}-${m}-${d}T${hh}:${mm}:00.000Z`;
+  }
+
+  if (service.pickupTime?.includes('AM') || service.pickupTime?.includes('PM')) {
     const normalizedMinutes = String(minutes).padStart(2, '0');
     const hour12 = hours % 12 || 12;
     const nextPeriod = hours >= 12 ? 'PM' : 'AM';
     return `${hour12}:${normalizedMinutes} ${nextPeriod}`;
   }
 
-  if (serviceType === 'st' || service.pickupTime?.includes('AM') || service.pickupTime?.includes('PM')) {
-    const normalizedMinutes = String(minutes).padStart(2, '0');
-    const hour12 = hours % 12 || 12;
-    const nextPeriod = hours >= 12 ? 'PM' : 'AM';
-    return `${hour12}:${normalizedMinutes} ${nextPeriod}`;
+  if (service.pickupTime?.includes('T')) {
+    const [y, m, d] = selectedDate.split('-');
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    return `${y}-${m}-${d}T${hh}:${mm}:00.000Z`;
   }
 
   const paddedHours = String(hours).padStart(2, '0');
@@ -183,20 +199,11 @@ const buildComparisonFromFlightInfo = (
   }
 
   try {
-    const flightTime = parse12HourTime(flightInfo.scheduled_in, selectedDate);
-    const serviceTime = parseServiceTime(comparison.service.pickupTime, selectedDate);
-
-    if (isNaN(flightTime.getTime()) || isNaN(serviceTime.getTime())) {
-      return {
-        ...comparison,
-        flightData: flightInfo,
-        status: 'error',
-        message: 'Formato de hora inválido para la comparación',
-      };
-    }
-
-    const timeDiff = Math.abs(serviceTime.getTime() - flightTime.getTime());
-    const minutesDiff = timeDiff / (1000 * 60);
+    const serviceDisplay = formatServiceDisplayTime(comparison.service.pickupTime, comparison.service.serviceType);
+    const flightDisplay = formatServiceDisplayTime(flightInfo.scheduled_in, comparison.service.serviceType);
+    const serviceMinutes = displayTimeToMinutes(serviceDisplay);
+    const flightMinutes = displayTimeToMinutes(flightDisplay);
+    const minutesDiff = Math.abs(serviceMinutes - flightMinutes);
 
     if (minutesDiff <= 5) {
       return {
@@ -369,7 +376,7 @@ const FlightComparisonModal = ({
         throw new Error('Service not found');
       }
 
-      const formattedTime = normalizeServiceTimeFormat(service, newTime);
+      const formattedTime = normalizeServiceTimeFormat(service, newTime, selectedDate);
 
       if (onUpdateServiceTime) {
         await onUpdateServiceTime(serviceId, formattedTime);
@@ -640,7 +647,7 @@ const FlightComparisonModal = ({
                             </span>
                           </div>
                           <p className="text-lg md:text-2xl font-bold text-sky-900 dark:text-sky-100 leading-tight">
-                            {comparison.service.pickupTime}
+                            {formatServiceDisplayTime(comparison.service.pickupTime, comparison.service.serviceType)}
                           </p>
                         </div>
 
@@ -652,7 +659,7 @@ const FlightComparisonModal = ({
                           </div>
                           {hasFlightData ? (
                             <p className="text-lg md:text-2xl font-bold text-violet-900 dark:text-violet-50 leading-tight">
-                              {comparison.flightData!.scheduled_in}
+                              {formatServiceDisplayTime(comparison.flightData!.scheduled_in, comparison.service.serviceType)}
                             </p>
                           ) : (
                             <p className="text-sm text-violet-800/80 dark:text-violet-100/80">

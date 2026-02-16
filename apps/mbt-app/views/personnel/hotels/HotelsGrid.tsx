@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Card from "@/components/single/card";
 import { FiSearch } from "react-icons/fi";
-import { MdHotel, MdAdd, MdAirplanemodeActive, MdPlace } from "react-icons/md";
+import { MdHotel, MdAdd, MdAirplanemodeActive, MdPlace, MdLocationOn, MdTag } from "react-icons/md";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { usePlaces } from "@/hooks/usePlaces";
 import PlaceDetail from "./PlaceDetail";
@@ -170,51 +170,58 @@ export default function HotelsGrid() {
 
       {/* Grid */}
       {filteredPlaces.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24 auto-rows-fr">
           {filteredPlaces.map((place: Place) => {
             const Icon = getPlaceIcon(place.kind);
+            const gradientByKind: Record<Place["kind"], string> = {
+              AIRPORT: "from-blue-500/90 via-accent-500 to-accent-700",
+              HOTEL: "from-accent-500/90 via-accent-500 to-accent-700",
+              OTHER: "from-slate-500/90 via-slate-500 to-slate-700",
+            };
 
             return (
               <Card
                 key={place.id}
-                extra="p-6 cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02]"
+                extra="h-full !rounded-md !shadow-[0_18px_45px_rgba(15,23,42,0.14)] dark:!shadow-[0_22px_50px_rgba(0,0,0,0.42)] p-0 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:!shadow-[0_24px_60px_rgba(15,23,42,0.2)] border border-gray-200 dark:border-white/10 overflow-hidden group"
                 onClick={() => handleViewPlace(place)}
               >
-                {/* Icon and Badge */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500">
-                    <Icon className="text-2xl text-black dark:text-white" />
+                <div className="flex h-full flex-col">
+                  <div className={`relative h-36 w-full border-b border-gray-200 dark:border-white/10 bg-gradient-to-br ${gradientByKind[place.kind]}`}>
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Icon className="text-6xl text-white/95" />
+                    </div>
+                    <div className="absolute inset-y-0 left-0 w-1.5 bg-accent-500 group-hover:w-2 transition-all duration-300" />
+                    <span className={`absolute right-3 top-3 px-3 py-1 text-xs font-semibold shadow-sm ${getPlaceColor(place.kind)}`}>
+                      {getPlaceLabel(place.kind)}
+                    </span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPlaceColor(place.kind)}`}>
-                    {getPlaceLabel(place.kind)}
-                  </span>
+
+                  <div className="flex h-full flex-col p-5">
+                    <h3 className="text-lg font-bold text-navy-700 dark:text-white leading-tight">
+                      {place.name}
+                    </h3>
+
+                    <div className="mt-3 space-y-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                        <MdTag className="text-accent-500 dark:text-accent-400" />
+                        {place.iata ? `IATA: ${place.iata}` : "Sin codigo IATA"}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                        <MdPlace className="text-accent-500 dark:text-accent-400" />
+                        {place.zone ? `Zona: ${place.zone.name}` : "Sin zona asignada"}
+                      </p>
+                    </div>
+
+                    <div className="mt-auto pt-4 border-t border-gray-200 dark:border-white/10">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 truncate">
+                        <MdLocationOn className="text-accent-500 dark:text-accent-400" />
+                        {place.latitude != null && place.longitude != null
+                          ? `${place.latitude.toFixed(4)}, ${place.longitude.toFixed(4)}`
+                          : "Sin coordenadas"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-
-                {/* Name */}
-                <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-1">
-                  {place.name}
-                </h3>
-
-                {/* IATA Code */}
-                {place.iata && (
-                  <p className="text-sm font-mono text-gray-600 dark:text-gray-400 mb-2">
-                    IATA: {place.iata}
-                  </p>
-                )}
-
-                {/* Zone */}
-                {place.zone && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Zona: {place.zone.name}
-                  </p>
-                )}
-
-                {/* Coordinates */}
-                {(place.latitude || place.longitude) && (
-                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                    📍 {place.latitude?.toFixed(4)}, {place.longitude?.toFixed(4)}
-                  </p>
-                )}
               </Card>
             );
           })}

@@ -186,12 +186,18 @@ export async function POST(request: NextRequest) {
           }).format(new Date(iso));
         };
 
+        const arrivalIso =
+          pujFlight.scheduled_in ||
+          pujFlight.estimated_in ||
+          pujFlight.actual_in ||
+          undefined;
+
         const result: FlightResult = {
           code,
           departure_airport: pujFlight.origin?.code_iata || undefined,
           arrival_airport: pujFlight.destination?.code_iata || undefined,
           scheduled_out: to12Hour(pujFlight.scheduled_out) || undefined,
-          scheduled_in: to12Hour(pujFlight.scheduled_in) || undefined,
+          scheduled_in: to12Hour(arrivalIso) || undefined,
           status: pujFlight.status
         };
 

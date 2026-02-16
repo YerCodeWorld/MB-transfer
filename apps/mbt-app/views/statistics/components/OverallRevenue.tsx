@@ -1,16 +1,16 @@
-import Card from '../../../single/card';
-import LineChart from '../../../charts/LineChart';
+import Card from "../../../components/single/card";
+import LineChart from "../../../components/charts/LineChart";
 
-import { MdArrowDropUp } from 'react-icons/md';
+import { MdArrowDropUp } from "react-icons/md";
 
 export const lineChartDataOverallRevenue = [
   {
-    name: "Revenue",
-    data: [50, 64, 48, 66, 49, 68],
+    name: "Ingresos",
+    data: [92, 101, 97, 113, 108, 124],
   },
   {
-    name: "Profit",
-    data: [30, 40, 24, 46, 20, 46],
+    name: "Utilidad",
+    data: [44, 52, 47, 59, 56, 63],
   },
 ];
 
@@ -37,7 +37,6 @@ export const lineChartOptionsOverallRevenue = {
     strokeOpacity: 0.9,
     strokeDashArray: 0,
     fillOpacity: 1,
-    // discrete: [],
     shape: "circle",
     radius: 2,
     offsetX: 0,
@@ -56,7 +55,7 @@ export const lineChartOptionsOverallRevenue = {
   },
   xaxis: {
     type: "numeric",
-    categories: ["SEP", "OCT", "NOV", "DEC", "JAN", "FEB"],
+    categories: ["SEP", "OCT", "NOV", "DIC", "ENE", "FEB"],
     labels: {
       style: {
         colors: "#A3AED0",
@@ -90,44 +89,37 @@ export const lineChartOptionsOverallRevenue = {
 function OverallRevenue() {
   const newOptions = {
     ...lineChartOptionsOverallRevenue,
-    colors: ['var(--color-accent-500)', '#39B8FF'],
+    colors: ["var(--color-accent-500)", "#39B8FF"],
   };
 
   return (
-    <Card extra={'h-[381px] pb-8 px-6 pt-6'}>
+    <Card extra={"h-[381px] px-6 pb-8 pt-6"}>
       <div className="flex justify-between px-3 pt-1">
         <div className="flex items-center">
           <div className="flex flex-col">
             <p className="text-[34px] font-bold text-navy-700 dark:text-white">
-              {' '}
-              $37.5K
+              $426.8K
             </p>
-            <p className="text-sm font-medium text-gray-600">
-              Overall Revenue{' '}
-            </p>
+            <p className="text-sm font-medium text-gray-600">Ingresos acumulados</p>
           </div>
           <div className="ml-4 flex items-end pb-2">
             <MdArrowDropUp className="font-medium text-green-500" />
-            <span className="text-sm font-bold text-green-500">+2.45%</span>
+            <span className="text-sm font-bold text-green-500">+6.2%</span>
           </div>
         </div>
 
         <div className="flex items-center justify-center">
           <select className="mb-3 mr-2 flex items-center justify-center text-sm font-bold text-gray-600 hover:cursor-pointer dark:!bg-navy-800 dark:text-white">
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
-            <option value="weekly">Weekly</option>
+            <option value="monthly">Mensual</option>
+            <option value="yearly">Anual</option>
+            <option value="weekly">Semanal</option>
           </select>
         </div>
       </div>
 
-      {/* Charts */}
       <div className="flex h-full w-full flex-row sm:flex-wrap lg:flex-nowrap 2xl:overflow-hidden">
         <div className="h-full w-full">
-          <LineChart
-            chartData={lineChartDataOverallRevenue}
-            chartOptions={newOptions}
-          />
+          <LineChart chartData={lineChartDataOverallRevenue} chartOptions={newOptions} />
         </div>
       </div>
     </Card>

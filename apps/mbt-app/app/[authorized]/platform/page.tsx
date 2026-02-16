@@ -2,22 +2,25 @@
 
 import { useState, useEffect } from "react";
 
+// MY BEAUTIFUL BARS
 import NavBar from "../../../components/single/navbar";
 import Sidebar from "../../../components/single/sidebar";
 import BottomBar from "../../../components/single/bottombar";
 
-import UsersOverview from "../../../components/compound/users";
-import CalendarManager from "../../../components/compound/calendar";
-import Accounting from "../../../components/compound/accounting";
+// MY BEAUTIFUL VIEWS
 // will be collocating here as I place in views
 import ItineraryView from "../../../views/itinerary";
 import PersonnelView from "../../../views/personnel";
+import StatisticsView from "../../../views/statistics";
 
+// A guard to get trash out
 import AuthGuard from "../../../components/guards/AuthGuard";
 
+// MY BEAUTIFUL HOOKS
 import { NavigationProvider, useNavigation } from "../../../contexts/NavigationContext";
 import { BottomBarProvider } from "../../../contexts/BottomBarContext";
 
+// Please get rid of this asap
 import { ServiceProvider } from "../../../contexts/ServiceContext";
 import { ServiceDataProvider } from "../../../contexts/ServiceDataContext";
 
@@ -58,8 +61,7 @@ function PlatformContent() {
         {
           section === 'itinerary' ? <ItineraryView /> :
           section === 'employees' ? <PersonnelView /> :
-          section === 'notes' ? <CalendarManager /> :
-          section === 'stats' ? <Accounting /> :
+          section === 'stats' ? <StatisticsView /> :
           <div className="rounded-[20px] bg-white p-6 shadow-3xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none">
             <h2 className="text-2xl font-bold text-navy-700 dark:text-white">
               Section not implemented

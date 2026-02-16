@@ -1,16 +1,20 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { useNavigation } from '../../contexts/NavigationContext';
-import { useServiceData } from '../../contexts/ServiceDataContext';
-import { useBottomBar } from '../../contexts/BottomBarContext';
-import { ServiceInput } from '../../types/services';
-import { convertTo12Hour, convertTo24Hour } from '../../utils/services';
-import { toDDMMYY } from "../../utils/dateUtils";
+
+import { useNavigation } from '../../../contexts/NavigationContext';
+import { useServiceData } from '../../../contexts/ServiceDataContext';
+import { useBottomBar } from '../../../contexts/BottomBarContext';
+
+import { ServiceInput } from '../../../types/services';
+
+import { convertTo12Hour, convertTo24Hour } from '../../../utils/services';
+import { toDDMMYY } from "../../../utils/dateUtils";
+
 import * as XLSX from 'xlsx';
 
-import ServiceTable from '../shared/ServiceTable';
-import Card from "../single/card";
+import ServiceTable from '../../../components/shared/ServiceTable';
+import Card from "../../../components/single/card";
 
 import { toast } from 'sonner';
 
@@ -67,6 +71,7 @@ const SacbeTransferService = () => {
 	const [step, setStep] = useState<'upload' | 'review'>('upload');
 
 	useEffect(() => {
+		// Hydrate ST tab from persisted services for selected date (same behavior as AT).
 		const persistedSt = getServicesByAlly('Sacbé Transfer');
 		if (!persistedSt.length) {
 			setServices([]);
@@ -89,7 +94,11 @@ const SacbeTransferService = () => {
 			vehicleType: s.vehicleTypeName || s.vehicleType,
 			ally: s.ally?.name || 'Sacbé Transfer',
 			rowIndex: idx + 1,
-			validation: { isValid: true, errors: [], warnings: [] },
+			validation: {
+				isValid: true,
+				errors: [],
+				warnings: [],
+			},
 		}));
 
 		setServices(mapped);

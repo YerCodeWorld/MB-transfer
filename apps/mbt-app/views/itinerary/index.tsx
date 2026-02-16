@@ -18,7 +18,8 @@ import { itineraryTabs } from "../../constants/itineraryTabs";
 
 // Service components
 import AirportTransferService from "./services/AirportTransferService";
-import SacbeTransferService from "../../components/services/SacbeTransferService";
+import ST from "./services/SacbeTransfeService";
+// import SacbeTransferService from "../../components/services/SacbeTransferService";
 import MBTransferService from "../../components/services/MBTransferService";
 import AllServicesView from "../../components/services/AllServicesView";
 
@@ -65,7 +66,7 @@ const Courses = () => {
         component = AirportTransferService;
         break;
       case 'st':
-        component = SacbeTransferService;
+        component = ST;
         break;
       case 'mbt':
         component = MBTransferService;

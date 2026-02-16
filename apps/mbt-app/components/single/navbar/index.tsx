@@ -15,8 +15,7 @@ import { RiMoonFill, RiSunFill } from 'react-icons/ri';
 import { FiAlignJustify } from "react-icons/fi";
 import { IoMdNotificationsOutline, IoMdInformationCircleOutline } from "react-icons/io";
 
-import navbarimage from  "../../../public/airplane1.jpg";
-import avatar from  "../../../public/airplane1.jpg";
+import avatar from  "../../../public/bg-water.jpg";
 
 const Navbar = (props: {
   onOpenSidenav: () => void;
@@ -205,7 +204,7 @@ const Navbar = (props: {
           <div className="flex w-[350px] flex-col gap-2 rounded-[20px] bg-white p-4 shadow-xl shadow-shadow-500 dark:!bg-navy-700 dark:text-white dark:shadow-none">
             <div
               style={{
-                backgroundImage: `url(${navbarimage.src})`,
+                backgroundImage: `url(${avatar.src})`,
                 backgroundRepeat: "no-repeat",
                 backgroundSize: "cover",
               }}

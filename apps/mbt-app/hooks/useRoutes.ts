@@ -72,3 +72,34 @@ export function useDeleteRoute() {
     },
   });
 }
+
+export function useAddRoutePrice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      routeId,
+      data,
+    }: {
+      routeId: string;
+      data: { vehicleId: string; price: string };
+    }) => apiClient.addRoutePrice(routeId, data),
+    onSuccess: (_, { routeId }) => {
+      queryClient.invalidateQueries({ queryKey: routeKeys.detail(routeId) });
+      queryClient.invalidateQueries({ queryKey: routeKeys.lists() });
+    },
+  });
+}
+
+export function useDeleteRoutePrice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ routeId, vehicleId }: { routeId: string; vehicleId: string }) =>
+      apiClient.deleteRoutePrice(routeId, vehicleId),
+    onSuccess: (_, { routeId }) => {
+      queryClient.invalidateQueries({ queryKey: routeKeys.detail(routeId) });
+      queryClient.invalidateQueries({ queryKey: routeKeys.lists() });
+    },
+  });
+}

@@ -24,6 +24,33 @@ export default function RouteDetail({ routeId, onUpdate }: RouteDetailProps) {
   // Using React Query hooks
   const { data: route, isLoading, error, refetch } = useRoute(routeId);
   const deleteRouteMutation = useDeleteRoute();
+  const routePrices = route?.prices || [];
+  const numericPrices = routePrices
+    .map((p: any) => Number(p.price))
+    .filter((v: number) => Number.isFinite(v));
+  const minRoutePrice = numericPrices.length ? Math.min(...numericPrices) : null;
+  const getPriceBand = (value: number) => {
+    if (!Number.isFinite(value)) return "N/A";
+    if (value < 40) return "20-40";
+    if (value < 80) return "40-80";
+    return "80+";
+  };
+
+  const getPriceBandClass = (value: number) => {
+    if (!Number.isFinite(value)) return "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300";
+    if (value < 40) return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+    if (value < 80) return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
+    return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+  };
+
+  const getZonePlacesCount = (zone: any): number => {
+    if (!zone) return 0;
+    if (typeof zone._count?.places === "number") return zone._count.places;
+    if (Array.isArray(zone.places)) return zone.places.length;
+    if (typeof zone.placeCount === "number") return zone.placeCount;
+    if (typeof zone.totalPlaces === "number") return zone.totalPlaces;
+    return 0;
+  };
 
   const handleEdit = () => {
     if (!route) return;
@@ -105,12 +132,13 @@ export default function RouteDetail({ routeId, onUpdate }: RouteDetailProps) {
   return (
     <div className="w-full h-full p-6 pb-24 overflow-y-auto">
       {/* Header Card */}
-      <Card extra="p-6 mb-6">
+      <Card extra="p-6 mb-6 !rounded-md !shadow-[0_14px_35px_rgba(15,23,42,0.14)] border border-gray-200 dark:border-white/10">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             {/* Icon */}
-            <div className="flex items-center justify-center w-20 h-20 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500">
+            <div className="relative flex items-center justify-center w-20 h-20 rounded-md bg-gradient-to-br from-accent-500 to-accent-700 dark:from-accent-400 dark:to-accent-600">
               <MdRoute className="text-4xl text-black dark:text-white" />
+              <div className="absolute -left-2 top-2 h-10 w-1 bg-accent-500" />
             </div>
 
             {/* Name */}
@@ -150,7 +178,7 @@ export default function RouteDetail({ routeId, onUpdate }: RouteDetailProps) {
       {/* Details Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Route Information */}
-        <Card extra="p-6">
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
           <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
             Información de Ruta
           </h3>
@@ -186,28 +214,61 @@ export default function RouteDetail({ routeId, onUpdate }: RouteDetailProps) {
         </Card>
 
         {/* Pricing */}
-        <Card extra="p-6">
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
           <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
-            Precio
+            Precios de Ruta
           </h3>
-          <div className="space-y-3">
-            <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl border border-green-200 dark:border-green-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Precio Base</p>
-              <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                ${route.price.toFixed(2)}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">USD</p>
+          {routePrices.length > 0 ? (
+            <div className="space-y-3">
+              <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl border border-green-200 dark:border-green-700">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Precio mínimo</p>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {minRoutePrice !== null ? `$${minRoutePrice.toFixed(2)}` : 'N/A'}
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">USD</p>
+                  {minRoutePrice !== null && (
+                    <span className={`px-2 py-1 text-[11px] font-semibold ${getPriceBandClass(minRoutePrice)}`}>
+                      {getPriceBand(minRoutePrice)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                {routePrices.map((price: any) => {
+                  const value = Number(price.price);
+                  return (
+                  <div
+                    key={price.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                  >
+                    <span className="text-sm text-navy-700 dark:text-white">
+                      {price.vehicle?.name || 'Vehículo'}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                        {Number.isFinite(value) ? `$${value.toFixed(2)}` : "N/A"}
+                      </span>
+                      <span className={`px-2 py-1 text-[11px] font-semibold ${getPriceBandClass(value)}`}>
+                        {getPriceBand(value)}
+                      </span>
+                    </div>
+                  </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                💡 Este precio se aplica a los servicios que usan esta ruta.
+          ) : (
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                No hay precios configurados para esta ruta.
               </p>
             </div>
-          </div>
+          )}
         </Card>
 
         {/* Statistics */}
-        <Card extra="p-6 md:col-span-2">
+        <Card extra="p-6 md:col-span-2 !rounded-md border border-gray-200 dark:border-white/10">
           <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
             Estadísticas de Uso
           </h3>
@@ -221,13 +282,13 @@ export default function RouteDetail({ routeId, onUpdate }: RouteDetailProps) {
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Lugares en zona origen</p>
               <p className="text-2xl font-bold text-navy-700 dark:text-white">
-                {route.from._count?.places || 0}
+                {getZonePlacesCount(route.from)}
               </p>
             </div>
             <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Lugares en zona destino</p>
               <p className="text-2xl font-bold text-navy-700 dark:text-white">
-                {route.to._count?.places || 0}
+                {getZonePlacesCount(route.to)}
               </p>
             </div>
           </div>
@@ -235,7 +296,7 @@ export default function RouteDetail({ routeId, onUpdate }: RouteDetailProps) {
 
         {/* Zone Details */}
         {(route.from.prices?.length > 0 || route.to.prices?.length > 0) && (
-          <Card extra="p-6 md:col-span-2">
+          <Card extra="p-6 md:col-span-2 !rounded-md border border-gray-200 dark:border-white/10">
             <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
               Precios de Zonas
             </h3>
@@ -247,7 +308,9 @@ export default function RouteDetail({ routeId, onUpdate }: RouteDetailProps) {
                     Precios en {route.from.name}:
                   </p>
                   <div className="space-y-2">
-                    {route.from.prices.map((price: any) => (
+                    {route.from.prices.map((price: any) => {
+                      const value = Number(price.price);
+                      return (
                       <div
                         key={price.id}
                         className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
@@ -255,11 +318,17 @@ export default function RouteDetail({ routeId, onUpdate }: RouteDetailProps) {
                         <span className="text-sm text-navy-700 dark:text-white">
                           {price.vehicle.name}
                         </span>
-                        <span className="text-sm font-bold text-green-600 dark:text-green-400">
-                          ${price.price.toFixed(2)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                            {Number.isFinite(value) ? `$${value.toFixed(2)}` : "N/A"}
+                          </span>
+                          <span className={`px-2 py-1 text-[11px] font-semibold ${getPriceBandClass(value)}`}>
+                            {getPriceBand(value)}
+                          </span>
+                        </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -271,7 +340,9 @@ export default function RouteDetail({ routeId, onUpdate }: RouteDetailProps) {
                     Precios en {route.to.name}:
                   </p>
                   <div className="space-y-2">
-                    {route.to.prices.map((price: any) => (
+                    {route.to.prices.map((price: any) => {
+                      const value = Number(price.price);
+                      return (
                       <div
                         key={price.id}
                         className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
@@ -279,11 +350,17 @@ export default function RouteDetail({ routeId, onUpdate }: RouteDetailProps) {
                         <span className="text-sm text-navy-700 dark:text-white">
                           {price.vehicle.name}
                         </span>
-                        <span className="text-sm font-bold text-green-600 dark:text-green-400">
-                          ${price.price.toFixed(2)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                            {Number.isFinite(value) ? `$${value.toFixed(2)}` : "N/A"}
+                          </span>
+                          <span className={`px-2 py-1 text-[11px] font-semibold ${getPriceBandClass(value)}`}>
+                            {getPriceBand(value)}
+                          </span>
+                        </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

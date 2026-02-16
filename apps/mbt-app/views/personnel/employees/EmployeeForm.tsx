@@ -152,7 +152,7 @@ export default function EmployeeForm({ mode, employeeId, defaultRole, onSuccess 
       setLoading(true);
       setErrors({});
 
-      payload: any = {
+      payload = {
         name: formData.name,
         email: formData.email || undefined,
         identification: formData.identification || undefined,

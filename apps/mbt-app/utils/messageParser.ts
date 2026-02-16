@@ -158,16 +158,22 @@ function parseArrivalFormat(lines: string[], type: 'ARRIVAL' | 'DEPARTURE' | 'TR
 }
 
 export function convertParsedToServiceInput(parsed: ParsedServiceMessage, selectedDate: string): ServiceInput {
-  // Convert time format if needed (from HH:MM to full datetime)
-  let pickupTime: string;
-  
-  // Check if time is just HH:MM format
-  if (/^\d{1,2}:\d{2}$/.test(parsed.time)) {
-    // Combine with the selected date
-    pickupTime = `${selectedDate}T${parsed.time}:00`;
-  } else {
-    // Try to use the parsed time as-is or default to selected date
-    pickupTime = `${selectedDate}T${parsed.time}`;
+  // Normalize to strict ISO UTC expected by API: YYYY-MM-DDTHH:mm:ss.sssZ
+  let pickupTime = `${selectedDate}T00:00:00.000Z`;
+  const raw = String(parsed.time || '').trim();
+
+  if (/^\d{1,2}:\d{2}$/.test(raw)) {
+    const [h, m] = raw.split(':');
+    pickupTime = `${selectedDate}T${h.padStart(2, '0')}:${m}:00.000Z`;
+  } else if (/^\d{1,2}:\d{2}:\d{2}$/.test(raw)) {
+    const [h, m, s] = raw.split(':');
+    pickupTime = `${selectedDate}T${h.padStart(2, '0')}:${m}:${s}.000Z`;
+  } else if (/^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}(?::\d{2})?$/.test(raw)) {
+    const normalized = raw.replace(' ', 'T');
+    const withSeconds = normalized.length === 16 ? `${normalized}:00` : normalized;
+    pickupTime = `${withSeconds}.000Z`;
+  } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(raw)) {
+    pickupTime = raw;
   }
 
   return {

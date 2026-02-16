@@ -24,14 +24,12 @@ interface ServicePreview extends ServiceInput {
 const AirportTransferService = () => {
 	const { popView } = useNavigation();
 
-	const { 
-		setCurrentServices, 
-		getCache, 
-		setCache, 
+	const {
+		createManyServices,
 		exportServices,
-		activeServiceType,
-		setActiveServiceType,
-		selectedDate
+		selectedDate,
+		refetchServices,
+		getServicesByAlly
 	} = useServiceData();
 	const { setActions, clearActions } = useBottomBar();
 
@@ -41,29 +39,32 @@ const AirportTransferService = () => {
 	const [step, setStep] = useState<'fetch' | 'review' | 'confirm'>('review');
 
 	useEffect(() => {
-		if (activeServiceType !== 'at') {
-			setActiveServiceType('at');
-		}
-	}, [activeServiceType, setActiveServiceType]);
-	
-	// will use DB 
-	useEffect(() => {    
-		const cache = getCache('at', selectedDate);
-		if (cache && cache.data.length > 0) {
-			const cachedServicesWithStatus: ServicePreview[] = cache.data.map(service => ({
-				...service,
-				status: 'validated' as const
-			}));
-
-			setServices(cachedServicesWithStatus);
-			setCurrentServices(cache.data);
-			setStep('review');
-		} else {
-			// Reset to fetch step if no cache for this date
+		// Keep AT view aligned with persisted services for the selected date.
+		const persistedAt = getServicesByAlly('Airport Transfer');
+		if (!persistedAt.length) {
 			setServices([]);
-			// setStep('fetch');
+			return;
 		}
-	}, [selectedDate, getCache]);
+
+		const mapped: ServicePreview[] = persistedAt.map((s) => ({
+			id: s.id,
+			code: s.code,
+			kindOf: s.kindOf,
+			clientName: s.clientName,
+			pickupTime: s.pickupTime,
+			flightCode: s.flightCode,
+			pax: s.pax,
+			luggage: s.luggage,
+			pickupLocation: s.pickup?.name || s.pickupLocationName || '',
+			dropoffLocation: s.dropoff?.name || s.dropoffLocationName || '',
+			notes: s.notes,
+			vehicleType: s.vehicleTypeName || s.vehicleType,
+			ally: s.ally?.name || 'Airport Transfer',
+			status: 'validated',
+		}));
+
+		setServices(mapped);
+	}, [getServicesByAlly, selectedDate]);
 
 	// Update bottom bar actions based on current step
 	useEffect(() => {
@@ -121,25 +122,45 @@ const AirportTransferService = () => {
 					label: "Guardar",
 					Icon: HiOutlineSave,
 					variant: "primary",
-					onClick: () => {
-						const serviceInputs: ServiceInput[] = services.map(s => ({
-							id: s.id,
-							code: s.code,
-							kindOf: s.kindOf,
-							clientName: s.clientName,
-							pickupTime: s.pickupTime,
-							flightCode: s.flightCode,
-							pax: s.pax,
-							luggage: s.luggage,
-							pickupLocation: s.pickupLocation,
-							dropoffLocation: s.dropoffLocation,
-							notes: s.notes,
-							vehicleType: s.vehicleType,
-							ally: s.ally
-						}));
-						setCurrentServices(serviceInputs);
-						setCache('at', serviceInputs, selectedDate);
-						toast.success(`${serviceInputs.length} Servicios guardados exitosamente.`);
+					onClick: async () => {
+						setLoading(true);
+						try {
+							const servicesToCreate = services.map(s => ({
+								code: s.code,
+								kindOf: s.kindOf,
+								clientName: s.clientName,
+								pickupTime: s.pickupTime, // Already in ISO format
+								flightCode: s.flightCode,
+								pax: s.pax,
+								luggage: s.luggage,
+								pickupLocation: s.pickupLocation,
+								dropoffLocation: s.dropoffLocation,
+								notes: s.notes,
+								vehicleType: s.vehicleType,
+								ally: s.ally || 'Airport Transfer'
+							}));
+
+							const result = await createManyServices(servicesToCreate);
+
+							if (result.created > 0) {
+								toast.success(`${result.created} servicio(s) guardado(s) exitosamente!`);
+								// Ensure services are refetched before navigating back
+								await refetchServices();
+								if (result.errors.length === 0) {
+									popView(); // Go back if all succeeded
+								}
+							}
+
+							if (result.errors.length > 0) {
+								toast.error(`${result.errors.length} servicio(s) fallaron`);
+								console.error('Service creation errors:', result.errors);
+							}
+						} catch (error) {
+							console.error('Error saving services:', error);
+							toast.error('Error al guardar servicios');
+						} finally {
+							setLoading(false);
+						}
 					}
 				}
 			]);
@@ -148,7 +169,7 @@ const AirportTransferService = () => {
 		return () => {
 			clearActions();
 		};
-	}, [step, loading, services, selectedDate, exportServices, setCache, setCurrentServices, setStep, popView, clearActions, setActions]);
+	}, [step, loading, services, selectedDate, exportServices, popView, clearActions, setActions]);
 
 	const kindOfElement = (kind: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER') => {
 		const base = 'px-2 py-1 rounded-full text-xs font-semibold text-white inline-block';
@@ -213,7 +234,7 @@ const AirportTransferService = () => {
 					code: s.code,
 					kindOf: s.kindOf,
 					clientName: s.clientName,
-					pickupTime: convertIsoStringTo12h(s.pickupTime),
+					pickupTime: s.pickupTime, // Keep ISO format for API
 					flightCode: s.flightCode,
 					pax: s.pax,
 					luggage: s.luggage,
@@ -221,13 +242,12 @@ const AirportTransferService = () => {
 					dropoffLocation: s.dropoffLocation,
 					notes: s.notes,
 					vehicleType: s.vehicleType,
-					ally: s.ally        
+					ally: s.ally
 				};
 
-			});      
+			});
 
-			setCurrentServices(serviceInputs);
-			setServices(serviceInputs);
+			setServices(servicesWithStatus);
 			// setStep('review');
 
 		} catch (error) {
@@ -644,4 +664,3 @@ const AirportTransferService = () => {
 
 
 export default AirportTransferService;
-

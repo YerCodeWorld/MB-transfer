@@ -36,22 +36,27 @@ export function convertTo24Hour(time12: string): string {
 }
 
 
-// Needed for AT API response, where this is how the time is displayed 
+// Convert ISO datetime string to 12h format in Dominican Republic timezone
 export function convertIsoStringTo12h(isoString) {
-  const [datePart, timePart] = isoString.replace("Z", "").split("T");
-  const [year, month, day] = datePart.split("-").map(Number);
+  if (!isoString) return "";
 
-	if (!timePart) return;
+  // Preserve the wall-clock time encoded in the string to avoid unwanted timezone shifts.
+  // Example: "2026-02-16T10:30:00Z" -> "10:30 AM" (not converted to a different zone).
+  const isoTimeMatch = String(isoString).match(/(?:T|\s)(\d{2}):(\d{2})/);
+  if (isoTimeMatch) {
+    const hours24 = Number(isoTimeMatch[1]);
+    const minutes = isoTimeMatch[2];
+    const period = hours24 >= 12 ? "PM" : "AM";
+    const hours12 = hours24 % 12 || 12;
+    return `${hours12}:${minutes} ${period}`;
+  }
 
-  // Take only hours/minutes and ignore timezone shifting
-  const [h, m] = timePart.split(":").map(Number);
-
-  const date = new Date(year, month - 1, day, h, m);
-
+  // Fallback for non-ISO inputs.
+  const date = new Date(isoString);
   return date.toLocaleString("en-US", {
     hour: "numeric",
     minute: "2-digit",
-    hour12: true
+    hour12: true,
   });
 }
 
@@ -152,17 +157,47 @@ export function extractAtServices(bookings: any[], targetDateStr: string): Servi
     return "TRANSFER";
   }
 
+  // Helper to convert time string to ISO datetime in Dominican timezone
+  function parseTimeToIso(timeStr: string, dateStr: string): string {
+    // If already ISO format, return as-is
+    if (timeStr.includes('T') || timeStr.includes('Z')) {
+      return timeStr;
+    }
+
+    // Parse time like "10:30" or "10:30:00"
+    const [hours, minutes] = timeStr.split(':').map(Number);
+
+    // Create date in Dominican Republic timezone
+    // We need to create a UTC date that represents the Dominican time
+    const [year, month, day] = dateStr.split('-').map(Number);
+
+    // Dominican Republic is UTC-4 (no DST)
+    // So if it's 10:30 in DR, it's 14:30 UTC
+    const dominicanDate = new Date(year, month - 1, day, hours, minutes, 0);
+
+    // Get the offset in minutes (should be 240 for UTC-4)
+    const offsetMinutes = 240;
+
+    // Add the offset to convert to UTC
+    const utcDate = new Date(dominicanDate.getTime() + (offsetMinutes * 60 * 1000));
+
+    return utcDate.toISOString();
+  }
+
   return bookings.map(res => {
     const pax = (res.travelers?.adult || 0) + (res.travelers?.children || 0) + (res.travelers?.infant || 0);
+    const flightTime = res.travel?.flight_arrival || res.travel?.pickup_time || "12:00";
+
     return {
       code: res.reservation_no,
       kindOf: determineType(res),
       clientName: `${res.passenger?.name || ""} ${res.passenger?.surname || ""}`.trim(),
       flightCode: res.travel?.flight_number || undefined,
-      pickupTime: res.travel?.flight_arrival || new Date().toISOString(),
+      pickupTime: parseTimeToIso(flightTime, targetDateStr),
       pax,
       pickupLocation: res.pickup_location?.name || "",
       dropoffLocation: res.drop_of_location?.name || "",
+      vehicleType: res.vehicle?.name || res.car_type || undefined,
       ally: "AirportTransfer"
     };
   });

@@ -4,20 +4,22 @@ import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import "../../css/MiniCalendar.css";
 
 import { useServiceData } from "../../../contexts/ServiceDataContext";
-import { toYMDLocal, isSameDay, startOfGrid, parseYMDLocal } from "../../../utils/dateUtils";
+import { isSameDay, startOfGrid, parseYMDLocal } from "../../../utils/dateUtils";
+import { apiClient } from "../../../utils/api";
 
 import "react-calendar/dist/Calendar.css";
 
 type MiniCalendarProps = { width?: string };
 
 const MiniCalendar: React.FC<MiniCalendarProps> = ({ width }) => {
-  const { selectedDate, setSelectedDate, getServicesByDate } = useServiceData();
+  const { selectedDate, setSelectedDate } = useServiceData();
 
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [value, setValue] = useState<Date | null>(parseYMDLocal(selectedDate));
   const [activeStartDate, setActiveStartDate] = useState<Date | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [isLoadingCounts, setIsLoadingCounts] = useState<boolean>(false);
 
   // Global tooltip state
   const [tip, setTip] = useState<{
@@ -38,10 +40,25 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ width }) => {
   };
   const hideTip = () => setTip((t) => ({ ...t, show: false }));
 
+  const toYMDFromDateParts = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const toYMDFromApiDate = (value: unknown): string => {
+    if (typeof value === "string") {
+      const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (match) return match[1];
+    }
+    return toYMDFromDateParts(new Date(value as any));
+  };
+
   const handleDateChange = (val: Date | Date[]) => {
     if (val instanceof Date) {
       setValue(val);            
-      setSelectedDate(toYMDLocal(val));
+      setSelectedDate(toYMDFromDateParts(val));
     }
   };
 
@@ -49,21 +66,48 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ width }) => {
     setValue(parseYMDLocal(selectedDate));
   }, [selectedDate]);
 
-  // Precompute visible 6x7 grid counts
+  // Precompute visible 6x7 grid counts by fetching itineraries for the month
   useEffect(() => {
-    const base =
-      activeStartDate ?? (value instanceof Date ? new Date(value) : new Date());
-    const start = startOfGrid(base);
-    const next: Record<string, number> = {};
-    for (let i = 0; i < 42; i++) {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      const key = toYMDLocal(d);
-      const list = getServicesByDate(key) || [];      
-      next[key] = list.length;
-    }
-    setCounts(next);
-  }, [activeStartDate, value, getServicesByDate]);
+    const fetchServiceCounts = async () => {
+      setIsLoadingCounts(true);
+
+      try {
+        const base = activeStartDate ?? (value instanceof Date ? new Date(value) : new Date());
+        const start = startOfGrid(base);
+
+        // Calculate end date (42 days from start)
+        const end = new Date(start);
+        end.setDate(start.getDate() + 41);
+
+        // Fetch itineraries for this date range
+        const response = await apiClient.getItineraries({
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+        });
+
+        const next: Record<string, number> = {};
+
+        if (response.success && response.data) {
+          // Count services for each itinerary
+          response.data.forEach((itinerary: any) => {
+            // Avoid timezone shifts when backend already returns YYYY-MM-DD.
+            const key = toYMDFromApiDate(itinerary.date);
+            // Count services if they exist in the itinerary
+            next[key] = itinerary.services?.length || itinerary._count?.services || 0;
+          });
+        }
+
+        setCounts(next);
+      } catch (error) {
+        console.error('Error fetching service counts:', error);
+        setCounts({});
+      } finally {
+        setIsLoadingCounts(false);
+      }
+    };
+
+    fetchServiceCounts();
+  }, [activeStartDate, value]);
 
   const badgeClass = (count: number) => {
     if (count >= 25) return "bg-rose-600 text-white";
@@ -76,7 +120,7 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ width }) => {
 
   const tileContent = ({ date, view }: CalendarTileProperties) => {
     if (view !== "month") return null;
-    const key = toYMDLocal(date);
+    const key = toYMDFromDateParts(date);
     const count = counts[key] ?? 0;    
     if (!count) return null;
 
@@ -99,7 +143,7 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ width }) => {
 
   const tileClassName = ({ date, view }: CalendarTileProperties) => {
     if (view !== "month") return undefined;
-    const key = toYMDLocal(date);
+    const key = toYMDFromDateParts(date);
     const today = new Date();
     const selected = value instanceof Date ? value : null;
     const hasServices = (counts[key] ?? 0) > 0;
@@ -160,7 +204,7 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ width }) => {
         formatDay={(locale, date) => `${date.getDate()}`}
         tileAriaLabel={({ date, view }) =>
             view === "month"
-              ? `${date.toDateString()}, ${(counts[toYMDLocal(date)] ?? 0)} services`
+              ? `${date.toDateString()}, ${(counts[toYMDFromDateParts(date)] ?? 0)} services`
               : undefined
         }
       />
@@ -177,4 +221,3 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ width }) => {
 };
 
 export default MiniCalendar;
-

@@ -5,14 +5,14 @@ import { BsCalendarCheck } from "react-icons/bs";
 
 // Needs to be attached with DB's data
 const Schedule = () => {
-	const { selectedDate, getServicesByDate } = useServiceData();
+	const { selectedDate, services, getServicesByAlly } = useServiceData();
 	const { pushView } = useNavigation();
 
 	// Get services for selected date and calculate statistics
-	const allServices = getServicesByDate(selectedDate);
-	const atServices = getServicesByDate(selectedDate, 'at');
-	const stServices = getServicesByDate(selectedDate, 'st');
-	const mbtServices = getServicesByDate(selectedDate, 'mbt');
+	const allServices = services;
+	const atServices = getServicesByAlly('Airport Transfer');
+	const stServices = getServicesByAlly('Sacbé Transfer');
+	const mbtServices = getServicesByAlly('MB Transfer');
 
 	const stats = {
 		total: allServices.length,

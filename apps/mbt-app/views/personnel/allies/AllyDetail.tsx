@@ -2,215 +2,214 @@
 
 import React from "react";
 import Card from "@/components/single/card";
-import { MdEdit, MdBusiness, MdPerson, MdEmail, MdPhone, MdLocationOn, MdBadge, MdDirectionsCar, MdCircle, MdCalendarToday } from "react-icons/md";
+import {
+  MdEdit,
+  MdDelete,
+  MdBusiness,
+  MdLanguage,
+  MdEmail,
+  MdPhone,
+  MdStickyNote2,
+  MdAssignment,
+} from "react-icons/md";
 import { useNavigation } from "@/contexts/NavigationContext";
-import { getAllyById } from "./mockAllies";
-import { Ally, AllyType, AllyStatus } from "@/types/personnel";
+import { useAlly, useDeleteAlly } from "@/hooks/useAllies";
 import AllyForm from "./AllyForm";
+import { toast } from "sonner";
 
 interface AllyDetailProps {
   allyId: string;
+  onUpdate?: () => void;
 }
 
-export default function AllyDetail({ allyId }: AllyDetailProps) {
-  const { pushView } = useNavigation();
-  const ally = getAllyById(allyId);
+export default function AllyDetail({ allyId, onUpdate }: AllyDetailProps) {
+  const { pushView, popView } = useNavigation();
+  const { data: ally, isLoading, error, refetch } = useAlly(allyId);
+  const deleteAllyMutation = useDeleteAlly();
 
-  if (!ally) {
+  const handleEdit = () => {
+    if (!ally) return;
+
+    pushView({
+      id: `ally-edit-${ally.id}`,
+      label: `Editar ${ally.name}`,
+      component: AllyForm,
+      data: {
+        mode: "edit",
+        allyId: ally.id,
+        onSuccess: () => {
+          refetch();
+          onUpdate?.();
+        },
+      },
+    });
+  };
+
+  const handleDelete = async () => {
+    if (!ally) return;
+
+    if ((ally.services?.length || 0) > 0) {
+      toast.error("No se puede eliminar un aliado con servicios asociados");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `¿Esta seguro que desea eliminar el aliado \"${ally.name}\"? Esta accion no se puede deshacer.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteAllyMutation.mutateAsync(ally.id);
+      toast.success("Aliado eliminado exitosamente");
+      onUpdate?.();
+      popView();
+    } catch (err: any) {
+      console.error("Error deleting ally:", err);
+      toast.error(err.message || "Error al eliminar aliado");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Cargando aliado...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !ally) {
     return (
       <div className="flex items-center justify-center h-full p-8">
         <Card extra="p-8">
-          <h2 className="text-xl font-bold text-red-600 dark:text-red-400">
-            Aliado no encontrado
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            No se pudo encontrar el aliado con ID: {allyId}
+          <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">Error</h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            {error instanceof Error ? error.message : "Aliado no encontrado"}
           </p>
+          <button
+            onClick={() => popView()}
+            className="mt-4 rounded-xl bg-gray-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-600"
+          >
+            Volver
+          </button>
         </Card>
       </div>
     );
   }
 
-  const handleEdit = () => {
-    pushView({
-      id: `ally-edit-${ally.id}`,
-      label: `Editar ${ally.name}`,
-      component: AllyForm,
-      data: { mode: 'edit', allyId: ally.id },
-    });
-  };
-
-  const typeLabels: Record<AllyType, string> = {
-    COMPANY: 'Empresa',
-    INDIVIDUAL: 'Individual',
-  };
-
-  const statusLabels: Record<AllyStatus, string> = {
-    ACTIVE: 'Activo',
-    INACTIVE: 'Inactivo',
-    SUSPENDED: 'Suspendido',
-  };
-
-  const statusColors: Record<AllyStatus, string> = {
-    ACTIVE: 'text-green-600 dark:text-green-400',
-    INACTIVE: 'text-gray-600 dark:text-gray-400',
-    SUSPENDED: 'text-orange-600 dark:text-orange-400',
-  };
-
   return (
-    <div className="w-full h-full pb-24 px-4">
-      {/* Header Card */}
-      <Card extra="p-6 mb-6">
+    <div className="w-full h-full p-6 pb-24 overflow-y-auto">
+      <Card extra="p-6 mb-6 !rounded-md !shadow-[0_14px_35px_rgba(15,23,42,0.14)] border border-gray-200 dark:border-white/10">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            {/* Icon */}
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500">
-              {ally.type === 'COMPANY' ? (
-                <MdBusiness className="text-4xl text-white" />
-              ) : (
-                <MdPerson className="text-4xl text-white" />
-              )}
+            <div className="relative flex items-center justify-center w-20 h-20 rounded-md bg-gradient-to-br from-accent-500 to-accent-700 dark:from-accent-400 dark:to-accent-600">
+              <MdBusiness className="text-4xl text-black dark:text-white" />
+              <div className="absolute -left-2 top-2 h-10 w-1 bg-accent-500" />
             </div>
-
-            {/* Name and Type */}
             <div>
-              <h1 className="text-2xl font-bold text-navy-700 dark:text-white">
-                {ally.name}
-              </h1>
-              <p className="text-base text-gray-600 dark:text-gray-400 mt-1">
-                {typeLabels[ally.type]}
+              <h1 className="text-2xl font-bold text-navy-700 dark:text-white mb-1">{ally.name}</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Creado el {new Date(ally.createdAt).toLocaleDateString("es-DO")}
               </p>
-              <div className="flex items-center gap-2 mt-2">
-                <MdCircle className={`text-sm ${statusColors[ally.status]}`} />
-                <span className={`text-sm font-medium ${statusColors[ally.status]}`}>
-                  {statusLabels[ally.status]}
-                </span>
-              </div>
             </div>
           </div>
 
-          {/* Edit Button */}
-          <button
-            onClick={handleEdit}
-            className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:hover:bg-brand-300"
-          >
-            <MdEdit />
-            Editar
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleEdit}
+              className="flex items-center gap-2 rounded-xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600"
+            >
+              <MdEdit />
+              Editar
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleteAllyMutation.isPending}
+              className="flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50"
+            >
+              <MdDelete />
+              {deleteAllyMutation.isPending ? "Eliminando..." : "Eliminar"}
+            </button>
+          </div>
         </div>
       </Card>
 
-      {/* Information Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Contact Information */}
-        <Card extra="p-6">
-          <h2 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
-            Información de Contacto
-          </h2>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <MdEmail className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Correo Electrónico</p>
-                <p className="font-medium text-navy-700 dark:text-white">
-                  {ally.email || <span className="text-gray-400 italic">No registrado</span>}
-                </p>
-              </div>
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
+          <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">Informacion de Contacto</h3>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <MdLanguage className="text-base" />
+              <span>{ally.website || "Sin sitio web"}</span>
             </div>
-
-            <div className="flex items-start gap-3">
-              <MdPhone className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Teléfono</p>
-                <p className="font-medium text-navy-700 dark:text-white">
-                  {ally.phone || <span className="text-gray-400 italic">No registrado</span>}
-                </p>
-              </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <MdEmail className="text-base" />
+              <span>{ally.email || "Sin correo"}</span>
             </div>
-
-            <div className="flex items-start gap-3">
-              <MdLocationOn className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Dirección</p>
-                <p className="font-medium text-navy-700 dark:text-white">
-                  {ally.address || <span className="text-gray-400 italic">No registrada</span>}
-                </p>
-              </div>
-            </div>
-
-            {ally.type === 'COMPANY' && ally.contactPerson && (
-              <div className="flex items-start gap-3">
-                <MdPerson className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Persona de Contacto</p>
-                  <p className="font-medium text-navy-700 dark:text-white">{ally.contactPerson}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* Business Information */}
-        <Card extra="p-6">
-          <h2 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
-            Información del Negocio
-          </h2>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <MdBadge className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {ally.type === 'COMPANY' ? 'RNC' : 'Identificación'}
-                </p>
-                <p className="font-medium text-navy-700 dark:text-white">
-                  {ally.identification || <span className="text-gray-400 italic">No registrada</span>}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <MdDirectionsCar className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Vehículos Registrados</p>
-                <p className="font-medium text-navy-700 dark:text-white">{ally.vehiclesCount}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <MdCircle className={`text-xl ${statusColors[ally.status]} mt-1`} />
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Estado</p>
-                <p className={`font-medium ${statusColors[ally.status]}`}>
-                  {statusLabels[ally.status]}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <MdCalendarToday className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Fecha de Registro</p>
-                <p className="font-medium text-navy-700 dark:text-white">
-                  {new Date(ally.createdAt).toLocaleDateString('es-DO', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
-              </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <MdPhone className="text-base" />
+              <span>{ally.contactNumber || "Sin telefono"}</span>
             </div>
           </div>
         </Card>
 
-        {/* Notes */}
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
+          <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">Resumen</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <MdAssignment className="text-base" />
+                Servicios registrados
+              </div>
+              <span className="text-lg font-bold text-brand-500 dark:text-brand-400">
+                {ally.services?.length || 0}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <MdStickyNote2 className="text-base" />
+                Observaciones
+              </div>
+              <span className="text-lg font-bold text-navy-700 dark:text-white">
+                {ally.observations?.length || 0}
+              </span>
+            </div>
+          </div>
+        </Card>
+
         {ally.notes && (
-          <Card extra="p-6 md:col-span-2">
-            <h2 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
-              Notas
-            </h2>
-            <p className="text-navy-700 dark:text-white whitespace-pre-wrap">
-              {ally.notes}
-            </p>
+          <Card extra="p-6 md:col-span-2 !rounded-md border border-gray-200 dark:border-white/10">
+            <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">Notas</h3>
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{ally.notes}</p>
+          </Card>
+        )}
+
+        {ally.services?.length > 0 && (
+          <Card extra="p-6 md:col-span-2 !rounded-md border border-gray-200 dark:border-white/10">
+            <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">Ultimos Servicios</h3>
+            <div className="space-y-2">
+              {ally.services.slice(0, 8).map((service: any) => (
+                <div
+                  key={service.id}
+                  className="rounded-lg border border-gray-200 dark:border-white/10 p-3 bg-gray-50 dark:bg-navy-800"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-navy-700 dark:text-white">
+                      {service.code || "Sin codigo"} - {service.clientName}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {new Date(service.pickupTime).toLocaleDateString("es-DO")}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    {service.pickup?.name || "Origen"} {"->"} {service.dropoff?.name || "Destino"}
+                  </p>
+                </div>
+              ))}
+            </div>
           </Card>
         )}
       </div>

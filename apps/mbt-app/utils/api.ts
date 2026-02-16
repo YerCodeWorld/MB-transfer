@@ -227,6 +227,259 @@ class APIClient {
 	async deleteRoute(id: string) {
 		return this.delete<any>(`/api/v1/routes/${id}`);
 	}
+
+	async addRoutePrice(routeId: string, data: { vehicleId: string; price: string }) {
+		return this.post<any>(`/api/v1/routes/${routeId}/prices`, data);
+	}
+
+	async deleteRoutePrice(routeId: string, vehicleId: string) {
+		return this.delete<any>(`/api/v1/routes/${routeId}/prices/${vehicleId}`);
+	}
+
+	// Allies endpoints
+	async getAllies(params?: { limit?: number; offset?: number }) {
+		const query = new URLSearchParams();
+		if (params?.limit) query.set('limit', params.limit.toString());
+		if (params?.offset) query.set('offset', params.offset.toString());
+
+		const queryString = query.toString();
+		return this.get<any[]>(`/api/v1/allies${queryString ? `?${queryString}` : ''}`);
+	}
+
+	async getAlly(id: string) {
+		return this.get<any>(`/api/v1/allies/${id}`);
+	}
+
+	async createAlly(data: {
+		name: string;
+		website?: string;
+		logo?: string;
+		email?: string;
+		contactNumber?: string;
+		notes?: string;
+	}) {
+		return this.post<any>('/api/v1/allies', data);
+	}
+
+	async updateAlly(
+		id: string,
+		data: {
+			name?: string;
+			website?: string;
+			logo?: string;
+			email?: string;
+			contactNumber?: string;
+			notes?: string;
+		}
+	) {
+		return this.put<any>(`/api/v1/allies/${id}`, data);
+	}
+
+	async deleteAlly(id: string) {
+		return this.delete<any>(`/api/v1/allies/${id}`);
+	}
+
+	// Services endpoints
+	async getServices(params?: {
+		date?: string;
+		itineraryId?: string;
+		state?: string;
+		kindOf?: string;
+		allyId?: string;
+		driverId?: string;
+		vehicleId?: string;
+		limit?: number;
+		offset?: number;
+	}) {
+		const query = new URLSearchParams();
+		if (params?.date) query.set('date', params.date);
+		if (params?.itineraryId) query.set('itineraryId', params.itineraryId);
+		if (params?.state) query.set('state', params.state);
+		if (params?.kindOf) query.set('kindOf', params.kindOf);
+		if (params?.allyId) query.set('allyId', params.allyId);
+		if (params?.driverId) query.set('driverId', params.driverId);
+		if (params?.vehicleId) query.set('vehicleId', params.vehicleId);
+		if (params?.limit) query.set('limit', params.limit.toString());
+		if (params?.offset) query.set('offset', params.offset.toString());
+
+		const queryString = query.toString();
+		return this.get<any[]>(`/api/v1/services${queryString ? `?${queryString}` : ''}`);
+	}
+
+	async getService(id: string) {
+		return this.get<any>(`/api/v1/services/${id}`);
+	}
+
+	async createService(data: {
+		code?: string;
+		kindOf: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER';
+		clientName: string;
+		pickupTime: string;
+		flightCode?: string;
+		pax: number;
+		luggage?: number;
+		pickupId: string;
+		dropoffId: string;
+		driverId?: string;
+		vehicleId?: string;
+		allyId?: string;
+		routeId?: string;
+		price?: number;
+		currency?: 'DOP' | 'USD' | 'EUR';
+		flierUrl?: string;
+		state?: 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELED' | 'REFUNDED';
+	}) {
+		return this.post<any>('/api/v1/services', data);
+	}
+
+	async updateService(id: string, data: {
+		code?: string;
+		kindOf?: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER';
+		clientName?: string;
+		pickupTime?: string;
+		flightCode?: string;
+		pax?: number;
+		luggage?: number;
+		pickupId?: string;
+		dropoffId?: string;
+		driverId?: string;
+		vehicleId?: string;
+		allyId?: string;
+		routeId?: string;
+		price?: number;
+		currency?: 'DOP' | 'USD' | 'EUR';
+		flierUrl?: string;
+		state?: 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELED' | 'REFUNDED';
+	}) {
+		return this.put<any>(`/api/v1/services/${id}`, data);
+	}
+
+	async deleteService(id: string) {
+		return this.delete<any>(`/api/v1/services/${id}`);
+	}
+
+	// Itineraries endpoints
+	async getItineraries(params?: {
+		startDate?: string;
+		endDate?: string;
+		sorted?: boolean;
+		flightsChecked?: boolean;
+		limit?: number;
+		offset?: number;
+	}) {
+		const query = new URLSearchParams();
+		if (params?.startDate) query.set('startDate', params.startDate);
+		if (params?.endDate) query.set('endDate', params.endDate);
+		if (params?.sorted !== undefined) query.set('sorted', params.sorted.toString());
+		if (params?.flightsChecked !== undefined) query.set('flightsChecked', params.flightsChecked.toString());
+		if (params?.limit) query.set('limit', params.limit.toString());
+		if (params?.offset) query.set('offset', params.offset.toString());
+
+		const queryString = query.toString();
+		return this.get<any[]>(`/api/v1/itineraries${queryString ? `?${queryString}` : ''}`);
+	}
+
+	async getItinerary(id: string) {
+		return this.get<any>(`/api/v1/itineraries/${id}`);
+	}
+
+	async getItineraryByDate(date: string) {
+		return this.get<any>(`/api/v1/itineraries/by-date/${date}`);
+	}
+
+	async createItinerary(data: {
+		date: string;
+		sorted?: boolean;
+		flightsChecked?: boolean;
+		timesConverted?: boolean;
+		edgeCases?: boolean;
+	}) {
+		return this.post<any>('/api/v1/itineraries', data);
+	}
+
+	async updateItinerary(id: string, data: {
+		sorted?: boolean;
+		flightsChecked?: boolean;
+		timesConverted?: boolean;
+		edgeCases?: boolean;
+	}) {
+		return this.put<any>(`/api/v1/itineraries/${id}`, data);
+	}
+
+	async deleteItinerary(id: string) {
+		return this.delete<any>(`/api/v1/itineraries/${id}`);
+	}
+
+	// Notes endpoints
+	async getNotes(params?: {
+		serviceId?: string;
+		itineraryId?: string;
+		date?: string;
+		tag?: string;
+		vehicleId?: string;
+		employeeId?: string;
+		limit?: number;
+		offset?: number;
+	}) {
+		const query = new URLSearchParams();
+		if (params?.serviceId) query.set('serviceId', params.serviceId);
+		if (params?.itineraryId) query.set('itineraryId', params.itineraryId);
+		if (params?.date) query.set('date', params.date);
+		if (params?.tag) query.set('tag', params.tag);
+		if (params?.vehicleId) query.set('vehicleId', params.vehicleId);
+		if (params?.employeeId) query.set('employeeId', params.employeeId);
+		if (params?.limit) query.set('limit', params.limit.toString());
+		if (params?.offset) query.set('offset', params.offset.toString());
+
+		const queryString = query.toString();
+		return this.get<any[]>(`/api/v1/notes${queryString ? `?${queryString}` : ''}`);
+	}
+
+	async getNote(id: string) {
+		return this.get<any>(`/api/v1/notes/${id}`);
+	}
+
+	async createNote(data: {
+		title: string;
+		caption?: string;
+		content: string;
+		tag?: 'EMERGENCY' | 'IMPORTANT' | 'REMINDER' | 'MINOR' | 'IDEA' | 'SUGGESTION';
+		serviceId?: string;
+		itineraryId?: string;
+		vehicleId?: string;
+		placeId?: string;
+		routeId?: string;
+		allyId?: string;
+		budgetId?: string;
+		employeeId?: string;
+		transactionId?: string;
+		spendingId?: string;
+	}) {
+		return this.post<any>('/api/v1/notes', data);
+	}
+
+	async updateNote(id: string, data: {
+		title?: string;
+		caption?: string;
+		content?: string;
+		tag?: 'EMERGENCY' | 'IMPORTANT' | 'REMINDER' | 'MINOR' | 'IDEA' | 'SUGGESTION';
+		serviceId?: string;
+		itineraryId?: string;
+		vehicleId?: string;
+		placeId?: string;
+		routeId?: string;
+		allyId?: string;
+		budgetId?: string;
+		employeeId?: string;
+		transactionId?: string;
+		spendingId?: string;
+	}) {
+		return this.put<any>(`/api/v1/notes/${id}`, data);
+	}
+
+	async deleteNote(id: string) {
+		return this.delete<any>(`/api/v1/notes/${id}`);
+	}
 }
 
 export const apiClient = new APIClient(API_BASE_URL);

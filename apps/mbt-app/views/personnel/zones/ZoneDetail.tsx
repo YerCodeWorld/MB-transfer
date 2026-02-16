@@ -27,6 +27,19 @@ export default function ZoneDetail({ zoneId, onUpdate }: ZoneDetailProps) {
   const { data: zone, isLoading, error, refetch } = useZone(zoneId);
   const deleteZoneMutation = useDeleteZone();
   const deleteZonePriceMutation = useDeleteZonePrice();
+  const getPriceBand = (value: number) => {
+    if (!Number.isFinite(value)) return "N/A";
+    if (value < 40) return "20-40";
+    if (value < 80) return "40-80";
+    return "80+";
+  };
+
+  const getPriceBandClass = (value: number) => {
+    if (!Number.isFinite(value)) return "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300";
+    if (value < 40) return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+    if (value < 80) return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
+    return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+  };
 
   const handleEdit = () => {
     if (!zone) return;
@@ -129,12 +142,13 @@ export default function ZoneDetail({ zoneId, onUpdate }: ZoneDetailProps) {
   return (
     <div className="w-full h-full p-6 pb-24 overflow-y-auto">
       {/* Header Card */}
-      <Card extra="p-6 mb-6">
+      <Card extra="p-6 mb-6 !rounded-md !shadow-[0_14px_35px_rgba(15,23,42,0.14)] border border-gray-200 dark:border-white/10">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             {/* Icon */}
-            <div className="flex items-center justify-center w-20 h-20 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500">
+            <div className="relative flex items-center justify-center w-20 h-20 rounded-md bg-gradient-to-br from-accent-500 to-accent-700 dark:from-accent-400 dark:to-accent-600">
               <MdMap className="text-4xl text-black dark:text-white" />
+              <div className="absolute -left-2 top-2 h-10 w-1 bg-accent-500" />
             </div>
 
             {/* Name and Description */}
@@ -174,7 +188,7 @@ export default function ZoneDetail({ zoneId, onUpdate }: ZoneDetailProps) {
       {/* Details Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Statistics */}
-        <Card extra="p-6">
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
           <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
             Estadísticas
           </h3>
@@ -202,7 +216,7 @@ export default function ZoneDetail({ zoneId, onUpdate }: ZoneDetailProps) {
 
         {/* Places in Zone */}
         {zone.places && zone.places.length > 0 && (
-          <Card extra="p-6">
+          <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
             <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
               Lugares en esta Zona
             </h3>
@@ -230,7 +244,7 @@ export default function ZoneDetail({ zoneId, onUpdate }: ZoneDetailProps) {
         )}
 
         {/* Vehicle Prices */}
-        <Card extra="p-6 md:col-span-2">
+        <Card extra="p-6 md:col-span-2 !rounded-md border border-gray-200 dark:border-white/10">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-navy-700 dark:text-white flex items-center gap-2">
               <MdDirectionsCar className="text-brand-500" />
@@ -247,7 +261,9 @@ export default function ZoneDetail({ zoneId, onUpdate }: ZoneDetailProps) {
 
           {zone.prices && zone.prices.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {zone.prices.map((price: any) => (
+              {zone.prices.map((price: any) => {
+                const value = Number(price.price);
+                return (
                 <div
                   key={price.id}
                   className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
@@ -270,13 +286,19 @@ export default function ZoneDetail({ zoneId, onUpdate }: ZoneDetailProps) {
                     </button>
                   </div>
                   <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      ${price.price.toFixed(2)}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">USD</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {Number.isFinite(value) ? `$${value.toFixed(2)}` : "N/A"}
+                      </p>
+                      <span className={`px-2 py-1 text-[11px] font-semibold ${getPriceBandClass(value)}`}>
+                        {getPriceBand(value)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">USD</p>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8">
@@ -296,7 +318,7 @@ export default function ZoneDetail({ zoneId, onUpdate }: ZoneDetailProps) {
 
         {/* Routes */}
         {(zone.routesFrom?.length > 0 || zone.routesTo?.length > 0) && (
-          <Card extra="p-6 md:col-span-2">
+          <Card extra="p-6 md:col-span-2 !rounded-md border border-gray-200 dark:border-white/10">
             <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
               Rutas Conectadas
             </h3>
@@ -315,7 +337,7 @@ export default function ZoneDetail({ zoneId, onUpdate }: ZoneDetailProps) {
                         → {route.to.name}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        ${route.price.toFixed(2)} USD
+                        Ver precios en la pestaña de rutas
                       </p>
                     </div>
                   ))}
@@ -335,7 +357,7 @@ export default function ZoneDetail({ zoneId, onUpdate }: ZoneDetailProps) {
                         {route.from.name} →
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        ${route.price.toFixed(2)} USD
+                        Ver precios en la pestaña de rutas
                       </p>
                     </div>
                   ))}

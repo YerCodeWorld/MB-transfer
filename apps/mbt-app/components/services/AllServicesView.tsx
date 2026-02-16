@@ -6,7 +6,7 @@ import { useNavigation } from '../../contexts/NavigationContext';
 import { useServiceData } from '../../contexts/ServiceDataContext';
 import { useBottomBar } from '../../contexts/BottomBarContext';
 import { ServiceInput } from '../../types/services';
-import { convertIsoStringTo12h, convertTo12Hour, convertTo24Hour, time12ToMinutes, mockDrivers, mockVehicles } from '../../utils/services';
+import { convertIsoStringTo12h, convertTo24Hour, time12ToMinutes, mockDrivers, mockVehicles } from '../../utils/services';
 
 import { 
   SERVICE_TYPE_OPTIONS, 
@@ -44,7 +44,7 @@ interface ExtendedService extends ServiceInput {
 
 const AllServicesView = () => {
   const { popView } = useNavigation();
-  const { getCache, setCache, selectedDate } = useServiceData();
+  const { services: dbServices, selectedDate, createService, updateService, deleteService, refetchServices } = useServiceData();
   const { setActions, clearActions } = useBottomBar();
   
   // Tab state
@@ -92,54 +92,74 @@ const AllServicesView = () => {
     };
   }, [editingService]);
   
-  // Load all services from cache for the selected date
-  const loadServicesFromCache = () => {
-    const atCache = getCache('at', selectedDate);
-    const stCache = getCache('st', selectedDate);
-    const mbtCache = getCache('mbt', selectedDate);
-    
-    const services: ExtendedService[] = [];
-    
-    // Add AT services with deep cloning
-    if (atCache && atCache.data) {
-      services.push(...atCache.data.map(service => ({
-        ...JSON.parse(JSON.stringify(service)), // Deep clone to prevent reference issues
-        serviceType: 'at' as const,
-        status: (service as any).status || 'pending' as ServiceStatus,
-        assignedDriver: (service as any).assignedDriver,
-        assignedVehicle: (service as any).assignedVehicle
-      })));
-    }
-    
-    // Add ST services with deep cloning
-    if (stCache && stCache.data) {
-      services.push(...stCache.data.map(service => ({
-        ...JSON.parse(JSON.stringify(service)), // Deep clone to prevent reference issues
-        serviceType: 'st' as const,
-        status: (service as any).status || 'pending' as ServiceStatus,
-        assignedDriver: (service as any).assignedDriver,
-        assignedVehicle: (service as any).assignedVehicle
-      })));
-    }
-    
-    // Add MBT services with deep cloning
-    if (mbtCache && mbtCache.data) {
-      services.push(...mbtCache.data.map(service => ({
-        ...JSON.parse(JSON.stringify(service)), // Deep clone to prevent reference issues
-        serviceType: 'mbt' as const,
-        status: (service as any).status || 'pending' as ServiceStatus,
-        assignedDriver: (service as any).assignedDriver,
-        assignedVehicle: (service as any).assignedVehicle
-      })));
-    }
-    
-    setAllServices(services);
+  // Map ally name to service type code
+  const mapAllyToServiceType = (allyName?: string, code?: string): 'at' | 'st' | 'mbt' => {
+    const normalizedAlly = (allyName || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '');
+    const normalizedCode = (code || '').trim().toUpperCase();
+
+    if (normalizedAlly.includes('airporttransfer') || normalizedAlly.includes('airport')) return 'at';
+    if (normalizedAlly.includes('sacbe')) return 'st';
+    if (normalizedAlly.includes('mbtransfer') || normalizedAlly === 'mbt') return 'mbt';
+
+    if (normalizedCode.startsWith('AT')) return 'at';
+    if (normalizedCode.startsWith('ST')) return 'st';
+    if (normalizedCode.startsWith('MBT')) return 'mbt';
+
+    return 'mbt';
   };
 
-  // Load services from cache when selectedDate changes
+  const isIsoLikeDateTime = (value?: string) =>
+    typeof value === 'string' && (/^\d{4}-\d{2}-\d{2}[T\s]/.test(value) || value.endsWith('Z'));
+
+  const toTimeInputValue = (value?: string): string => {
+    const input = String(value || '').trim();
+    if (!input) return '';
+
+    if (isIsoLikeDateTime(input)) {
+      const isoMatch = input.match(/[T\s](\d{2}):(\d{2})/);
+      if (isoMatch) return `${isoMatch[1]}:${isoMatch[2]}`;
+    }
+
+    if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(input)) {
+      return convertTo24Hour(input);
+    }
+
+    if (/^\d{1,2}:\d{2}$/.test(input)) {
+      const [h, m] = input.split(':');
+      return `${h.padStart(2, '0')}:${m}`;
+    }
+
+    return '';
+  };
+
+  // Map database services to ExtendedService format
   useEffect(() => {
-    loadServicesFromCache();
-  }, [selectedDate]);
+    const extended: ExtendedService[] = dbServices.map(service => ({
+      id: service.id,
+      code: service.code,
+      kindOf: service.kindOf,
+      clientName: service.clientName,
+      pickupTime: service.pickupTime,
+      flightCode: service.flightCode,
+      pax: service.pax,
+      luggage: service.luggage,
+      pickupLocation: service.pickup?.name || service.pickupLocationName || '',
+      dropoffLocation: service.dropoff?.name || service.dropoffLocationName || '',
+      notes: service.notes,
+      vehicleType: service.vehicleTypeName || service.vehicleType,
+      ally: service.ally?.name,
+      serviceType: mapAllyToServiceType(service.ally?.name, service.code),
+      status: (service.state?.toLowerCase() as ServiceStatus) || 'pending',
+      assignedDriver: service.driver?.name,
+      assignedVehicle: service.vehicle?.name
+    }));
+
+    setAllServices(extended);
+  }, [dbServices]);
   
   // Apply filters and sorting
   useEffect(() => {
@@ -178,10 +198,17 @@ const AllServicesView = () => {
       let aValue: any, bValue: any;
       
       switch (sortField) {
-        case 'time':                  
-          aValue = time12ToMinutes(a.pickupTime);
-          bValue = time12ToMinutes(b.pickupTime);                    
+        case 'time': {
+          const aTime = isIsoLikeDateTime(a.pickupTime)
+            ? convertIsoStringTo12h(a.pickupTime)
+            : a.pickupTime;
+          const bTime = isIsoLikeDateTime(b.pickupTime)
+            ? convertIsoStringTo12h(b.pickupTime)
+            : b.pickupTime;
+          aValue = time12ToMinutes(aTime);
+          bValue = time12ToMinutes(bTime);
           break;
+        }
         case 'client':
           aValue = a.clientName.toLowerCase();
           bValue = b.clientName.toLowerCase();
@@ -270,31 +297,62 @@ const AllServicesView = () => {
     setShowPDFGenerator(true);
   };
   
-  const handleAddService = (newService: ServiceInput & { serviceType?: 'at' | 'st' | 'mbt' }) => {
-    // Determine which cache to use based on serviceType
+  const handleAddService = async (newService: ServiceInput & { serviceType?: 'at' | 'st' | 'mbt' }) => {
+    // Determine ally based on serviceType
     const cacheType = newService.serviceType || 'mbt';
-    const cache = getCache(cacheType, selectedDate);
-    const existingData = cache?.data || [];
-    
+    const companyName = getCompanyName(cacheType);
+
     // Clean the service to remove serviceType before saving
     const { serviceType: _, ...cleanService } = newService;
-    
-    // Add the new service to the existing data
-    const updatedData = [...existingData, cleanService];
-    
-    // Save to the appropriate cache
-    setCache(cacheType, updatedData, selectedDate);
-    
-    // Reload all services to reflect the new addition
-    loadServicesFromCache();
-    
-    setShowAddService(false);
-    
-    const companyName = getCompanyName(cacheType);
-    toast.success('Servicio Agregado', {
-      className: "bg-card text-card-foreground border-border",
-      description: `Servicio añadido a ${companyName}`
+
+    const normalizePickupTimeToIso = (raw: string): string => {
+      const input = String(raw || '').trim();
+      if (!input) return `${selectedDate}T00:00:00.000Z`;
+
+      // Already strict ISO UTC
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(input)) return input;
+
+      // ISO-ish without timezone
+      if (/^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}(?::\d{2})?$/.test(input)) {
+        const normalized = input.replace(' ', 'T');
+        const withSeconds = normalized.length === 16 ? `${normalized}:00` : normalized;
+        return `${withSeconds}.000Z`;
+      }
+
+      // 12h clock
+      if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(input)) {
+        const hhmm = convertTo24Hour(input);
+        return `${selectedDate}T${hhmm}:00.000Z`;
+      }
+
+      // 24h clock
+      if (/^\d{1,2}:\d{2}$/.test(input)) {
+        const [h, m] = input.split(':');
+        return `${selectedDate}T${h.padStart(2, '0')}:${m}:00.000Z`;
+      }
+
+      return `${selectedDate}T00:00:00.000Z`;
+    };
+
+    // Create service via API
+    const result = await createService({
+      ...cleanService,
+      pickupTime: normalizePickupTimeToIso(cleanService.pickupTime),
+      ally: companyName
     });
+
+    if (result.success) {
+      setShowAddService(false);
+      toast.success('Servicio Agregado', {
+        className: "bg-card text-card-foreground border-border",
+        description: `Servicio añadido a ${companyName}`
+      });
+    } else {
+      toast.error('Error al agregar servicio', {
+        description: result.error
+      });
+    }
+    return result.success;
   };
   
   const handleSort = (field: SortField) => {
@@ -310,15 +368,9 @@ const AllServicesView = () => {
     setEditingService(service);
   };
   
-  const handleSaveEdit = (updatedService: ExtendedService) => {
-    // Check if company has changed
-    const originalService = allServices.find(s => s.code === updatedService.code);
-    const oldCacheKey = originalService?.serviceType;
-    const newCacheKey = updatedService.serviceType;
-    
-    // Create a clean ServiceInput object for cache storage
-    const cleanServiceForCache = {
-      id: updatedService.id,
+  const handleSaveEdit = async (updatedService: ExtendedService) => {
+    // Prepare data for API update
+    const updateData = {
       code: updatedService.code,
       kindOf: updatedService.kindOf,
       clientName: updatedService.clientName,
@@ -330,130 +382,82 @@ const AllServicesView = () => {
       dropoffLocation: updatedService.dropoffLocation,
       notes: updatedService.notes,
       vehicleType: updatedService.vehicleType,
-      ally: updatedService.ally,
-      assignedDriver: updatedService.assignedDriver,
-      assignedVehicle: updatedService.assignedVehicle,
-      pdfData: updatedService.pdfData,
-      // Include status for persistence (extends ServiceInput)
-      status: updatedService.status
-    } as ServiceInput & { status: ServiceStatus };
+      ally: getCompanyName(updatedService.serviceType),
+      state: updatedService.status.toUpperCase(),
+      // TODO: Map assignedDriver and assignedVehicle to driver/vehicle IDs
+    };
 
-    if (oldCacheKey && oldCacheKey !== newCacheKey) {
-      // Company has changed - move service to new cache
-      
-      // Remove from old cache
-      const oldCache = getCache(oldCacheKey, selectedDate);
-      if (oldCache) {
-        const oldUpdatedData = oldCache.data.filter(s => s.code !== updatedService.code);
-        setCache(oldCacheKey, oldUpdatedData, selectedDate);
-      }
-      
-      // Add to new cache
-      const newCache = getCache(newCacheKey, selectedDate);
-      const newCacheData = newCache?.data || [];
-      const newUpdatedData = [...newCacheData, cleanServiceForCache];
-      setCache(newCacheKey, newUpdatedData, selectedDate);
-      
-      toast.success('Servicio Movido', {
-        className: "bg-card text-card-foreground border-border",
-        description: `Servicio movido a ${getCompanyName(newCacheKey)}`
-      });
-    } else {
-      // Company hasn't changed - update in same cache
-      const cache = getCache(newCacheKey, selectedDate);
-      
-      if (cache) {
-        // Update only the specific service in the cache with deep cloning to prevent reference issues
-        const updatedData = cache.data.map(s => 
-          s.code === updatedService.code ? cleanServiceForCache : JSON.parse(JSON.stringify(s))
-        );
-        
-        setCache(newCacheKey, updatedData, selectedDate);
-        
+    const result = await updateService(updatedService.id, updateData);
+
+    if (result.success) {
+      const originalService = allServices.find(s => s.id === updatedService.id);
+      if (originalService?.serviceType !== updatedService.serviceType) {
+        toast.success('Servicio Movido', {
+          className: "bg-card text-card-foreground border-border",
+          description: `Servicio movido a ${getCompanyName(updatedService.serviceType)}`
+        });
+      } else {
         toast.success('Servicio Actualizado');
       }
-    }
-    
-    // Reload all services from cache to ensure consistency
-    loadServicesFromCache();
-    setEditingService(null);
-  };
-
-  const handlePDFServiceUpdate = (serviceCode: string, updatedService: ExtendedService) => {
-    // Update service in the appropriate cache including pdfData
-    const cacheKey = updatedService.serviceType;
-    const cache = getCache(cacheKey, selectedDate);
-    
-    if (cache) {
-      // Create a clean ServiceInput object for cache storage with pdfData included
-      const cleanServiceForCache = {
-        id: updatedService.id,
-        code: updatedService.code,
-        kindOf: updatedService.kindOf,
-        clientName: updatedService.clientName,
-        pickupTime: updatedService.pickupTime,
-        flightCode: updatedService.flightCode,
-        pax: updatedService.pax,
-        luggage: updatedService.luggage,
-        pickupLocation: updatedService.pickupLocation,
-        dropoffLocation: updatedService.dropoffLocation,
-        notes: updatedService.notes,
-        vehicleType: updatedService.vehicleType,
-        ally: updatedService.ally,
-        assignedDriver: updatedService.assignedDriver,
-        assignedVehicle: updatedService.assignedVehicle,
-        pdfData: updatedService.pdfData, // Include pdfData for PDF customization
-        // Include status for persistence (extends ServiceInput)
-        status: updatedService.status
-      } as ServiceInput & { status: ServiceStatus };
-      
-      // Update only the specific service in the cache with deep cloning to prevent reference issues
-      const updatedData = cache.data.map(s => 
-        s.code === serviceCode ? cleanServiceForCache : JSON.parse(JSON.stringify(s))
-      );
-      
-      setCache(cacheKey, updatedData, selectedDate);
-      
-      // Reload all services from cache to ensure consistency
-      loadServicesFromCache();
+      setEditingService(null);
+    } else {
+      toast.error('Error al actualizar servicio', {
+        description: result.error
+      });
     }
   };
 
-  const handleFlightTimeUpdate = (serviceId: string, formattedTime: string) => {
+  const handlePDFServiceUpdate = async (serviceCode: string, updatedService: ExtendedService) => {
+    // Update service via API
+    const updateData = {
+      code: updatedService.code,
+      kindOf: updatedService.kindOf,
+      clientName: updatedService.clientName,
+      pickupTime: updatedService.pickupTime,
+      flightCode: updatedService.flightCode,
+      pax: updatedService.pax,
+      luggage: updatedService.luggage,
+      pickupLocation: updatedService.pickupLocation,
+      dropoffLocation: updatedService.dropoffLocation,
+      notes: updatedService.notes,
+      vehicleType: updatedService.vehicleType,
+      ally: getCompanyName(updatedService.serviceType),
+      state: updatedService.status.toUpperCase(),
+      // TODO: Store pdfData if needed
+    };
+
+    await updateService(updatedService.id, updateData);
+  };
+
+  const handleFlightTimeUpdate = async (serviceId: string, formattedTime: string) => {
     const targetService = allServices.find((service) => service.id === serviceId);
 
     if (!targetService) {
-      throw new Error('Service not found for cache update');
+      toast.error('Servicio no encontrado');
+      return;
     }
 
-    const cacheKey = targetService.serviceType;
-    const cache = getCache(cacheKey, selectedDate);
+    const result = await updateService(serviceId, {
+      pickupTime: formattedTime,
+    });
 
-    if (!cache) {
-      throw new Error(`No cache found for service type ${cacheKey}`);
+    if (result.success) {
+      toast.success('Hora de servicio actualizada', {
+        className: 'bg-card text-card-foreground border-border',
+        description: `Servicio ${targetService.code} actualizado`,
+      });
+    } else {
+      toast.error('Error al actualizar hora', {
+        description: result.error
+      });
     }
-
-    const updatedData = cache.data.map((service) => {
-      if (service.id !== serviceId) {
-        return JSON.parse(JSON.stringify(service));
-      }
-
-      return {
-        ...JSON.parse(JSON.stringify(service)),
-        pickupTime: formattedTime,
-      };
-    });
-
-    setCache(cacheKey, updatedData, selectedDate);
-    loadServicesFromCache();
-
-    toast.success('Hora de servicio actualizada', {
-      className: 'bg-card text-card-foreground border-border',
-      description: `Servicio ${targetService.code} actualizado en caché local`,
-    });
   };
 
   const exportToCSV = () => {
+    console.log('🔍 DEBUG: exportToCSV called');
+    console.log('🔍 filteredServices length:', filteredServices.length);
+    console.log('🔍 First service:', filteredServices[0]);
+
     // CSV Headers
     const headers = [
       'Empresa',
@@ -469,36 +473,43 @@ const AllServicesView = () => {
       'Conductor',
       'Estado',
       'Notas'
-    ];
+    ].map(h => `"${h}"`); // Wrap headers in quotes
 
     // Convert services to CSV rows
     const csvRows = filteredServices.map(service => {
       const company = getCompanyName(service.serviceType);
-      const time = service.serviceType === 'at' 
-        ? convertIsoStringTo12h(service.pickupTime)  
+      const time = isIsoLikeDateTime(service.pickupTime)
+        ? convertIsoStringTo12h(service.pickupTime)
         : service.pickupTime;
-      
-      return [
+
+      const row = [
         company,
         service.code || '',
-        service.clientName,
-        service.kindOf,
-        time,
-        service.pax.toString(),
-        service.pickupLocation,
-        service.dropoffLocation,
+        service.clientName || '',
+        service.kindOf || '',
+        time || '',
+        service.pax?.toString() || '0',
+        service.pickupLocation || '',
+        service.dropoffLocation || '',
         service.flightCode || '',
         service.assignedVehicle || '',
         service.assignedDriver || '',
         service.status || 'pending',
         service.notes || ''
-      ].map(field => `"${field.replace(/"/g, '""')}"`) // Escape quotes
+      ].map(field => `"${String(field).replace(/"/g, '""')}"`); // Escape quotes, ensure string
+
+      return row;
     });
 
+    console.log('🔍 CSV rows count:', csvRows.length);
+    console.log('🔍 First CSV row:', csvRows[0]);
+
     // Combine headers and rows
-    const csvContent = [headers, ...csvRows]
-      .map(row => row.join(','))
+    const csvContent = [headers.join(','), ...csvRows.map(row => row.join(','))]
       .join('\n');
+
+    console.log('🔍 CSV content length:', csvContent.length);
+    console.log('🔍 CSV preview:', csvContent.substring(0, 200));
 
     // Create and download file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -528,22 +539,18 @@ const AllServicesView = () => {
     }
   };
   
-  const handleRemoveService = (service: ExtendedService) => {
+  const handleRemoveService = async (service: ExtendedService) => {
     if (confirm(`Are you sure you want to remove service ${service.code}?`)) {
-      // Remove from appropriate cache
-      const cacheKey = service.serviceType;
-      const cache = getCache(cacheKey, selectedDate);
-      
-      if (cache) {
-        // Filter out the specific service and ensure deep cloning for remaining services
-        const updatedData = cache.data
-          .filter(s => s.code !== service.code)
-          .map(s => JSON.parse(JSON.stringify(s)));
-        
-        setCache(cacheKey, updatedData, selectedDate);
-        
-        // Reload all services from cache to ensure consistency
-        loadServicesFromCache();
+      const result = await deleteService(service.id);
+
+      if (result.success) {
+        toast.success('Servicio eliminado', {
+          description: `${service.code} ha sido eliminado`
+        });
+      } else {
+        toast.error('Error al eliminar servicio', {
+          description: result.error
+        });
       }
     }
   };
@@ -776,7 +783,7 @@ const AllServicesView = () => {
                     </td>
                     <td className="px-4 py-4">
                       <span className="text-sm text-gray-900 dark:text-gray-100">
-                        {service.serviceType === 'at' && service.pickupTime?.includes('T')
+                        {isIsoLikeDateTime(service.pickupTime)
                           ? convertIsoStringTo12h(service.pickupTime)
                           : service.pickupTime}
                       </span>
@@ -943,9 +950,12 @@ const AllServicesView = () => {
                 </label>
                 <input 
                   type="time"
-                  value={convertTo24Hour(editingService.pickupTime)}
+                  value={toTimeInputValue(editingService.pickupTime)}
                   onChange={(e) => {{                                        
-                    setEditingService({ ...editingService, pickupTime: convertTo12Hour(e.target.value) });
+                    setEditingService({
+                      ...editingService,
+                      pickupTime: `${selectedDate}T${e.target.value}:00.000Z`
+                    });
                   }}}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
                 />

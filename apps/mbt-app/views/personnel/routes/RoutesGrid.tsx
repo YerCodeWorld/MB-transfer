@@ -22,7 +22,11 @@ interface Route {
     name: string;
     description?: string;
   };
-  price: number;
+  prices?: Array<{
+    id: string;
+    vehicleId: string;
+    price: number | string;
+  }>;
   _count?: {
     services: number;
   };
@@ -36,6 +40,15 @@ export default function RoutesGrid() {
 
   // Using React Query hook
   const { data: routes = [], isLoading, error, refetch } = useRoutes({ limit: 100 });
+
+  const getMinRoutePrice = (route: Route): number | null => {
+    if (!route.prices || route.prices.length === 0) return null;
+    const numericPrices = route.prices
+      .map((p) => Number(p.price))
+      .filter((price) => Number.isFinite(price));
+    if (numericPrices.length === 0) return null;
+    return Math.min(...numericPrices);
+  };
 
   const filteredRoutes = routes.filter((route: Route) =>
     route.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -125,7 +138,7 @@ export default function RoutesGrid() {
               No hay rutas registradas
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Comienza creando rutas entre zonas con precios en USD
+              Comienza creando rutas entre zonas con precios por vehículo
             </p>
             <button
               onClick={handleCreateRoute}
@@ -152,6 +165,7 @@ export default function RoutesGrid() {
       {filteredRoutes.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
           {filteredRoutes.map((route: Route) => {
+            const minPrice = getMinRoutePrice(route);
             return (
               <Card
                 key={route.id}
@@ -190,8 +204,20 @@ export default function RoutesGrid() {
                   <span className="text-sm text-gray-600 dark:text-gray-400">
                     Precio
                   </span>
-                  <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                    ${route.price.toFixed(2)} USD
+                  {minPrice !== null ? (
+                    <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                      Desde ${minPrice.toFixed(2)} USD
+                    </span>
+                  ) : (
+                    <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                      Sin precios
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {route.prices?.length || 0} precio(s) configurado(s)
                   </span>
                 </div>
 

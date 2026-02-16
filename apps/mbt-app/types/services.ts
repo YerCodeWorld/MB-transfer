@@ -1,6 +1,6 @@
 export interface Service {
   id: string;
-  code: string;
+  code?: string;
   kindOf: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER';
   state: 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELED' | 'REFUNDED';
   clientName: string;
@@ -8,44 +8,106 @@ export interface Service {
   flightCode?: string;
   pax: number;
   luggage?: number;
+  driverId?: string;
+  vehicleId?: string;
+  allyId?: string;
+  pickupId: string;
+  dropoffId: string;
+  routeId?: string;
   driver?: {
     id: string;
     name: string;
+    photo?: string;
   };
   vehicle?: {
     id: string;
     name: string;
-    capacity: number;
+    paxCapacity: number;
+    luggageCapacity: number;
+    state?: string;
   };
   ally?: {
     id: string;
     name: string;
+    website?: string;
+    logo?: string;
   };
   pickup: {
     id: string;
     name: string;
     kind: 'AIRPORT' | 'HOTEL' | 'OTHER';
+    latitude?: number;
+    longitude?: number;
+    zone?: {
+      id: string;
+      name: string;
+    };
   };
   dropoff: {
     id: string;
     name: string;
     kind: 'AIRPORT' | 'HOTEL' | 'OTHER';
+    latitude?: number;
+    longitude?: number;
+    zone?: {
+      id: string;
+      name: string;
+    };
   };
   route?: {
     id: string;
     name: string;
-    price: number;
-    currency: 'DOP' | 'USD' | 'EUR';
+    fromId: string;
+    toId: string;
   };
   price?: number;
   currency?: 'DOP' | 'USD' | 'EUR';
   flierUrl?: string;
+  itineraryId?: string;
+  itinerary?: {
+    id: string;
+    date: string;
+  };
   notes?: Array<{
     id: string;
     title: string;
     content: string;
+    caption?: string;
     tag?: 'EMERGENCY' | 'IMPORTANT' | 'REMINDER' | 'MINOR' | 'IDEA' | 'SUGGESTION';
   }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Itinerary {
+  id: string;
+  date: string;
+  sorted: boolean;
+  flightsChecked: boolean;
+  timesConverted: boolean;
+  edgeCases: boolean;
+  services?: Service[];
+  notes?: Note[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Note {
+  id: string;
+  title: string;
+  caption?: string;
+  content: string;
+  tag?: 'EMERGENCY' | 'IMPORTANT' | 'REMINDER' | 'MINOR' | 'IDEA' | 'SUGGESTION';
+  serviceId?: string;
+  itineraryId?: string;
+  vehicleId?: string;
+  placeId?: string;
+  routeId?: string;
+  allyId?: string;
+  budgetId?: string;
+  employeeId?: string;
+  transactionId?: string;
+  spendingId?: string;
   createdAt: string;
   updatedAt: string;
 }

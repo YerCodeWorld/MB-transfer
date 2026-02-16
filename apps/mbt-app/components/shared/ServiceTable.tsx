@@ -128,6 +128,9 @@ const ServiceTable = ({
     onServiceSelect?.(service);
   };
 
+  const isIsoLikeDateTime = (value?: string) =>
+    typeof value === "string" && (/^\d{4}-\d{2}-\d{2}[T\s]/.test(value) || value.endsWith("Z"));
+
   return (
     <>
       <div className="w-full space-y-3">
@@ -258,7 +261,7 @@ const ServiceTable = ({
                           className={`inline-flex items-center gap-2 px-2 py-1 rounded-full ${theme.accentSoft} text-[0.75rem] font-semibold text-gray-800 dark:text-gray-100`}
                         >
                           <FaClock className="text-[0.8rem]" />
-                          {company === "AT" && s.pickupTime?.includes("T")
+                          {isIsoLikeDateTime(s.pickupTime)
                             ? convertIsoStringTo12h(s.pickupTime)
                             : s.pickupTime}
                         </span>

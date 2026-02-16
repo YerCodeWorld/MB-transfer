@@ -1,38 +1,34 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react';
-import { ServiceInput } from '../types/services';
-import { toYMDLocal, getTodayLocal } from '../utils/dateUtils';
-
-export interface ServiceCache {
-  data: ServiceInput[];
-  timestamp: number;
-  date: string;
-  serviceType: 'at' | 'mbt' | 'st';
-}
+import { Service } from '../types/services';
+import { apiClient } from '../utils/api';
+import { getTodayLocal } from '../utils/dateUtils';
 
 interface ServiceDataContextType {
-  // Current active services
-  currentServices: ServiceInput[];
-  setCurrentServices: (services: ServiceInput[]) => void;
-  
+  // Current services for selected date
+  services: Service[];
+  isLoading: boolean;
+  error: string | null;
+
   // Date management
   selectedDate: string;
   setSelectedDate: (date: string) => void;
-  getServicesByDate: (date: string, serviceType?: 'at' | 'mbt' | 'st') => ServiceInput[];
-  
-  // Cache management
-  getCache: (serviceType: 'at' | 'mbt' | 'st', date?: string) => ServiceCache | null;
-  setCache: (serviceType: 'at' | 'mbt' | 'st', data: ServiceInput[], date?: string) => void;
-  clearCache: (serviceType?: 'at' | 'mbt' | 'st') => void;
-  
-  // Export functionality
-  exportServices: (services: ServiceInput[], format: 'json' | 'csv') => void;
-  
-  // Global state utilities
-  hasActiveData: () => boolean;
-  getActiveServiceType: () => 'at' | 'mbt' | 'st' | null;
-  setActiveServiceType: (type: 'at' | 'mbt' | 'st' | null) => void;
+
+  // CRUD operations
+  createService: (data: any) => Promise<{ success: boolean; data?: Service; error?: string }>;
+  createManyServices: (services: any[]) => Promise<{ success: boolean; created: number; errors: string[] }>;
+  updateService: (id: string, data: any) => Promise<{ success: boolean; data?: Service; error?: string }>;
+  deleteService: (id: string) => Promise<{ success: boolean; error?: string }>;
+
+  // Refetch services
+  refetchServices: () => Promise<void>;
+
+  // Filter services by ally
+  getServicesByAlly: (allyName: string) => Service[];
+
+  // Export functionality (kept for compatibility)
+  exportServices: (services: any[], format: 'json' | 'csv') => void;
 }
 
 const ServiceDataContext = createContext<ServiceDataContextType | undefined>(undefined);
@@ -42,147 +38,184 @@ interface ServiceDataProviderProps {
 }
 
 export const ServiceDataProvider = ({ children }: ServiceDataProviderProps) => {
-  const [currentServices, setCurrentServicesState] = useState<ServiceInput[]>([]);
-  const [activeServiceType, setActiveServiceTypeState] = useState<'at' | 'mbt' | 'st' | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDateState] = useState<string>(() => {
     return getTodayLocal();
   });
 
-  // Load initial data from localStorage
-  useEffect(() => {
-    const savedServices = localStorage.getItem('mbt_current_services');
-    const savedType = localStorage.getItem('mbt_active_service_type');
-    const savedDate = localStorage.getItem('mbt_selected_date');
-    
-    if (savedServices) {
-      try {
-        setCurrentServicesState(JSON.parse(savedServices));
-      } catch (error) {
-        console.error('Error loading services from localStorage:', error);
+  // Fetch services when date changes
+  const fetchServices = useCallback(async (date: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.getServices({ date });
+
+      if (response.success && response.data) {
+        setServices(response.data);
+      } else {
+        setServices([]);
       }
-    }
-    
-    if (savedType) {
-      setActiveServiceTypeState(savedType as 'at' | 'mbt' | 'st');
-    }
-    
-    if (savedDate) {
-      setSelectedDateState(savedDate);
+    } catch (err: any) {
+      console.error('Error fetching services:', err);
+      setError(err.message || 'Failed to fetch services');
+      setServices([]);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  const setCurrentServices = (services: ServiceInput[]) => {
-    setCurrentServicesState(services);
-    localStorage.setItem('mbt_current_services', JSON.stringify(services));
-  };
+  // Fetch services when selectedDate changes
+  useEffect(() => {
+    fetchServices(selectedDate);
+  }, [selectedDate, fetchServices]);
 
-  const setActiveServiceType = useCallback(
-    (type: 'at' | 'mbt' | 'st' | null) => {
-      setActiveServiceTypeState(prev => {
-        // avoid re-setting the same value
-        if (prev === type) return prev;
-
-        if (type) {
-          localStorage.setItem('mbt_active_service_type', type);
-        } else {
-          localStorage.removeItem('mbt_active_service_type');
-        }
-
-        return type;
-      });
-    },
-    []
-  );
-
-  const setSelectedDate = (date: string) => {
+  const setSelectedDate = useCallback((date: string) => {
     setSelectedDateState(date);
-    localStorage.setItem('mbt_selected_date', date);
-  };
+  }, []);
 
-  const getServicesByDate = (date: string, serviceType?: 'at' | 'mbt' | 'st'): ServiceInput[] => {
-    const serviceTypes = serviceType ? [serviceType] : ['at', 'st', 'mbt'] as const;
-    const services: ServiceInput[] = [];
-    
-    serviceTypes.forEach(type => {
-      const cache = getCache(type, date);
-      if (cache && cache.data) {
-        services.push(...cache.data);
+  const refetchServices = useCallback(async () => {
+    await fetchServices(selectedDate);
+  }, [selectedDate, fetchServices]);
+
+  const createService = useCallback(async (data: any): Promise<{ success: boolean; data?: Service; error?: string }> => {
+    try {
+      const response = await apiClient.createService(data);
+
+      if (response.success && response.data) {
+        // Refetch services to get updated list
+        await refetchServices();
+        return { success: true, data: response.data };
       }
-    });
-    
-    return services;
-  };
 
-  const getCache = useCallback( 
-    (serviceType: 'at' | 'mbt' | 'st', date?: string): ServiceCache | null => {
-      const key = date ? 
-        `mbt_cache_${serviceType}_${date}` : 
-        `mbt_cache_${serviceType}_latest`;
-      
-      const cached = localStorage.getItem(key);
-      if (cached) {
-        try {
-          return JSON.parse(cached);
-        } catch (error) {
-          console.error('Error parsing cached data:', error);
-        }
+      return { success: false, error: response.message || 'Failed to create service' };
+    } catch (err: any) {
+      console.error('Error creating service:', err);
+
+      // Handle specific warning cases (missing places/vehicles)
+      if (err.message && (err.message.includes('does not exist') || err.message.includes('Please add it'))) {
+        return { success: false, error: err.message };
       }
-      return null;
-    }, 
-    []
-  );
 
-  const setCache = (serviceType: 'at' | 'mbt' | 'st', data: ServiceInput[], date?: string) => {
-    const today = getTodayLocal();
-    const cacheDate = date || today;
-    
-    // Deep clone the data to prevent reference issues
-    const clonedData = JSON.parse(JSON.stringify(data));
-    
-    const cache: ServiceCache = {
-      data: clonedData,
-      timestamp: Date.now(),
-      date: cacheDate,
-      serviceType
-    };
-
-    // Save with date-specific key
-    const dateKey = `mbt_cache_${serviceType}_${cacheDate}`;
-    localStorage.setItem(dateKey, JSON.stringify(cache));
-    
-    // Also save as latest
-    const latestKey = `mbt_cache_${serviceType}_latest`;
-    localStorage.setItem(latestKey, JSON.stringify(cache));
-  };
-
-  const clearCache = (serviceType?: 'at' | 'mbt' | 'st') => {
-    if (serviceType) {
-      // Clear specific service type cache
-      const keys = Object.keys(localStorage).filter(key => 
-        key.startsWith(`mbt_cache_${serviceType}`)
-      );
-      keys.forEach(key => localStorage.removeItem(key));
-    } else {
-      // Clear all service cache
-      const keys = Object.keys(localStorage).filter(key => 
-        key.startsWith('mbt_cache_')
-      );
-      keys.forEach(key => localStorage.removeItem(key));
+      return { success: false, error: err.message || 'Failed to create service' };
     }
+  }, [refetchServices]);
+
+  const createManyServices = useCallback(async (servicesToCreate: any[]): Promise<{ success: boolean; created: number; errors: string[] }> => {
+    const errors: string[] = [];
+    let created = 0;
+
+    for (const service of servicesToCreate) {
+      try {
+        const response = await apiClient.createService(service);
+
+        if (response.success) {
+          created++;
+        } else {
+          errors.push(`${service.clientName || 'Unknown'}: ${response.message || 'Failed'}`);
+        }
+      } catch (err: any) {
+        errors.push(`${service.clientName || 'Unknown'}: ${err.message || 'Failed'}`);
+      }
+    }
+
+    // Refetch services after bulk creation
+    await refetchServices();
+
+    return {
+      success: created > 0,
+      created,
+      errors
+    };
+  }, [refetchServices]);
+
+  const updateService = useCallback(async (id: string, data: any): Promise<{ success: boolean; data?: Service; error?: string }> => {
+    try {
+      const response = await apiClient.updateService(id, data);
+
+      if (response.success && response.data) {
+        // Refetch services to get updated list
+        await refetchServices();
+        return { success: true, data: response.data };
+      }
+
+      return { success: false, error: response.message || 'Failed to update service' };
+    } catch (err: any) {
+      console.error('Error updating service:', err);
+      return { success: false, error: err.message || 'Failed to update service' };
+    }
+  }, [refetchServices]);
+
+  const deleteService = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await apiClient.deleteService(id);
+
+      if (response.success) {
+        // Refetch services to get updated list
+        await refetchServices();
+        return { success: true };
+      }
+
+      return { success: false, error: response.message || 'Failed to delete service' };
+    } catch (err: any) {
+      console.error('Error deleting service:', err);
+      return { success: false, error: err.message || 'Failed to delete service' };
+    }
+  }, [refetchServices]);
+
+  const normalize = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '');
+
+  const getBucketFromAlly = (allyName?: string, code?: string): 'airport' | 'sacbe' | 'mbt' => {
+    const normalizedAlly = normalize(allyName || '');
+    const normalizedCode = (code || '').trim().toUpperCase();
+
+    if (normalizedAlly.includes('airporttransfer') || normalizedAlly.includes('airport')) return 'airport';
+    if (normalizedAlly.includes('sacbe')) return 'sacbe';
+    if (normalizedAlly.includes('mbtransfer') || normalizedAlly === 'mbt') return 'mbt';
+
+    if (normalizedCode.startsWith('AT')) return 'airport';
+    if (normalizedCode.startsWith('ST')) return 'sacbe';
+    if (normalizedCode.startsWith('MBT')) return 'mbt';
+
+    return 'mbt';
   };
 
-  const exportServices = (services: ServiceInput[], format: 'json' | 'csv') => {
-    if (services.length === 0) {
+  const getServicesByAlly = useCallback((allyName: string): Service[] => {
+    if (allyName === 'All') {
+      return services;
+    }
+
+    const targetBucket = getBucketFromAlly(allyName);
+    return services.filter((service) => {
+      const serviceBucket = getBucketFromAlly(service.ally?.name, service.code);
+      return serviceBucket === targetBucket;
+    });
+  }, [services]);
+
+  const exportServices = useCallback((servicesToExport: Service[], format: 'json' | 'csv') => {
+    console.log('🔍 DEBUG: exportServices called');
+    console.log('🔍 Services to export:', servicesToExport.length);
+    console.log('🔍 First service:', servicesToExport[0]);
+    console.log('🔍 Format:', format);
+
+    if (servicesToExport.length === 0) {
       alert('No services to export');
       return;
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    
+
     if (format === 'json') {
-      const dataStr = JSON.stringify(services, null, 2);
+      const dataStr = JSON.stringify(servicesToExport, null, 2);
       const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-      
+
       const exportFileDefaultName = `services_export_${timestamp}.json`;
       const linkElement = document.createElement('a');
       linkElement.setAttribute('href', dataUri);
@@ -190,54 +223,66 @@ export const ServiceDataProvider = ({ children }: ServiceDataProviderProps) => {
       linkElement.click();
     } else if (format === 'csv') {
       // Convert to CSV
-      const headers = ['Code', 'Client Name', 'Service Type', 'Pickup Time', 'Flight Code', 'PAX', 'Pickup Location', 'Dropoff Location', 'Notes'];
-      
+      const headers = ['Code', 'Client Name', 'Service Type', 'Pickup Time', 'Flight Code', 'PAX', 'Pickup Location', 'Dropoff Location', 'Ally', 'Driver', 'Vehicle', 'State'];
+
       const csvContent = [
         headers.join(','),
-        ...services.map(service => [
-          `"${service.code || ''}"`,
-          `"${service.clientName || ''}"`,
-          `"${service.kindOf || ''}"`,
-          `"${service.pickupTime || ''}"`,
-          `"${service.flightCode || ''}"`,
-          service.pax || 0,
-          `"${service.pickupLocation || ''}"`,
-          `"${service.dropoffLocation || ''}"`,
-          `"${service.notes || ''}"`,
-        ].join(','))
+        ...servicesToExport.map((service, index) => {
+          // Handle both flat fields (from mapped services) and nested fields (from DB)
+          const pickupLoc = service.pickupLocation || service.pickup?.name || service.pickupLocationName || '';
+          const dropoffLoc = service.dropoffLocation || service.dropoff?.name || service.dropoffLocationName || '';
+          const vehicleName = service.vehicleType || service.vehicle?.name || service.vehicleTypeName || '';
+          const allyName = service.ally || service.ally?.name || '';
+
+          if (index === 0) {
+            console.log('🔍 First CSV row data:');
+            console.log('  pickupLoc:', pickupLoc);
+            console.log('  dropoffLoc:', dropoffLoc);
+            console.log('  vehicleName:', vehicleName);
+          }
+
+          return [
+            `"${service.code || ''}"`,
+            `"${service.clientName || ''}"`,
+            `"${service.kindOf || ''}"`,
+            `"${service.pickupTime || ''}"`,
+            `"${service.flightCode || ''}"`,
+            service.pax || 0,
+            `"${pickupLoc}"`,
+            `"${dropoffLoc}"`,
+            `"${allyName}"`,
+            `"${service.driver?.name || ''}"`,
+            `"${vehicleName}"`,
+            `"${service.state || service.status || ''}"`,
+          ].join(',');
+        })
       ].join('\n');
+
+      console.log('🔍 CSV content preview:', csvContent.substring(0, 300));
 
       const dataUri = 'data:text/csv;charset=utf-8,'+ encodeURIComponent(csvContent);
       const exportFileDefaultName = `services_export_${timestamp}.csv`;
-      
+
       const linkElement = document.createElement('a');
       linkElement.setAttribute('href', dataUri);
       linkElement.setAttribute('download', exportFileDefaultName);
       linkElement.click();
     }
-  };
-
-  const hasActiveData = () => {
-    return currentServices.length > 0;
-  };
-
-  const getActiveServiceType = () => {
-    return activeServiceType;
-  };
+  }, []);
 
   const contextValue: ServiceDataContextType = {
-    currentServices,
-    setCurrentServices,
+    services,
+    isLoading,
+    error,
     selectedDate,
     setSelectedDate,
-    getServicesByDate,
-    getCache,
-    setCache,
-    clearCache,
+    createService,
+    createManyServices,
+    updateService,
+    deleteService,
+    refetchServices,
+    getServicesByAlly,
     exportServices,
-    hasActiveData,
-    getActiveServiceType,
-    setActiveServiceType,
   };
 
   return (

@@ -23,13 +23,10 @@ interface FormService extends ServiceInput {
 
 const MBTransferService = () => {
   const { popView } = useNavigation();
-  const { 
-    setCurrentServices, 
-    getCache, 
-    setCache, 
+  const {
+    createManyServices,
     exportServices,
-    setActiveServiceType,
-    selectedDate 
+    selectedDate
   } = useServiceData();
   const { setActions, clearActions } = useBottomBar();
   
@@ -58,22 +55,6 @@ const MBTransferService = () => {
   
   // Cached services state (all previously submitted services)
   const [cachedServices, setCachedServices] = useState<ServiceInput[]>([]);
-
-  // Load cached data on component mount and set up service type
-  useEffect(() => {
-    setActiveServiceType('mbt');
-    
-    // Check specifically for 'mbt' service type cache for the selected date
-    const cache = getCache('mbt', selectedDate);
-    if (cache && cache.data.length > 0) {
-      setCachedServices(cache.data);
-      setActiveTab('services'); // Show services if data exists
-    } else {
-      // Reset to form tab if no cache for this date
-      setCachedServices([]);
-      setActiveTab('form');
-    }
-  }, [selectedDate, getCache, setActiveServiceType]);
 
   const addNewService = () => {
     const newService: FormService = {
@@ -162,17 +143,16 @@ const MBTransferService = () => {
     return updatedServices.every(service => Object.keys(service.errors).length === 0);
   };
 
-  const submitServices = () => {
+  const submitServices = async () => {
     if (validateAllServices()) {
       const validServices = services.filter(s => Object.keys(s.errors).length === 0);
-      
-      // Convert FormService to ServiceInput and add to cached list
-      const serviceInputs: ServiceInput[] = validServices.map(service => ({
-        id: `mbt_${Date.now()}_${service.id}`,
+
+      // Convert FormService to API format
+      const servicesToCreate = validServices.map(service => ({
         code: service.code,
         kindOf: service.kindOf,
         clientName: service.clientName,
-        pickupTime: `${selectedDate}T${service.pickupTime}:00`, // Combine date + time
+        pickupTime: `${selectedDate}T${service.pickupTime}:00.000Z`,
         flightCode: service.flightCode,
         pax: service.pax,
         luggage: service.luggage,
@@ -180,37 +160,58 @@ const MBTransferService = () => {
         dropoffLocation: service.dropoffLocation,
         notes: service.notes,
         vehicleType: service.vehicleType,
-        ally: service.ally
+        ally: 'MB Transfer'
       }));
-      
-      // Add to existing cached services
-      const updatedCachedServices = [...cachedServices, ...serviceInputs];
-      setCachedServices(updatedCachedServices);
-      
-      // Update global cache
-      setCache('mbt', updatedCachedServices, selectedDate);
-      setCurrentServices(updatedCachedServices);
-      
-      // Reset form to initial state
-      setServices([{
-        id: '1',
-        code: '',
-        kindOf: 'TRANSFER',
-        clientName: '',
-        pickupTime: '',
-        flightCode: '',
-        pax: 1,
-        luggage: 0,
-        pickupLocation: '',
-        dropoffLocation: '',
-        notes: '',
-        vehicleType: '',
-        ally: 'MB Transfer',
-        errors: {}
-      }]);
-      
-      toast.success(`${serviceInputs.length} services added to cache successfully!`);
-      setActiveTab('services'); // Switch to services view to show the added services
+
+      // Call API to create services
+      const result = await createManyServices(servicesToCreate);
+
+      if (result.created > 0) {
+        toast.success(`${result.created} service(s) saved successfully!`);
+
+        // Update local cache for display
+        const serviceInputs: ServiceInput[] = validServices.map(service => ({
+          id: `mbt_${Date.now()}_${service.id}`,
+          code: service.code,
+          kindOf: service.kindOf,
+          clientName: service.clientName,
+          pickupTime: `${selectedDate}T${service.pickupTime}:00`,
+          flightCode: service.flightCode,
+          pax: service.pax,
+          luggage: service.luggage,
+          pickupLocation: service.pickupLocation,
+          dropoffLocation: service.dropoffLocation,
+          notes: service.notes,
+          vehicleType: service.vehicleType,
+          ally: service.ally
+        }));
+        setCachedServices([...cachedServices, ...serviceInputs]);
+
+        // Reset form
+        setServices([{
+          id: '1',
+          code: '',
+          kindOf: 'TRANSFER',
+          clientName: '',
+          pickupTime: '',
+          flightCode: '',
+          pax: 1,
+          luggage: 0,
+          pickupLocation: '',
+          dropoffLocation: '',
+          notes: '',
+          vehicleType: '',
+          ally: 'MB Transfer',
+          errors: {}
+        }]);
+
+        setActiveTab('services');
+      }
+
+      if (result.errors.length > 0) {
+        toast.error(`Failed to create ${result.errors.length} service(s)`);
+        console.error('Service creation errors:', result.errors);
+      }
     }
   };
   
@@ -287,12 +288,16 @@ const MBTransferService = () => {
         },
         {
           key: "save",
-          label: "Guardar",
+          label: "Finalizar",
           Icon: HiOutlineSave,
           variant: "primary",
           onClick: () => {
-            setCache('mbt', cachedServices, selectedDate);
-            toast.success('Services saved successfully!');
+            if (cachedServices.length > 0) {
+              toast.success('Services finalized!');
+              popView();
+            } else {
+              toast.warning('No services to save');
+            }
           }
         }
       ]);

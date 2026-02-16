@@ -136,11 +136,11 @@ export default function EmployeeDetail({ employeeId, onUpdate }: EmployeeDetailP
   return (
     <div className="w-full h-full pb-24 px-4">
       {/* Header Card */}
-      <Card extra="p-6 mb-6">
+      <Card extra="p-6 mb-6 !rounded-md !shadow-[0_14px_35px_rgba(15,23,42,0.14)] border border-gray-200 dark:border-white/10">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             {/* Avatar */}
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500 overflow-hidden">
+            <div className="relative flex h-20 w-20 items-center justify-center rounded-md bg-gradient-to-br from-accent-500 to-accent-700 dark:from-accent-400 dark:to-accent-600 overflow-hidden">
               {employee.photo ? (
                 <img
                   src={employee.photo}
@@ -152,6 +152,7 @@ export default function EmployeeDetail({ employeeId, onUpdate }: EmployeeDetailP
                   {employee.name.charAt(0).toUpperCase()}
                 </span>
               )}
+              <div className="absolute -left-2 top-2 h-10 w-1 bg-accent-500" />
             </div>
 
             {/* Name and Role */}
@@ -194,7 +195,7 @@ export default function EmployeeDetail({ employeeId, onUpdate }: EmployeeDetailP
       {/* Information Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Personal Information */}
-        <Card extra="p-6">
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
           <h2 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
             Información Personal
           </h2>
@@ -256,7 +257,7 @@ export default function EmployeeDetail({ employeeId, onUpdate }: EmployeeDetailP
         </Card>
 
         {/* Contact Information */}
-        <Card extra="p-6">
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
           <h2 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
             Información de Contacto
           </h2>
@@ -294,7 +295,7 @@ export default function EmployeeDetail({ employeeId, onUpdate }: EmployeeDetailP
         </Card>
 
         {/* Employment Information */}
-        <Card extra="p-6">
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
           <h2 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
             Información Laboral
           </h2>

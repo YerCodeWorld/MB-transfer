@@ -1,12 +1,12 @@
-import BarChart from "../../../charts/barchart";
-import Card from "../../../single/card";
+import BarChart from "../../../components/charts/barchart";
+import Card from "../../../components/single/card";
 
 import { MdArrowDropUp } from "react-icons/md";
 
 const barChartDataDailyTraffic = [
   {
-    name: "Daily Traffic",
-    data: [20, 30, 40, 20, 45, 50, 30],
+    name: "Servicios",
+    data: [18, 26, 39, 44, 37, 49, 34],
   },
 ];
 
@@ -28,7 +28,7 @@ export const barChartOptionsDailyTraffic = {
     theme: "dark",
   },
   xaxis: {
-    categories: ["00", "04", "08", "12", "14", "16", "18"],
+    categories: ["00", "04", "08", "12", "16", "20", "24"],
     show: false,
     labels: {
       show: true,
@@ -103,31 +103,31 @@ export const barChartOptionsDailyTraffic = {
     },
   },
 };
-  
+
 const DailyTraffic = () => {
   return (
-    <Card extra="pb-7 p-5">
+    <Card extra="h-[360px] p-5">
       <div className="flex flex-row justify-between">
         <div className="ml-1 pt-2">
           <p className="text-sm font-medium leading-4 text-gray-600">
-            Daily Traffic
+            Operacion por Franja Horaria
           </p>
-          <p className="text-[34px] font-bold text-navy-700 dark:text-white">
-            2.579{" "}
-            <span className="text-sm font-medium leading-6 text-gray-600">
-              Visitors
+          <p className="text-[30px] font-bold text-navy-700 dark:text-white">
+            247
+            <span className="ml-2 text-sm font-medium leading-6 text-gray-600">
+              servicios hoy
             </span>
           </p>
         </div>
         <div className="mt-2 flex items-start">
           <div className="flex items-center text-sm text-green-500">
             <MdArrowDropUp className="h-5 w-5" />
-            <p className="font-bold"> +2.45% </p>
+            <p className="font-bold">+4.9%</p>
           </div>
         </div>
       </div>
 
-      <div className="h-[300px] w-full pt-10 pb-0">
+      <div className="h-[250px] w-full pt-8">
         <BarChart
           chartData={barChartDataDailyTraffic}
           chartOptions={barChartOptionsDailyTraffic}

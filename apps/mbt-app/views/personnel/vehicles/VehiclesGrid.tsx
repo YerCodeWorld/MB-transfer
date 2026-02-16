@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Card from "@/components/single/card";
 import { FiSearch } from "react-icons/fi";
-import { MdDirectionsCar, MdAdd } from "react-icons/md";
+import { MdDirectionsCar, MdAdd, MdAirlineSeatReclineNormal, MdLuggage, MdBuild } from "react-icons/md";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { apiClient } from "@/utils/api";
 import VehicleDetail from "./VehicleDetail";
@@ -152,52 +152,75 @@ export default function VehiclesGrid() {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24 auto-rows-fr">
         {filteredVehicles.map((vehicle) => (
           <Card
             key={vehicle.id}
-            extra="p-6 cursor-pointer hover:shadow-xl transition-shadow"
+            extra="h-full !rounded-md !shadow-[0_18px_45px_rgba(15,23,42,0.14)] dark:!shadow-[0_22px_50px_rgba(0,0,0,0.42)] p-0 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:!shadow-[0_24px_60px_rgba(15,23,42,0.2)] border border-gray-200 dark:border-white/10 overflow-hidden group"
             onClick={() => handleViewVehicle(vehicle)}
           >
-            {/* Header with image/icon and status */}
-            <div className="flex-column items-start items-center mb-4 ">
-              <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500 overflow-hidden">
+            <div className="flex h-full flex-col">
+              {/* Media/Header */}
+              <div className="relative h-40 w-full border-b border-gray-200 dark:border-white/10 bg-gradient-to-br from-accent-500/90 via-accent-500 to-accent-700 dark:from-accent-400 dark:via-accent-500 dark:to-accent-700">
                 {vehicle.image ? (
                   <img
                     src={vehicle.image}
                     alt={vehicle.name}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover opacity-95"
                   />
                 ) : (
-                  <MdDirectionsCar className="text-2xl text-white" />
+                  <div className="flex h-full w-full items-center justify-center">
+                    <MdDirectionsCar className="text-6xl text-white/95" />
+                  </div>
                 )}
+                <div className="absolute inset-y-0 left-0 w-1.5 bg-accent-500 group-hover:w-2 transition-all duration-300" />
+                <span className={`absolute right-3 top-3 px-3 py-1 text-xs font-semibold shadow-sm ${getStateColor(vehicle.state)}`}>
+                  {getStateLabel(vehicle.state)}
+                </span>
               </div>
-              <span className={`px-3 py-1 w-full text-xs font-semibold ${getStateColor(vehicle.state)}`}>
-                {getStateLabel(vehicle.state)}
-              </span>
-            </div>
 
-            {/* Name and Brand */}
-            <h3 className="text-lg font-bold text-navy-700 dark:text-white mt-2">
-              {vehicle.name}
-            </h3>
-            {vehicle.brand && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                {vehicle.brand}
-              </p>
-            )}
+              {/* Content */}
+              <div className="flex h-full flex-col p-5">
+                <h3 className="text-lg font-bold text-navy-700 dark:text-white leading-tight">
+                  {vehicle.name}
+                </h3>
+                <p className="mt-1 min-h-[1.25rem] text-sm text-gray-600 dark:text-gray-400">
+                  {vehicle.brand || "Marca no especificada"}
+                </p>
 
-            {/* Capacity Info */}
-            <div className="grid grid-cols-2 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-1">
-              <p className="text-gray-600 dark:text-gray-400">
-                Pasajeros: <span className="font-medium text-navy-700 dark:text-white">{vehicle.paxCapacity}</span>
-              </p>
-              <p className="text-gray-600 dark:text-gray-400">
-                Equipaje: <span className="font-medium text-navy-700 dark:text-white">{vehicle.luggageCapacity}</span>
-              </p>
-              <p className="text-gray-600 dark:text-gray-400">
-                Servicios: <span className="font-medium text-navy-700 dark:text-white">{vehicle.usageCount}</span>
-              </p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2 border border-gray-200 dark:border-white/10 px-2 py-2 bg-gray-50 dark:bg-navy-800">
+                    <MdAirlineSeatReclineNormal className="text-accent-500 dark:text-accent-400 text-base" />
+                    <div>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-none">Pasajeros</p>
+                      <p className="text-sm font-semibold text-navy-700 dark:text-white">{vehicle.paxCapacity}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 border border-gray-200 dark:border-white/10 px-2 py-2 bg-gray-50 dark:bg-navy-800">
+                    <MdLuggage className="text-accent-500 dark:text-accent-400 text-base" />
+                    <div>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-none">Equipaje</p>
+                      <p className="text-sm font-semibold text-navy-700 dark:text-white">{vehicle.luggageCapacity}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom-aligned meta */}
+                <div className="mt-auto pt-4 border-t border-gray-200 dark:border-white/10">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                      <MdBuild className="text-accent-500 dark:text-accent-400" />
+                      Servicios
+                    </span>
+                    <span className="font-bold text-navy-700 dark:text-white">{vehicle.usageCount}</span>
+                  </div>
+                  <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                    {vehicle.lastMaintenanceOn
+                      ? `Mantenimiento: ${new Date(vehicle.lastMaintenanceOn).toLocaleDateString("es-DO")}`
+                      : "Sin mantenimiento registrado"}
+                  </p>
+                </div>
+              </div>
             </div>
           </Card>
         ))}

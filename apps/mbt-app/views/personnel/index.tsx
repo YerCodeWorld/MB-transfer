@@ -122,6 +122,15 @@ export default function PersonnelView() {
 	// Render active tab view
 	return (
 		<div className="h-full m-10 pb-24">
+			<div className="mb-5">
+			<h1 className="text-2xl font-bold text-navy-700 dark:text-white">
+				Control
+			</h1>
+			<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+				Maneja todo el personal, desde empleados hasta rutas, para uso en las demás secciones
+			</p>
+			</div>
+
 			{activeTab === 'employees' && <EmployeesGrid />}
 			{activeTab === 'drivers' && <DriversGrid />}
 			{activeTab === 'allies' && <AlliesGrid />}

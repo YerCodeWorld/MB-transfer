@@ -1,7 +1,7 @@
 "use client";
 
 import { ServiceInput } from '../../types/services';
-import { convertIsoStringTo12h } from '../../utils/services';
+import { convertIsoStringTo12h, convertTo12Hour } from '../../utils/services';
 import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
 import {
@@ -35,6 +35,18 @@ const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
   }, [service]);
 
   if (!service || !mounted) return null;
+
+  const formatPickupTime = (value?: string) => {
+    const input = String(value || '').trim();
+    if (!input) return 'N/A';
+    if (/^\d{4}-\d{2}-\d{2}[T\s]/.test(input) || input.endsWith('Z')) {
+      return convertIsoStringTo12h(input);
+    }
+    if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(input)) {
+      return convertTo12Hour(input);
+    }
+    return input;
+  };
 
   const kindOfElement = (kind: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER') => {
     const base =
@@ -155,7 +167,7 @@ const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
                   Hora 
                 </label>
                 <p className="text-sm font-medium text-navy-700 dark:text-white">
-                  {service.pickupTime}
+                  {formatPickupTime(service.pickupTime)}
                 </p>
               </div>
               {service.flightCode && (

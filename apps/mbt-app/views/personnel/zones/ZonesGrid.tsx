@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Card from "@/components/single/card";
 import { FiSearch } from "react-icons/fi";
-import { MdMap, MdAdd } from "react-icons/md";
+import { MdMap, MdAdd, MdRoute, MdLocationOn, MdPayments } from "react-icons/md";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useZones } from "@/hooks/useZones";
 import ZoneDetail from "./ZoneDetail";
@@ -151,47 +151,64 @@ export default function ZonesGrid() {
 
       {/* Grid */}
       {filteredZones.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24 auto-rows-fr">
           {filteredZones.map((zone: Zone) => {
             const totalRoutes = (zone._count?.routesFrom || 0) + (zone._count?.routesTo || 0);
 
             return (
               <Card
                 key={zone.id}
-                extra="p-6 cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02]"
+                extra="h-full !rounded-md !shadow-[0_18px_45px_rgba(15,23,42,0.14)] dark:!shadow-[0_22px_50px_rgba(0,0,0,0.42)] p-0 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:!shadow-[0_24px_60px_rgba(15,23,42,0.2)] border border-gray-200 dark:border-white/10 overflow-hidden group"
                 onClick={() => handleViewZone(zone)}
               >
-                {/* Icon */}
-                <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500 mb-4">
-                  <MdMap className="text-2xl text-black dark:text-white" />
-                </div>
-
-                {/* Name */}
-                <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-1">
-                  {zone.name}
-                </h3>
-
-                {/* Description */}
-                {zone.description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-                    {zone.description}
-                  </p>
-                )}
-
-                {/* Stats */}
-                <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mt-4">
-                  <span>📍 {zone._count?.places || 0} lugares</span>
-                  <span>🛣️ {totalRoutes} rutas</span>
-                </div>
-
-                {/* Prices Count */}
-                {zone.prices && zone.prices.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      💵 {zone.prices.length} precio(s) configurado(s)
-                    </p>
+                <div className="flex h-full flex-col">
+                  <div className="relative h-36 w-full border-b border-gray-200 dark:border-white/10 bg-gradient-to-br from-accent-500/90 via-accent-500 to-accent-700 dark:from-accent-400 dark:via-accent-500 dark:to-accent-700">
+                    <div className="flex h-full w-full items-center justify-center">
+                      <MdMap className="text-6xl text-white/95" />
+                    </div>
+                    <div className="absolute inset-y-0 left-0 w-1.5 bg-accent-500 group-hover:w-2 transition-all duration-300" />
                   </div>
-                )}
+
+                  <div className="flex h-full flex-col p-5">
+                    <h3 className="text-lg font-bold text-navy-700 dark:text-white leading-tight">
+                      {zone.name}
+                    </h3>
+
+                    {zone.description ? (
+                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-2 min-h-[2.5rem]">
+                        {zone.description}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 min-h-[2.5rem]">
+                        Sin descripcion
+                      </p>
+                    )}
+
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <div className="border border-gray-200 dark:border-white/10 px-2 py-2 bg-gray-50 dark:bg-navy-800">
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                          <MdLocationOn className="text-accent-500 dark:text-accent-400" />
+                          Lugares
+                        </p>
+                        <p className="text-sm font-semibold text-navy-700 dark:text-white">{zone._count?.places || 0}</p>
+                      </div>
+                      <div className="border border-gray-200 dark:border-white/10 px-2 py-2 bg-gray-50 dark:bg-navy-800">
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                          <MdRoute className="text-accent-500 dark:text-accent-400" />
+                          Rutas
+                        </p>
+                        <p className="text-sm font-semibold text-navy-700 dark:text-white">{totalRoutes}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-auto pt-4 border-t border-gray-200 dark:border-white/10">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                        <MdPayments className="text-accent-500 dark:text-accent-400" />
+                        {zone.prices?.length || 0} precio(s) configurado(s)
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </Card>
             );
           })}

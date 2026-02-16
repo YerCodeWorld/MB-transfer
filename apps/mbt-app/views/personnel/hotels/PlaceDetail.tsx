@@ -122,12 +122,13 @@ export default function PlaceDetail({ placeId, onUpdate }: PlaceDetailProps) {
   return (
     <div className="w-full h-full p-6 pb-24 overflow-y-auto">
       {/* Header Card */}
-      <Card extra="p-6 mb-6">
+      <Card extra="p-6 mb-6 !rounded-md !shadow-[0_14px_35px_rgba(15,23,42,0.14)] border border-gray-200 dark:border-white/10">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             {/* Icon */}
-            <div className="flex items-center justify-center w-20 h-20 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500">
+            <div className="relative flex items-center justify-center w-20 h-20 rounded-md bg-gradient-to-br from-accent-500 to-accent-700 dark:from-accent-400 dark:to-accent-600">
               <Icon className="text-4xl text-black dark:text-white" />
+              <div className="absolute -left-2 top-2 h-10 w-1 bg-accent-500" />
             </div>
 
             {/* Name and Type */}
@@ -170,13 +171,13 @@ export default function PlaceDetail({ placeId, onUpdate }: PlaceDetailProps) {
       {/* Details Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Location Information */}
-        <Card extra="p-6">
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
           <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4 flex items-center gap-2">
             <MdLocationOn className="text-brand-500" />
             Ubicación
           </h3>
           <div className="space-y-3">
-            {place.latitude && place.longitude ? (
+            {place.latitude != null && place.longitude != null ? (
               <>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Latitud</p>
@@ -208,7 +209,7 @@ export default function PlaceDetail({ placeId, onUpdate }: PlaceDetailProps) {
         </Card>
 
         {/* Zone Information */}
-        <Card extra="p-6">
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
           <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4 flex items-center gap-2">
             <MdMap className="text-brand-500" />
             Zona
@@ -241,7 +242,7 @@ export default function PlaceDetail({ placeId, onUpdate }: PlaceDetailProps) {
 
         {/* Airport Code (if applicable) */}
         {place.kind === 'AIRPORT' && (
-          <Card extra="p-6">
+          <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
             <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4 flex items-center gap-2">
               <MdCode className="text-brand-500" />
               Código IATA
@@ -266,7 +267,7 @@ export default function PlaceDetail({ placeId, onUpdate }: PlaceDetailProps) {
 
         {/* Usage Statistics */}
         {place._count && (
-          <Card extra="p-6">
+          <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
             <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
               Estadísticas de Uso
             </h3>
@@ -295,7 +296,7 @@ export default function PlaceDetail({ placeId, onUpdate }: PlaceDetailProps) {
 
         {/* Access Notes */}
         {place.accessNotes && place.accessNotes.length > 0 && (
-          <Card extra="p-6 md:col-span-2">
+          <Card extra="p-6 md:col-span-2 !rounded-md border border-gray-200 dark:border-white/10">
             <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
               Notas de Acceso
             </h3>

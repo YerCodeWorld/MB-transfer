@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { FaStickyNote, FaEye } from 'react-icons/fa';
-import { Note } from './Notes';
+import { FaStickyNote, FaEye, FaSpinner } from 'react-icons/fa';
+import { Note } from '@/types/services';
+import { apiClient } from '@/utils/api';
 
 interface NotesWidgetProps {
   selectedDate: string;
@@ -12,33 +13,40 @@ interface NotesWidgetProps {
 
 const NotesWidget = ({ selectedDate, onViewAll, className = "" }: NotesWidgetProps) => {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Load notes for selected date
   useEffect(() => {
-    const loadNotes = () => {
-      const notesKey = `mbt_notes_${selectedDate}`;
-      const savedNotes = localStorage.getItem(notesKey);
-      if (savedNotes) {
-        try {
-          setNotes(JSON.parse(savedNotes));
-        } catch (error) {
-          console.error('Error loading notes:', error);
+    const loadNotes = async () => {
+      setIsLoading(true);
+
+      try {
+        const response = await apiClient.getNotes({ date: selectedDate });
+
+        if (response.success && response.data) {
+          setNotes(response.data);
+        } else {
           setNotes([]);
         }
-      } else {
+      } catch (error: any) {
+        console.error('Error loading notes:', error);
         setNotes([]);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     loadNotes();
   }, [selectedDate]);
 
-  const getTagColor = (tag: string = 'general') => {
+  const getTagColor = (tag: string = 'REMINDER') => {
     switch (tag) {
-      case 'important': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
-      case 'reminder': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
-      case 'meeting': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300';
-      case 'todo': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300';
+      case 'EMERGENCY': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
+      case 'IMPORTANT': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300';
+      case 'REMINDER': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+      case 'MINOR': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+      case 'IDEA': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300';
+      case 'SUGGESTION': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
       default: return 'bg-accent-100 text-accent-800 dark:bg-accent-900/20 dark:text-accent-300';
     }
   };
@@ -62,13 +70,20 @@ const NotesWidget = ({ selectedDate, onViewAll, className = "" }: NotesWidgetPro
           className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-accent-600 hover:text-accent-700 hover:bg-accent-50 dark:text-accent-400 dark:hover:text-accent-300 dark:hover:bg-accent-900/20 rounded transition-colors"
         >
           <FaEye />
-          Ver todas 
+          Ver todas
         </button>
       </div>
 
       {/* Notes Preview */}
       <div className="p-4">
-        {notes.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-4">
+            <FaSpinner className="animate-spin text-accent-500 mx-auto mb-2" />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Cargando notas...
+            </p>
+          </div>
+        ) : notes.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
               Aún no hay notas para esta fecha
@@ -95,6 +110,11 @@ const NotesWidget = ({ selectedDate, onViewAll, className = "" }: NotesWidgetPro
                     {note.tag}
                   </span>
                 </div>
+                {note.caption && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    {note.caption}
+                  </p>
+                )}
                 <p className="text-xs text-gray-600 dark:text-gray-300">
                   {truncateText(note.content, 60)}
                 </p>

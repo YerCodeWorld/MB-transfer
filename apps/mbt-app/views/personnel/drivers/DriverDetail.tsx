@@ -118,11 +118,11 @@ export default function DriverDetail({ driverId, onUpdate }: DriverDetailProps) 
   return (
     <div className="w-full h-full pb-24 px-4">
       {/* Header Card */}
-      <Card extra="p-6 mb-6">
+      <Card extra="p-6 mb-6 !rounded-md !shadow-[0_14px_35px_rgba(15,23,42,0.14)] border border-gray-200 dark:border-white/10">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             {/* Avatar */}
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500 overflow-hidden">
+            <div className="relative flex h-20 w-20 items-center justify-center rounded-md bg-gradient-to-br from-accent-500 to-accent-700 dark:from-accent-400 dark:to-accent-600 overflow-hidden">
               {driver.photo ? (
                 <img
                   src={driver.photo}
@@ -132,6 +132,7 @@ export default function DriverDetail({ driverId, onUpdate }: DriverDetailProps) 
               ) : (
                 <MdLocalShipping className="text-3xl text-white" />
               )}
+              <div className="absolute -left-2 top-2 h-10 w-1 bg-accent-500" />
             </div>
 
             {/* Name and Status */}
@@ -174,7 +175,7 @@ export default function DriverDetail({ driverId, onUpdate }: DriverDetailProps) 
       {/* Information Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Basic Information */}
-        <Card extra="p-6">
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
           <h2 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
             Información Básica
           </h2>
@@ -210,7 +211,7 @@ export default function DriverDetail({ driverId, onUpdate }: DriverDetailProps) 
         </Card>
 
         {/* System Information */}
-        <Card extra="p-6">
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
           <h2 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
             Información del Sistema
           </h2>

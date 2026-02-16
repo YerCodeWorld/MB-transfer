@@ -1,110 +1,153 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Card from "@/components/single/card";
 import { MdSave } from "react-icons/md";
 import { useNavigation } from "@/contexts/NavigationContext";
-import { getAllyById, createAlly, updateAlly } from "./mockAllies";
-import { Ally, AllyType, AllyStatus } from "@/types/personnel";
+import { useAlly, useCreateAlly, useUpdateAlly } from "@/hooks/useAllies";
+import { toast } from "sonner";
 
 interface AllyFormProps {
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
   allyId?: string;
+  onSuccess?: () => void;
 }
 
-export default function AllyForm({ mode, allyId }: AllyFormProps) {
-  const { popView } = useNavigation();
-  const existingAlly = mode === 'edit' && allyId ? getAllyById(allyId) : null;
+interface AllyFormData {
+  name: string;
+  website: string;
+  logo: string;
+  email: string;
+  contactNumber: string;
+  notes: string;
+}
 
-  const [formData, setFormData] = useState<Partial<Ally>>({
-    name: existingAlly?.name || '',
-    type: existingAlly?.type || 'COMPANY',
-    email: existingAlly?.email || '',
-    phone: existingAlly?.phone || '',
-    identification: existingAlly?.identification || '',
-    address: existingAlly?.address || '',
-    status: existingAlly?.status || 'ACTIVE',
-    vehiclesCount: existingAlly?.vehiclesCount || 0,
-    contactPerson: existingAlly?.contactPerson || '',
-    notes: existingAlly?.notes || '',
+export default function AllyForm({ mode, allyId, onSuccess }: AllyFormProps) {
+  const { popView } = useNavigation();
+  const { data: ally, isLoading: loadingAlly } = useAlly(allyId || "");
+  const createAllyMutation = useCreateAlly();
+  const updateAllyMutation = useUpdateAlly();
+
+  const [formData, setFormData] = useState<AllyFormData>({
+    name: "",
+    website: "",
+    logo: "",
+    email: "",
+    contactNumber: "",
+    notes: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (field: keyof Ally, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  useEffect(() => {
+    if (mode === "edit" && ally) {
+      setFormData({
+        name: ally.name || "",
+        website: ally.website || "",
+        logo: ally.logo || "",
+        email: ally.email || "",
+        contactNumber: ally.contactNumber || "",
+        notes: ally.notes || "",
+      });
+    }
+  }, [mode, ally]);
+
+  const handleInputChange = (field: keyof AllyFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name?.trim()) {
-      newErrors.name = 'El nombre es requerido';
+    if (!formData.name.trim()) {
+      newErrors.name = "El nombre es requerido";
     }
 
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email inválido';
+      newErrors.email = "Correo invalido";
     }
 
-    if (formData.phone && !/^\d{3}-\d{3}-\d{4}$/.test(formData.phone)) {
-      // Basic phone validation for format XXX-XXX-XXXX
-      // Allow it to be flexible
+    if (
+      formData.website &&
+      !/^https?:\/\/.+/i.test(formData.website)
+    ) {
+      newErrors.website = "El sitio web debe iniciar con http:// o https://";
+    }
+
+    if (
+      formData.logo &&
+      !/^https?:\/\/.+/i.test(formData.logo)
+    ) {
+      newErrors.logo = "La URL del logo debe iniciar con http:// o https://";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) return;
 
+    const payload = {
+      name: formData.name.trim(),
+      website: formData.website.trim() || undefined,
+      logo: formData.logo.trim() || undefined,
+      email: formData.email.trim() || undefined,
+      contactNumber: formData.contactNumber.trim() || undefined,
+      notes: formData.notes.trim() || undefined,
+    };
+
     try {
-      if (mode === 'create') {
-        createAlly(formData as Omit<Ally, 'id' | 'createdAt'>);
-      } else if (mode === 'edit' && allyId) {
-        updateAlly(allyId, formData);
+      if (mode === "create") {
+        await createAllyMutation.mutateAsync(payload);
+        toast.success("Aliado creado exitosamente");
+      } else if (mode === "edit" && allyId) {
+        await updateAllyMutation.mutateAsync({ id: allyId, data: payload });
+        toast.success("Aliado actualizado exitosamente");
       }
+
+      onSuccess?.();
       popView();
-    } catch (error) {
-      console.error('Error saving ally:', error);
-      setErrors({ submit: 'Error al guardar el aliado' });
+    } catch (error: any) {
+      console.error("Error saving ally:", error);
+      toast.error(error.message || "Error al guardar aliado");
+      setErrors({ submit: error.message || "Error al guardar aliado" });
     }
   };
 
-  const typeOptions: { value: AllyType; label: string }[] = [
-    { value: 'COMPANY', label: 'Empresa' },
-    { value: 'INDIVIDUAL', label: 'Individual' },
-  ];
+  if (loadingAlly && mode === "edit") {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Cargando aliado...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const statusOptions: { value: AllyStatus; label: string }[] = [
-    { value: 'ACTIVE', label: 'Activo' },
-    { value: 'INACTIVE', label: 'Inactivo' },
-    { value: 'SUSPENDED', label: 'Suspendido' },
-  ];
+  const isSubmitting = createAllyMutation.isPending || updateAllyMutation.isPending;
 
   return (
-    <div className="w-full h-full pb-24 px-4">
+    <div className="w-full h-full pb-24 px-4 overflow-y-auto">
       <Card extra="p-6">
-        {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-navy-700 dark:text-white">
-            {mode === 'create' ? 'Nuevo Aliado' : 'Editar Aliado'}
+            {mode === "create" ? "Nuevo Aliado" : "Editar Aliado"}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {mode === 'create'
-              ? 'Complete la información para agregar un nuevo aliado'
-              : 'Actualice la información del aliado'
-            }
+            {mode === "create"
+              ? "Complete la informacion para agregar un nuevo aliado"
+              : "Actualice la informacion del aliado"}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
@@ -112,164 +155,103 @@ export default function AllyForm({ mode, allyId }: AllyFormProps) {
               </label>
               <input
                 type="text"
-                value={formData.name || ''}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                className={`w-full rounded-lg border-2 ${
-                  errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-                } bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400`}
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Nombre del aliado"
+                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
               />
-              {errors.name && (
-                <p className="text-sm text-red-500 mt-1">{errors.name}</p>
-              )}
+              {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
-                Tipo <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) => handleInputChange('type', e.target.value as AllyType)}
-                className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
-              >
-                {typeOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
-                Estado <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => handleInputChange('status', e.target.value as AllyStatus)}
-                className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
-              >
-                {statusOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Contact Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
-                Correo Electrónico
-              </label>
-              <input
-                type="email"
-                value={formData.email || ''}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                className={`w-full rounded-lg border-2 ${
-                  errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-                } bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400`}
-                placeholder="ejemplo@correo.com"
-              />
-              {errors.email && (
-                <p className="text-sm text-red-500 mt-1">{errors.email}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
-                Teléfono
-              </label>
-              <input
-                type="tel"
-                value={formData.phone || ''}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
-                placeholder="809-555-1234"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
-                {formData.type === 'COMPANY' ? 'RNC' : 'Identificación'}
+                Sitio Web
               </label>
               <input
                 type="text"
-                value={formData.identification || ''}
-                onChange={(e) => handleInputChange('identification', e.target.value)}
-                className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
-                placeholder={formData.type === 'COMPANY' ? '130-12345-6' : '001-1234567-8'}
+                value={formData.website}
+                onChange={(e) => handleInputChange("website", e.target.value)}
+                placeholder="https://example.com"
+                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
               />
+              {errors.website && <p className="mt-1 text-sm text-red-500">{errors.website}</p>}
             </div>
 
-            {formData.type === 'COMPANY' && (
-              <div>
-                <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
-                  Persona de Contacto
-                </label>
-                <input
-                  type="text"
-                  value={formData.contactPerson || ''}
-                  onChange={(e) => handleInputChange('contactPerson', e.target.value)}
-                  className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
-                  placeholder="Nombre del contacto"
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                URL Logo
+              </label>
+              <input
+                type="text"
+                value={formData.logo}
+                onChange={(e) => handleInputChange("logo", e.target.value)}
+                placeholder="https://..."
+                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
+              />
+              {errors.logo && <p className="mt-1 text-sm text-red-500">{errors.logo}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                Correo
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder="correo@empresa.com"
+                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
+              />
+              {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                Telefono
+              </label>
+              <input
+                type="text"
+                value={formData.contactNumber}
+                onChange={(e) => handleInputChange("contactNumber", e.target.value)}
+                placeholder="809-555-1234"
+                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
+              />
+            </div>
           </div>
 
-          {/* Address */}
           <div>
-            <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
-              Dirección
-            </label>
-            <input
-              type="text"
-              value={formData.address || ''}
-              onChange={(e) => handleInputChange('address', e.target.value)}
-              className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
-              placeholder="Dirección completa"
-            />
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
-              Notas
-            </label>
+            <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">Notas</label>
             <textarea
-              value={formData.notes || ''}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
+              value={formData.notes}
+              onChange={(e) => handleInputChange("notes", e.target.value)}
               rows={4}
-              className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400 resize-none"
-              placeholder="Información adicional sobre el aliado..."
+              placeholder="Notas internas sobre el aliado..."
+              className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
             />
           </div>
 
           {errors.submit && (
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-red-600 dark:text-red-400">{errors.submit}</p>
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+              <p className="text-sm text-red-600 dark:text-red-400">{errors.submit}</p>
             </div>
           )}
 
-          {/* Submit Button */}
-          <div className="flex items-center justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3 pt-6">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex items-center gap-2 rounded-xl bg-brand-500 px-6 py-3 text-sm font-semibold text-brand dark:text-white hover:bg-brand-600 disabled:opacity-50"
+            >
+              <MdSave />
+              {isSubmitting ? "Guardando..." : "Guardar Aliado"}
+            </button>
             <button
               type="button"
               onClick={() => popView()}
-              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-navy-700 dark:text-white hover:bg-gray-100 dark:hover:bg-navy-700"
+              disabled={isSubmitting}
+              className="rounded-xl bg-gray-200 dark:bg-gray-700 px-6 py-3 text-sm font-semibold text-navy-700 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
             >
               Cancelar
-            </button>
-            <button
-              type="submit"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-500 text-white hover:bg-brand-600 dark:bg-brand-400 dark:hover:bg-brand-300"
-            >
-              <MdSave />
-              Guardar
             </button>
           </div>
         </form>

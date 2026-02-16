@@ -33,10 +33,9 @@ function Sidebar(props: {
 	const menu: Array<{ key: ItemKey; label: string; Icon: any; title?: string }> = [
 		{ key: 'live', label: "Itinerario", Icon: BsPlay },
 		{ key: "itinerary", label: "Servicios", Icon: HiOutlineCalendar, title: "Drives / services" },
-		{ key: "notes",     label: "Agenda", Icon: HiOutlinePencilAlt },
 		{ key: "employees", label: "Personal", Icon: HiOutlineUsers },
 		{ key: "accounting",label: "Contabilidad", Icon: HiOutlineBriefcase },
-		{ key: "stats",     label: "Stadísticas", Icon: HiOutlineChartBar },
+		{ key: "stats",     label: "Estadísticas", Icon: HiOutlineChartBar },
 	];
 
 	const handleSelect = (k: ItemKey) => {
