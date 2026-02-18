@@ -98,6 +98,7 @@ function PlatformContent() {
   });
 
   const [selectedBackground, setSelectedBackground] = useState<string>('bg-globes.jpg');
+  const [currentAccent, setCurrentAccent] = useState<string>('purple');
 
   // Theme presets mapping
   const themePresets: Record<string, any> = {
@@ -201,17 +202,30 @@ function PlatformContent() {
       // Set accent theme from employee.appAccent
       if (employee.appAccent && themePresets[employee.appAccent]) {
         setThemeApp(themePresets[employee.appAccent]);
+        setCurrentAccent(employee.appAccent);
       }
     }
   }, [employee]);
 
   // Save customization settings to backend when they change
-  const saveCustomization = async (field: string, value: any) => {
+  const saveCustomization = async (changes: {
+    minimized?: boolean;
+    background?: string;
+    appAccent?: string;
+    darkMode?: boolean;
+  }) => {
     if (!employee) return;
 
     try {
+      const payload = {
+        minimized: changes.minimized ?? mini,
+        background: changes.background ?? selectedBackground,
+        appAccent: changes.appAccent ?? currentAccent,
+        darkMode: changes.darkMode ?? darkmode,
+      };
+
       await apiClient.put(`/api/v1/employees/${employee.id}`, {
-        [field]: value
+        ...payload,
       });
       // Refresh auth to get updated employee data
       await refreshAuth();
@@ -223,20 +237,21 @@ function PlatformContent() {
   // Wrapper for setMini that also saves to backend
   const handleSetMini = (value: boolean) => {
     setMini(value);
-    saveCustomization('minimized', value);
+    saveCustomization({ minimized: value });
   };
 
   // Wrapper for setSelectedBackground that also saves to backend
   const handleSetSelectedBackground = (value: string) => {
     setSelectedBackground(value);
-    saveCustomization('background', value);
+    saveCustomization({ background: value });
   };
 
   // Wrapper for setTheme that also saves to backend
   const handleSetTheme = (theme: any, themeName?: string) => {
     setThemeApp(theme);
     if (themeName) {
-      saveCustomization('appAccent', themeName);
+      setCurrentAccent(themeName);
+      saveCustomization({ appAccent: themeName });
     }
   };
 
@@ -246,7 +261,7 @@ function PlatformContent() {
   // Wrapper for darkmode that also saves to backend
   const handleSetDarkmode = (value: boolean) => {
     setDarkmode(value);
-    saveCustomization('darkMode', value);
+    saveCustomization({ darkMode: value });
   };
 
   useEffect(() => {
@@ -340,6 +355,5 @@ export default function Home() {
 		</NavigationProvider>
 	);
 }
-
 
 
