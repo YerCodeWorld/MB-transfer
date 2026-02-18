@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { apiClient } from '../../utils/api';
 import { ServiceInput } from '../../types/services';
+import { convertIsoStringTo12h, convertTo12Hour } from '../../utils/services';
 
 import { BsFilePdf, BsDownload, BsX, BsCheckCircle, BsExclamationTriangle, BsPencil } from 'react-icons/bs';
 import { FaSpinner } from 'react-icons/fa';
@@ -18,7 +19,7 @@ interface PDFGeneratorModalProps {
   onClose: () => void;
   services: ExtendedService[];
   selectedDate: string;
-  onServiceUpdate?: (serviceId: string, updatedService: ExtendedService) => void;
+  onServiceUpdate?: (serviceId: string, updatedService: ExtendedService) => Promise<void> | void;
 }
 
 const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
@@ -107,12 +108,20 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
       clientName: service.pdfData?.clientName || service.clientName,
       hotel: hotelLocation,
       pax: service.pdfData?.pax || service.pax,
-      time: service.pickupTime,
+      time: service.pdfData?.time || formatServiceTimeForPdf(service.pickupTime),
       flightCode: service.pdfData?.flightCode || service.flightCode || ''
     });
   };
 
-  const handleSaveEditedData = () => {
+  const formatServiceTimeForPdf = (value: string) => {
+    const input = String(value || '').trim();
+    if (!input) return '';
+    if (/^\d{4}-\d{2}-\d{2}[T\s]/.test(input) || input.endsWith('Z')) return convertIsoStringTo12h(input);
+    if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(input)) return convertTo12Hour(input);
+    return input;
+  };
+
+  const handleSaveEditedData = async () => {
     if (!editingService || !onServiceUpdate) return;
 
     const updatedService = {
@@ -121,17 +130,23 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
         clientName: editFormData.clientName,
         hotel: editFormData.hotel,
         pax: editFormData.pax,
+        time: editFormData.time,
         flightCode: editFormData.flightCode
       }
     };
 
-    onServiceUpdate(editingService.code || '', updatedService);
-    setEditingService(null);
-
-    toast.success("Información Actualizada", {
-      className: "bg-card text-card-foreground border-border",
-      description: 'La información del PDF del servicio ha sido actualizada'
-    });
+    try {
+      await onServiceUpdate(editingService.id || editingService.code || '', updatedService);
+      setEditingService(null);
+      toast.success("Información Actualizada", {
+        className: "bg-card text-card-foreground border-border",
+        description: 'La información del PDF del servicio ha sido actualizada'
+      });
+    } catch (error: any) {
+      toast.error("No se pudo actualizar el perfil PDF", {
+        description: error?.message || 'Error desconocido'
+      });
+    }
   };
 
   const handleCancelEdit = () => {
@@ -193,7 +208,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
         name: service.pdfData?.clientName || service.clientName,
         hotel: hotelLocation,
         pax: service.pdfData?.pax || service.pax,
-        time: service.pickupTime.toUpperCase(),
+        time: (service.pdfData?.time || formatServiceTimeForPdf(service.pickupTime)).toUpperCase(),
         date: selectedDate, // Send in YYYY-MM-DD format, Python will format for display
         company: company,
         service_type: serviceType,
@@ -243,6 +258,31 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
       case 'mbt': return 'MB Transfer';
       default: return serviceType.toUpperCase();
     }
+  };
+
+  const getPdfDisplayValues = (service: ExtendedService) => {
+    const displayClientName = service.pdfData?.clientName || service.clientName;
+    const displayPax = service.pdfData?.pax || service.pax;
+    const displayTime = service.pdfData?.time || formatServiceTimeForPdf(service.pickupTime);
+
+    let displayHotel = service.pdfData?.hotel;
+    if (!displayHotel) {
+      if (service.kindOf === 'ARRIVAL') {
+        displayHotel = service.dropoffLocation || service.pickupLocation || 'Hotel';
+      } else if (service.kindOf === 'DEPARTURE') {
+        displayHotel = service.pickupLocation || service.dropoffLocation || 'Hotel';
+      } else {
+        displayHotel = service.pickupLocation || service.dropoffLocation || 'Hotel';
+      }
+    }
+
+    return {
+      displayClientName,
+      displayPax,
+      displayTime,
+      displayHotel,
+      displayFlightCode: service.pdfData?.flightCode || service.flightCode || '',
+    };
   };
 
   if (!mounted || !isOpen) return null;
@@ -332,6 +372,13 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
                 ) : (
                   filteredServices.map((service) => {
                     const isCurrentlyGenerating = generatingService === service.code;
+                    const {
+                      displayClientName,
+                      displayPax,
+                      displayTime,
+                      displayHotel,
+                      displayFlightCode,
+                    } = getPdfDisplayValues(service);
 
                     return (
                       <div
@@ -341,14 +388,18 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium text-navy-700 dark:text-white">
-                              {service.clientName}
+                              {displayClientName}
                             </span>
                             <span className={`px-2 py-1 rounded text-xs font-medium ${getCompanyColor(service.serviceType)}`}>
                               {getCompanyName(service.serviceType)}
                             </span>
                           </div>
                           <div className="text-sm text-gray-600 dark:text-gray-300">
-                            {service.code} • {service.kindOf} • {service.pax} PAX • {service.pickupTime}
+                            {service.code} • {service.kindOf} • {displayPax} PAX • {displayTime}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Hotel: {displayHotel}
+                            {displayFlightCode ? ` • Vuelo: ${displayFlightCode}` : ''}
                           </div>
                         </div>
 

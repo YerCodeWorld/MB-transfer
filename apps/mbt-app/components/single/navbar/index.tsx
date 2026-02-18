@@ -30,6 +30,9 @@ const Navbar = (props: {
     setMini,
     theme,
     setTheme,
+    themePresets,
+    darkmode,
+    setDarkmode,
     hovered,
     selectedBackground,
     setSelectedBackground,
@@ -41,16 +44,12 @@ const Navbar = (props: {
     if (s.length < 2) return "";
     return s[0].toUpperCase()+s.slice(1);
   }
-  
-  const [darkmode, setDarkmode] = useState<Boolean>(false);
+
   const [now, setNow] = useState<Date | null>(null);          // null on SSR
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);                                         // gate client-only UI
-    if (document.documentElement.classList.contains("dark")) {
-      setDarkmode(true);
-    }
     setNow(new Date());
     const id = setInterval(() => {
       setNow(prevNow => {
@@ -119,36 +118,25 @@ const Navbar = (props: {
 
 	{/** TIME INFO, GREETING **/}
       <div className="ml-[6px]">
-      <h2 className="text-accent-500 dark:text-accent-100">{mounted ? `${message}!` : ""}</h2>
-        <p className="flex items-center gap-2 rounded-x1 text-[1.3rem] text-accent-800 dark:text-accent-50 tabular-nums">          
+        <h2 className="text-accent-500 dark:text-accent-100">{mounted ? `${message}!` : ""}</h2>
+        <p className="flex items-center gap-2 rounded-x1 text-[1.3rem] text-accent-800 dark:text-accent-50 tabular-nums">
           <span>{timeData.dayName} {timeData.dayNum} de {timeData.month} | {timeData.time} </span>
-        </p>        
+        </p>
       </div>
-		
 
-      <div className="relative mt-[3px] flex h-[61px] w-[355px] flex-grow items-center justify-around gap-2 rounded-full bg-white px-2 py-2 shadow-xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none md:w-[365px] md:flex-grow-0 md:gap-1 xl:w-[365px] xl:gap-2">
-        <div className="flex h-full items-center rounded-full bg-lightPrimary text-navy-700 dark:bg-navy-900 dark:text-white xl:w-[225px]">
-          <p className="pl-3 pr-2 text-xl">
-            <FiSearch className="h-4 w-4 text-gray-400 dark:text-white" />
-          </p>
-          <input
-            type="text"
-            placeholder="Buscar..."
-            className="block h-full w-full rounded-full bg-lightPrimary text-sm font-medium text-navy-700 outline-none placeholder:!text-gray-400 dark:bg-navy-900 dark:text-white dark:placeholder:!text-white sm:w-fit"
-          />
-        </div>
+      <div className="relative mt-[3px] flex h-[61px] items-center gap-3 rounded-full bg-white px-4 py-2 shadow-xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none">
         <span
-          className="flex cursor-pointer text-xl text-gray-600 dark:text-white xl:hidden "
+          className="flex cursor-pointer text-xl text-gray-600 dark:text-white xl:hidden"
           onClick={onOpenSidenav}
         >
           <FiAlignJustify className="h-5 w-5" />
         </span>
-        {/* start Notification */}
+        {/* Notification */}
         <Dropdown
           button={
-            <p className="cursor-pointer">
-              <IoMdNotificationsOutline className="h-4 w-4 text-gray-600 dark:text-white" />
-            </p>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-navy-700 transition-colors cursor-pointer">
+              <IoMdNotificationsOutline className="h-5 w-5 text-gray-600 dark:text-white" />
+            </div>
           }
           animation="origin-[65%_0%] md:origin-top-right transition-all duration-300 ease-in-out"
         >
@@ -191,89 +179,34 @@ const Navbar = (props: {
             </button>
           </div>
         </Dropdown>
-        {/* start Horizon PRO */}
-        <Dropdown
-          button={
-            <p className="cursor-pointer">
-              <IoMdInformationCircleOutline className="h-4 w-4 text-gray-600 dark:text-white" />
-            </p>
-          }
-          classNames={"py-2 top-6 -left-[250px] md:-left-[330px] w-max"}
-          animation="origin-[75%_0%] md:origin-top-right transition-all duration-300 ease-in-out"
-        >
-          <div className="flex w-[350px] flex-col gap-2 rounded-[20px] bg-white p-4 shadow-xl shadow-shadow-500 dark:!bg-navy-700 dark:text-white dark:shadow-none">
-            <div
-              style={{
-                backgroundImage: `url(${avatar.src})`,
-                backgroundRepeat: "no-repeat",
-                backgroundSize: "cover",
-              }}
-              className="mb-2 aspect-video w-full rounded-lg"
-            />
-            <a
-              target="blank"
-              href="https://horizon-ui.com/pro?ref=live-pro-tailwind-react"
-              className="px-full linear flex cursor-pointer items-center justify-center rounded-xl bg-brand-500 py-[11px] font-bold text-white transition duration-200 hover:bg-brand-600 hover:text-white active:bg-brand-700 dark:bg-brand-400 dark:hover:bg-brand-300 dark:active:bg-brand-200"
-            >
-              Buy Horizon UI PRO
-            </a>
-            <a
-              target="blank"
-              href="https://horizon-ui.com/docs-tailwind/docs/react/installation?ref=live-pro-tailwind-react"
-              className="px-full linear flex cursor-pointer items-center justify-center rounded-xl border py-[11px] font-bold text-navy-700 transition duration-200 hover:bg-gray-200 hover:text-navy-700 dark:!border-white/10 dark:text-white dark:hover:bg-white/20 dark:hover:text-white dark:active:bg-white/10"
-            >
-              See Documentation
-            </a>
-            <a
-              target="blank"
-              href="https://horizon-ui.com/?ref=live-pro-tailwind-react"
-              className="hover:bg-black px-full linear flex cursor-pointer items-center justify-center rounded-xl py-[11px] font-bold text-navy-700 transition duration-200 hover:text-navy-700 dark:text-white dark:hover:text-white"
-            >
-              Try Horizon Free
-            </a>
-          </div>
-        </Dropdown>
-        
-        {/* <div
-          className="cursor-pointer text-gray-600"
-          onClick={() => {
-            if (darkmode) {
-              document.body.classList.remove('dark');
-              setDarkmode(false);
-            } else {
-              document.body.classList.add('dark');
-              setDarkmode(true);
-            }
-          }}
-        >
-          {darkmode ? (
-            <RiSunFill className="h-4 w-4 text-gray-600 dark:text-white" />
-          ) : (
-            <RiMoonFill className="h-4 w-4 text-gray-600 dark:text-white" />
-          )}
-        </div> */}
-        
-        <Configurator
-          mini={props.mini}
-          setMini={props.setMini}
-          theme={theme}
-          setTheme={setTheme}
-          darkmode={darkmode}
-          setDarkmode={setDarkmode}
-          selectedBackground={selectedBackground}
-          setSelectedBackground={setSelectedBackground}                    
-        />
+
+        {/* Settings/Configurator */}
+        <div className="flex h-10 w-10 items-center justify-center">
+          <Configurator
+            mini={props.mini}
+            setMini={props.setMini}
+            theme={theme}
+            setTheme={setTheme}
+            themePresets={themePresets}
+            darkmode={darkmode}
+            setDarkmode={setDarkmode}
+            selectedBackground={selectedBackground}
+            setSelectedBackground={setSelectedBackground}
+          />
+        </div>
 
         {/* Profile & Dropdown */}
         <Dropdown
           button={
-            <Image
-              src={employee.photo}
-              alt="Profile"
-              width={40}
-              height={40}
-              className="h-10 w-10 rounded-full object-cover"
-            />
+            <div className="flex h-10 w-10 items-center justify-center cursor-pointer">
+              <Image
+                src={employee.photo}
+                alt="Profile"
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-full object-cover hover:ring-2 hover:ring-accent-500 transition-all"
+              />
+            </div>
           }
           animation="origin-[75%_0%] md:origin-top-right transition-all duration-300 ease-in-out"
           classNames={"py-2 top-8 -left-[180px] w-max"}

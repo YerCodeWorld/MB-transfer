@@ -31,7 +31,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Set token in API client
           apiClient.setToken(storedToken);
 
-          // Validate token by fetching current user
+          // Parse stored employee to set initial state quickly
+          try {
+            const parsedEmployee = JSON.parse(storedEmployee);
+            setEmployee(parsedEmployee);
+            setIsAuthenticated(true);
+          } catch (e) {
+            console.error('Error parsing stored employee:', e);
+          }
+
+          // Validate token by fetching current user in background
           try {
             const response = await apiClient.getMe();
             if (response.success && response.data?.employee) {
@@ -39,14 +48,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setIsAuthenticated(true);
               // Update stored employee data
               localStorage.setItem('mbt-employee', JSON.stringify(response.data.employee));
+
+              // Ensure cookie is still set
+              const expiryDate = new Date();
+              expiryDate.setDate(expiryDate.getDate() + 7);
+              document.cookie = `mbt-auth=authenticated; path=/; expires=${expiryDate.toUTCString()}; SameSite=Lax; Secure`;
             } else {
               // Token invalid, clear storage
               clearAuthStorage();
+              setIsAuthenticated(false);
+              setEmployee(null);
             }
           } catch (error) {
-            // Token validation failed, clear storage
+            // Token validation failed, but don't immediately log out
+            // This prevents logout on temporary network issues
             console.error('Token validation failed:', error);
-            clearAuthStorage();
+            // Only clear if it's a 401/403 error
+            if (error instanceof Error && error.message.includes('401')) {
+              clearAuthStorage();
+              setIsAuthenticated(false);
+              setEmployee(null);
+            }
           }
         }
       } catch (error) {
@@ -70,8 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('mbt-token', token);
         localStorage.setItem('mbt-employee', JSON.stringify(employeeData));
 
-        // Set cookie for middleware
-        document.cookie = 'mbt-auth=authenticated; path=/; max-age=86400; SameSite=Strict';
+        // Set cookie for middleware (with longer expiry and proper settings)
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 7); // 7 days
+        document.cookie = `mbt-auth=authenticated; path=/; expires=${expiryDate.toUTCString()}; SameSite=Lax; Secure`;
 
         // Set token in API client
         apiClient.setToken(token);
@@ -122,7 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearAuthStorage = () => {
     localStorage.removeItem('mbt-token');
     localStorage.removeItem('mbt-employee');
-    document.cookie = 'mbt-auth=; path=/; max-age=0';
+    // Clear cookie with all possible attributes
+    document.cookie = 'mbt-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'mbt-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure';
     apiClient.clearToken();
   };
 

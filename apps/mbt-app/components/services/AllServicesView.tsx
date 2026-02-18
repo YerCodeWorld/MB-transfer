@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigation } from '../../contexts/NavigationContext';
 import { useServiceData } from '../../contexts/ServiceDataContext';
 import { useBottomBar } from '../../contexts/BottomBarContext';
+import { apiClient } from '../../utils/api';
 import { ServiceInput } from '../../types/services';
-import { convertIsoStringTo12h, convertTo24Hour, time12ToMinutes, mockDrivers, mockVehicles } from '../../utils/services';
+import { convertIsoStringTo12h, convertTo24Hour, time12ToMinutes } from '../../utils/services';
 
 import { 
   SERVICE_TYPE_OPTIONS, 
@@ -42,6 +43,18 @@ interface ExtendedService extends ServiceInput {
   assignedVehicle?: string;
 }
 
+type ServiceNoteLike = {
+  title?: string;
+  content?: string;
+  caption?: string;
+};
+
+type VehicleOption = {
+  id: string;
+  name: string;
+  paxCapacity?: number;
+};
+
 const AllServicesView = () => {
   const { popView } = useNavigation();
   const { services: dbServices, selectedDate, createService, updateService, deleteService, refetchServices } = useServiceData();
@@ -53,6 +66,7 @@ const AllServicesView = () => {
   // Services data
   const [allServices, setAllServices] = useState<ExtendedService[]>([]);
   const [filteredServices, setFilteredServices] = useState<ExtendedService[]>([]);
+  const [vehicleOptions, setVehicleOptions] = useState<VehicleOption[]>([]);
   
   // Filters and sorting
   const [filterType, setFilterType] = useState<string>('all');
@@ -91,6 +105,22 @@ const AllServicesView = () => {
       document.body.style.overflow = 'unset';
     };
   }, [editingService]);
+
+  // Load available vehicles for edit modal selects
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      try {
+        const response = await apiClient.get<VehicleOption[]>('/api/v1/vehicules?limit=200');
+        if (response.success && response.data) {
+          setVehicleOptions(response.data);
+        }
+      } catch (err) {
+        console.error('Error loading vehicles:', err);
+      }
+    };
+
+    fetchVehicles();
+  }, []);
   
   // Map ally name to service type code
   const mapAllyToServiceType = (allyName?: string, code?: string): 'at' | 'st' | 'mbt' => {
@@ -151,6 +181,15 @@ const AllServicesView = () => {
       dropoffLocation: service.dropoff?.name || service.dropoffLocationName || '',
       notes: service.notes,
       vehicleType: service.vehicleTypeName || service.vehicleType,
+      pdfData: service.pdfProfile
+        ? {
+            clientName: service.pdfProfile.clientName || undefined,
+            hotel: service.pdfProfile.hotelName || undefined,
+            pax: service.pdfProfile.pax || undefined,
+            time: service.pdfProfile.time || undefined,
+            flightCode: service.pdfProfile.flightCode || undefined,
+          }
+        : undefined,
       ally: service.ally?.name,
       serviceType: mapAllyToServiceType(service.ally?.name, service.code),
       status: (service.state?.toLowerCase() as ServiceStatus) || 'pending',
@@ -163,8 +202,14 @@ const AllServicesView = () => {
   
   // Apply filters and sorting
   useEffect(() => {
+    console.log('🔍 FILTER DEBUG - Starting with', allServices.length, 'services');
+    console.log('🔍 filterType:', filterType);
+    console.log('🔍 filterStatus:', filterStatus);
+    console.log('🔍 searchTerm:', searchTerm);
+
     let filtered = [...allServices];
-    
+    console.log('🔍 After copy:', filtered.length);
+
     // Apply type filter
     if (filterType !== 'all') {
       if (filterType === 'airport') {
@@ -176,11 +221,13 @@ const AllServicesView = () => {
       } else {
         filtered = filtered.filter(s => s.kindOf === filterType);
       }
+      console.log('🔍 After type filter:', filtered.length);
     }
     
     // Apply status filter
     if (filterStatus !== 'all') {
       filtered = filtered.filter(s => s.status === filterStatus);
+      console.log('🔍 After status filter:', filtered.length);
     }
     
     // Apply search term
@@ -233,7 +280,8 @@ const AllServicesView = () => {
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-    
+
+    console.log('🔍 FINAL filtered count:', filtered.length);
     setFilteredServices(filtered);
   }, [allServices, filterType, filterStatus, searchTerm, sortField, sortDirection]);
   
@@ -367,21 +415,51 @@ const AllServicesView = () => {
   const handleEditService = (service: ExtendedService) => {
     setEditingService(service);
   };
+
+  const normalizeOptionalString = (value: unknown): string | undefined => {
+    if (typeof value !== 'string') return undefined;
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : undefined;
+  };
+
+  const normalizeOptionalNumber = (value: unknown): number | undefined => {
+    if (typeof value !== 'number' || Number.isNaN(value)) return undefined;
+    return value;
+  };
+
+  const normalizeNotesForUpdate = (value: unknown): string | undefined => {
+    if (typeof value === 'string') return normalizeOptionalString(value);
+    if (!Array.isArray(value)) return undefined;
+
+    const notesText = value
+      .map((note) => {
+        if (!note || typeof note !== 'object') return '';
+        const item = note as ServiceNoteLike;
+        return [item.title, item.content, item.caption]
+          .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+          .join(' - ')
+          .trim();
+      })
+      .filter(Boolean)
+      .join(' | ');
+
+    return normalizeOptionalString(notesText);
+  };
   
   const handleSaveEdit = async (updatedService: ExtendedService) => {
     // Prepare data for API update
     const updateData = {
-      code: updatedService.code,
+      code: normalizeOptionalString(updatedService.code),
       kindOf: updatedService.kindOf,
       clientName: updatedService.clientName,
       pickupTime: updatedService.pickupTime,
-      flightCode: updatedService.flightCode,
+      flightCode: normalizeOptionalString(updatedService.flightCode),
       pax: updatedService.pax,
-      luggage: updatedService.luggage,
+      luggage: normalizeOptionalNumber(updatedService.luggage),
       pickupLocation: updatedService.pickupLocation,
       dropoffLocation: updatedService.dropoffLocation,
-      notes: updatedService.notes,
-      vehicleType: updatedService.vehicleType,
+      notes: normalizeNotesForUpdate(updatedService.notes),
+      vehicleType: normalizeOptionalString(updatedService.vehicleType),
       ally: getCompanyName(updatedService.serviceType),
       state: updatedService.status.toUpperCase(),
       // TODO: Map assignedDriver and assignedVehicle to driver/vehicle IDs
@@ -399,6 +477,7 @@ const AllServicesView = () => {
       } else {
         toast.success('Servicio Actualizado');
       }
+      await refetchServices();
       setEditingService(null);
     } else {
       toast.error('Error al actualizar servicio', {
@@ -407,26 +486,20 @@ const AllServicesView = () => {
     }
   };
 
-  const handlePDFServiceUpdate = async (serviceCode: string, updatedService: ExtendedService) => {
-    // Update service via API
-    const updateData = {
-      code: updatedService.code,
-      kindOf: updatedService.kindOf,
-      clientName: updatedService.clientName,
-      pickupTime: updatedService.pickupTime,
-      flightCode: updatedService.flightCode,
-      pax: updatedService.pax,
-      luggage: updatedService.luggage,
-      pickupLocation: updatedService.pickupLocation,
-      dropoffLocation: updatedService.dropoffLocation,
-      notes: updatedService.notes,
-      vehicleType: updatedService.vehicleType,
-      ally: getCompanyName(updatedService.serviceType),
-      state: updatedService.status.toUpperCase(),
-      // TODO: Store pdfData if needed
-    };
+  const handlePDFServiceUpdate = async (_serviceCode: string, updatedService: ExtendedService) => {
+    const result = await apiClient.updateServicePdfProfile(updatedService.id, {
+      clientName: updatedService.pdfData?.clientName ?? null,
+      hotelName: updatedService.pdfData?.hotel ?? null,
+      pax: updatedService.pdfData?.pax ?? null,
+      time: updatedService.pdfData?.time ?? null,
+      flightCode: updatedService.pdfData?.flightCode ?? null,
+    });
 
-    await updateService(updatedService.id, updateData);
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to update PDF profile');
+    }
+
+    await refetchServices();
   };
 
   const handleFlightTimeUpdate = async (serviceId: string, formattedTime: string) => {
@@ -453,10 +526,14 @@ const AllServicesView = () => {
     }
   };
 
-  const exportToCSV = () => {
-    console.log('🔍 DEBUG: exportToCSV called');
+  const exportToCSV = useCallback(() => {
+    console.log('🔍🔍🔍 DEBUG: AllServices exportToCSV called 🔍🔍🔍');
+    console.log('🔍 activeTab:', activeTab);
+    console.log('🔍 allServices length:', allServices.length);
     console.log('🔍 filteredServices length:', filteredServices.length);
-    console.log('🔍 First service:', filteredServices[0]);
+    console.log('🔍 First filtered service:', filteredServices[0]);
+
+    alert(`DEBUG: About to export ${filteredServices.length} services`);
 
     // CSV Headers
     const headers = [
@@ -528,7 +605,7 @@ const AllServicesView = () => {
       className: "bg-card text-card-foreground border-border",
       description: `Se exportaron ${filteredServices.length} servicios`
     });
-  };
+  }, [filteredServices, selectedDate]);
 
   const getCompanyName = (serviceType: string) => {
     switch (serviceType) {
@@ -994,33 +1071,14 @@ const AllServicesView = () => {
                   Vehículo Asignado 
                 </label>
                 <select
-                  value={editingService.assignedVehicle || ''}
-                  onChange={(e) => setEditingService({ ...editingService, assignedVehicle: e.target.value })}
+                  value={editingService.vehicleType || editingService.assignedVehicle || ''}
+                  onChange={(e) => setEditingService({ ...editingService, vehicleType: e.target.value, assignedVehicle: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
                 >
-                  <option value="">Unassigned</option>
-                  {mockVehicles.map(vehicle => (
+                  <option value="">Sin asignar</option>
+                  {vehicleOptions.map(vehicle => (
                     <option key={vehicle.id} value={vehicle.name}>
-                      {vehicle.name} (Cap: {vehicle.capacity})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              {/* Assigned Driver */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Conductor Asignado 
-                </label>
-                <select
-                  value={editingService.assignedDriver || ''}
-                  onChange={(e) => setEditingService({ ...editingService, assignedDriver: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
-                >
-                  <option value="">Unassigned</option>
-                  {mockDrivers.map(driver => (
-                    <option key={driver.id} value={driver.name}>
-                      {driver.name}
+                      {vehicle.name}{typeof vehicle.paxCapacity === 'number' ? ` (Cap: ${vehicle.paxCapacity})` : ''}
                     </option>
                   ))}
                 </select>

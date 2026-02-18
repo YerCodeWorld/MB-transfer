@@ -37,6 +37,7 @@ export interface Employee {
   darkMode: boolean;
   appAccent: string | null;
   minimized: boolean;
+  background: string | null;
   createdAt: string;
   updatedAt: string;
 }

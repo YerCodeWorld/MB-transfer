@@ -358,6 +358,19 @@ class APIClient {
 		return this.delete<any>(`/api/v1/services/${id}`);
 	}
 
+	async updateServicePdfProfile(
+		serviceId: string,
+		data: {
+			clientName?: string | null;
+			hotelName?: string | null;
+			pax?: number | null;
+			time?: string | null;
+			flightCode?: string | null;
+		}
+	) {
+		return this.put<any>(`/api/v1/services/${serviceId}/pdf-profile`, data);
+	}
+
 	// Itineraries endpoints
 	async getItineraries(params?: {
 		startDate?: string;

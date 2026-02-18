@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigation } from '../../contexts/NavigationContext';
 import { useServiceData } from '../../contexts/ServiceDataContext';
 import { useBottomBar } from '../../contexts/BottomBarContext';
 import { ServiceInput } from '../../types/services';
-import { mockVehicles } from '../../utils/services';
+import { apiClient } from '../../utils/api';
 import ServiceTable from '../shared/ServiceTable';
 
 import Card from "../single/card";
@@ -21,12 +21,19 @@ interface FormService extends ServiceInput {
   errors: { [key: string]: string };
 }
 
+interface VehicleOption {
+  id: string;
+  name: string;
+  paxCapacity?: number;
+}
+
 const MBTransferService = () => {
   const { popView } = useNavigation();
   const {
     createManyServices,
     exportServices,
-    selectedDate
+    selectedDate,
+    getServicesByAlly
   } = useServiceData();
   const { setActions, clearActions } = useBottomBar();
   
@@ -52,9 +59,50 @@ const MBTransferService = () => {
       errors: {}
     }
   ]);
+  const [vehicleOptions, setVehicleOptions] = useState<VehicleOption[]>([]);
+
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      try {
+        const response = await apiClient.get<VehicleOption[]>('/api/v1/vehicules?limit=100');
+        if (response.success && response.data) {
+          setVehicleOptions(response.data);
+        }
+      } catch (err) {
+        console.error('Error al cargar vehículos:', err);
+      }
+    };
+
+    fetchVehicles();
+  }, []);
   
-  // Cached services state (all previously submitted services)
-  const [cachedServices, setCachedServices] = useState<ServiceInput[]>([]);
+  const persistedServices = useMemo(() => {
+    const mbtServices = getServicesByAlly('MB Transfer');
+    return mbtServices.map((service) => {
+      const notesText = Array.isArray(service.notes)
+        ? service.notes
+            .map((note) => [note.title, note.content, note.caption].filter(Boolean).join(' - ').trim())
+            .filter(Boolean)
+            .join(' | ')
+        : '';
+
+      return {
+        id: service.id,
+        code: service.code,
+        kindOf: service.kindOf,
+        clientName: service.clientName,
+        pickupTime: service.pickupTime,
+        flightCode: service.flightCode,
+        pax: service.pax,
+        luggage: service.luggage,
+        pickupLocation: service.pickup?.name || (service as any).pickupLocationName || '',
+        dropoffLocation: service.dropoff?.name || (service as any).dropoffLocationName || '',
+        notes: notesText,
+        vehicleType: (service as any).vehicleTypeName || service.vehicle?.name || (service as any).vehicleType || '',
+        ally: service.ally?.name || 'MB Transfer',
+      } as ServiceInput;
+    });
+  }, [getServicesByAlly, selectedDate]);
 
   const addNewService = () => {
     const newService: FormService = {
@@ -104,31 +152,31 @@ const MBTransferService = () => {
     const errors: { [key: string]: string } = {};
 
     if (!service.clientName.trim()) {
-      errors.clientName = 'Passenger name is required';
+      errors.clientName = 'El nombre del pasajero es obligatorio';
     }
 
     if (!service.code?.trim()) {
-      errors.code = 'Service code is required';
+      errors.code = 'El código del servicio es obligatorio';
     }
 
     if (!service.pickupTime) {
-      errors.pickupTime = 'Pickup time is required';
+      errors.pickupTime = 'La hora de recogida es obligatoria';
     }
 
     if (!service.pickupLocation.trim()) {
-      errors.pickupLocation = 'Pickup location is required';
+      errors.pickupLocation = 'El origen es obligatorio';
     }
 
     if (!service.dropoffLocation.trim()) {
-      errors.dropoffLocation = 'Destination is required';
+      errors.dropoffLocation = 'El destino es obligatorio';
     }
 
     if (service.pax <= 0) {
-      errors.pax = 'PAX must be greater than 0';
+      errors.pax = 'El PAX debe ser mayor que 0';
     }
 
     if (service.kindOf === 'ARRIVAL' && !service.flightCode?.trim()) {
-      errors.flightCode = 'Flight code is required for arrivals';
+      errors.flightCode = 'El código de vuelo es obligatorio para llegadas';
     }
 
     return errors;
@@ -148,18 +196,23 @@ const MBTransferService = () => {
       const validServices = services.filter(s => Object.keys(s.errors).length === 0);
 
       // Convert FormService to API format
+      const toOptionalString = (value?: string) => {
+        const trimmed = (value || '').trim();
+        return trimmed.length ? trimmed : undefined;
+      };
+
       const servicesToCreate = validServices.map(service => ({
         code: service.code,
         kindOf: service.kindOf,
         clientName: service.clientName,
         pickupTime: `${selectedDate}T${service.pickupTime}:00.000Z`,
-        flightCode: service.flightCode,
+        flightCode: toOptionalString(service.flightCode),
         pax: service.pax,
-        luggage: service.luggage,
+        luggage: typeof service.luggage === 'number' ? service.luggage : 0,
         pickupLocation: service.pickupLocation,
         dropoffLocation: service.dropoffLocation,
-        notes: service.notes,
-        vehicleType: service.vehicleType,
+        notes: toOptionalString(service.notes),
+        vehicleType: toOptionalString(service.vehicleType),
         ally: 'MB Transfer'
       }));
 
@@ -167,25 +220,7 @@ const MBTransferService = () => {
       const result = await createManyServices(servicesToCreate);
 
       if (result.created > 0) {
-        toast.success(`${result.created} service(s) saved successfully!`);
-
-        // Update local cache for display
-        const serviceInputs: ServiceInput[] = validServices.map(service => ({
-          id: `mbt_${Date.now()}_${service.id}`,
-          code: service.code,
-          kindOf: service.kindOf,
-          clientName: service.clientName,
-          pickupTime: `${selectedDate}T${service.pickupTime}:00`,
-          flightCode: service.flightCode,
-          pax: service.pax,
-          luggage: service.luggage,
-          pickupLocation: service.pickupLocation,
-          dropoffLocation: service.dropoffLocation,
-          notes: service.notes,
-          vehicleType: service.vehicleType,
-          ally: service.ally
-        }));
-        setCachedServices([...cachedServices, ...serviceInputs]);
+        toast.success(`${result.created} servicio(s) guardado(s) correctamente`);
 
         // Reset form
         setServices([{
@@ -209,9 +244,13 @@ const MBTransferService = () => {
       }
 
       if (result.errors.length > 0) {
-        toast.error(`Failed to create ${result.errors.length} service(s)`);
+        toast.error(`No se pudieron crear ${result.errors.length} servicio(s)`, {
+          description: result.errors[0]
+        });
         console.error('Service creation errors:', result.errors);
       }
+    } else {
+      toast.error('Corrige los errores de validación antes de guardar');
     }
   };
   
@@ -279,10 +318,10 @@ const MBTransferService = () => {
           label: "Exportar",
           Icon: HiOutlineDownload,
           onClick: () => {
-            if (cachedServices.length > 0) {
-              exportServices(cachedServices, 'csv');
+            if (persistedServices.length > 0) {
+              exportServices(persistedServices, 'csv');
             } else {
-              toast.warning('No services to export');
+              toast.warning('No hay servicios para exportar');
             }
           }
         },
@@ -292,11 +331,11 @@ const MBTransferService = () => {
           Icon: HiOutlineSave,
           variant: "primary",
           onClick: () => {
-            if (cachedServices.length > 0) {
-              toast.success('Services finalized!');
+            if (persistedServices.length > 0) {
+              toast.success('Servicios finalizados');
               popView();
             } else {
-              toast.warning('No services to save');
+              toast.warning('No hay servicios para guardar');
             }
           }
         }
@@ -304,16 +343,25 @@ const MBTransferService = () => {
     }
 
     return () => {
-      
+      clearActions();
     };
-  }, [activeTab, cachedServices, clearActions, selectedDate]);
+  }, [
+    activeTab,
+    persistedServices,
+    clearActions,
+    selectedDate,
+    setActions,
+    popView,
+    exportServices,
+    services
+  ]);
 
   const renderServiceForm = (service: FormService, index: number) => (
     <Card key={service.id} extra="w-full mb-6">
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-lg font-semibold text-accent-700 dark:text-accent-300">
-            Service #{index + 1}
+            Servicio #{index + 1}
           </h4>
           {services.length > 1 && (
             <button
@@ -326,16 +374,16 @@ const MBTransferService = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Service Code */}
+          {/* Codigo de servicio */}
           <div>
             <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
-              Service Code *
+              Codigo de Servicio *
             </label>
             <input
               type="text"
               value={service.code}
               onChange={(e) => updateService(service.id, 'code', e.target.value)}
-              placeholder="Enter service code"
+              placeholder="Ingresa el codigo del servicio"
               className={`w-full px-3 py-2 border rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:text-white ${
                 service.errors.code ? 'border-red-500' : 'border-accent-300 dark:border-accent-600'
               }`}
@@ -345,32 +393,32 @@ const MBTransferService = () => {
             )}
           </div>
 
-          {/* Service Type */}
+          {/* Tipo de servicio */}
           <div>
             <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
-              Service Type *
+              Tipo de Servicio *
             </label>
             <select
               value={service.kindOf}
               onChange={(e) => updateService(service.id, 'kindOf', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
             >
-              <option value="ARRIVAL">Arrival</option>
-              <option value="DEPARTURE">Departure</option>
-              <option value="TRANSFER">Transfer</option>
+              <option value="ARRIVAL">Llegada</option>
+              <option value="DEPARTURE">Salida</option>
+              <option value="TRANSFER">Transferencia</option>
             </select>
           </div>
 
-          {/* Passenger Name */}
+          {/* Nombre del pasajero */}
           <div>
             <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
-              Passenger Name *
+              Nombre del Pasajero *
             </label>
             <input
               type="text"
               value={service.clientName}
               onChange={(e) => updateService(service.id, 'clientName', e.target.value)}
-              placeholder="Enter passenger name"
+              placeholder="Ingresa el nombre del pasajero"
               className={`w-full px-3 py-2 border rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:text-white ${
                 service.errors.clientName ? 'border-red-500' : 'border-accent-300 dark:border-accent-600'
               }`}
@@ -380,16 +428,16 @@ const MBTransferService = () => {
             )}
           </div>
 
-          {/* Flight Code */}
+          {/* Codigo de vuelo */}
           <div>
             <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
-              Flight Code {service.kindOf === 'ARRIVAL' && '*'}
+              Codigo de Vuelo {service.kindOf === 'ARRIVAL' && '*'}
             </label>
             <input
               type="text"
               value={service.flightCode || ''}
               onChange={(e) => updateService(service.id, 'flightCode', e.target.value)}
-              placeholder="Enter flight code"
+              placeholder="Ingresa el codigo de vuelo"
               className={`w-full px-3 py-2 border rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:text-white ${
                 service.errors.flightCode ? 'border-red-500' : 'border-accent-300 dark:border-accent-600'
               }`}
@@ -399,14 +447,14 @@ const MBTransferService = () => {
             )}
           </div>
 
-          {/* Pickup Time */}
+          {/* Hora de recogida */}
           <div>
             <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
-              Pickup Time *
+              Hora de Recogida *
             </label>
             <div className="mb-2">
               <div className="text-sm text-accent-600 dark:text-accent-400">
-                Date: {new Date(selectedDate).toLocaleDateString('en-US', { 
+                Fecha: {new Date(selectedDate).toLocaleDateString('es-ES', {
                   weekday: 'long', 
                   year: 'numeric', 
                   month: 'long', 
@@ -447,10 +495,10 @@ const MBTransferService = () => {
             )}
           </div>
 
-          {/* Luggage */}
+          {/* Equipaje */}
           <div>
             <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
-              Luggage
+              Equipaje
             </label>
             <input
               type="number"
@@ -461,35 +509,35 @@ const MBTransferService = () => {
             />
           </div>
 
-          {/* Vehicle Type */}
+          {/* Tipo de vehiculo */}
           <div>
             <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
-              Vehicle Type
+              Tipo de Vehiculo
             </label>
             <select
               value={service.vehicleType || ''}
               onChange={(e) => updateService(service.id, 'vehicleType', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
             >
-              <option value="">Select vehicle type</option>
-              {mockVehicles.map(vehicle => (
+              <option value="">Selecciona un vehiculo</option>
+              {vehicleOptions.map(vehicle => (
                 <option key={vehicle.id} value={vehicle.name}>
-                  {vehicle.name} (Cap: {vehicle.capacity})
+                  {vehicle.name}{typeof vehicle.paxCapacity === 'number' ? ` (Cap: ${vehicle.paxCapacity})` : ''}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Pickup Location */}
+          {/* Origen */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
-              Pickup Location *
+              Origen *
             </label>
             <input
               type="text"
               value={service.pickupLocation}
               onChange={(e) => updateService(service.id, 'pickupLocation', e.target.value)}
-              placeholder="Enter pickup location (hotel/airport)"
+              placeholder="Ingresa el origen (hotel/aeropuerto)"
               className={`w-full px-3 py-2 border rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:text-white ${
                 service.errors.pickupLocation ? 'border-red-500' : 'border-accent-300 dark:border-accent-600'
               }`}
@@ -499,16 +547,16 @@ const MBTransferService = () => {
             )}
           </div>
 
-          {/* Destination */}
+          {/* Destino */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
-              Destination *
+              Destino *
             </label>
             <input
               type="text"
               value={service.dropoffLocation}
               onChange={(e) => updateService(service.id, 'dropoffLocation', e.target.value)}
-              placeholder="Enter destination (hotel/airport)"
+              placeholder="Ingresa el destino (hotel/aeropuerto)"
               className={`w-full px-3 py-2 border rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:text-white ${
                 service.errors.dropoffLocation ? 'border-red-500' : 'border-accent-300 dark:border-accent-600'
               }`}
@@ -518,15 +566,15 @@ const MBTransferService = () => {
             )}
           </div>
 
-          {/* Notes */}
+          {/* Notas */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-accent-700 dark:text-accent-300 mb-1">
-              Notes
+              Notas
             </label>
             <textarea
               value={service.notes || ''}
               onChange={(e) => updateService(service.id, 'notes', e.target.value)}
-              placeholder="Enter any additional notes..."
+              placeholder="Ingresa notas adicionales..."
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-accent-500 focus:border-accent-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
             />
@@ -537,18 +585,18 @@ const MBTransferService = () => {
   );
 
   const renderServicesView = () => (
-    <div className="w-full space-y-6">
-      {cachedServices.length > 0 ? (
+      <div className="w-full space-y-6">
+      {persistedServices.length > 0 ? (
         <ServiceTable 
-          services={cachedServices}
-          title={`MBT Services for ${new Date(selectedDate).toLocaleDateString('en-US', { 
+          services={persistedServices}
+          title={`Servicios MBT para ${new Date(selectedDate).toLocaleDateString('es-ES', {
             month: 'long', 
             day: 'numeric', 
             year: 'numeric' 
           })}`}
           subtitle={
             <span>
-              MBTransfer services that have been manually entered for the selected date.
+              Servicios MBTransfer ingresados manualmente para la fecha seleccionada.
             </span>
           }
           company="MBT"
@@ -558,17 +606,17 @@ const MBTransferService = () => {
           <div className="p-8 text-center">
             <PiAddressBookThin className="text-6xl text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-navy-700 dark:text-white mb-2">
-              No Services Cached Yet
+              Aun no hay servicios
             </h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Use the form to manually enter MBTransfer services. Once submitted, they will appear here.
+              Usa el formulario para ingresar servicios de MBTransfer. Al guardarlos, apareceran aqui desde la base de datos.
             </p>
             <button
               onClick={() => setActiveTab('form')}
               className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2 mx-auto"
             >
               <HiClipboardList />
-              Go to Form
+              Ir al Formulario
             </button>
           </div>
         </Card>
@@ -590,7 +638,7 @@ const MBTransferService = () => {
 		Manejo de los Servicios de MBT
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
-            {activeTab === 'form' ? 'Manualmente llena el formulario para añadir el servicio' : 'Ver y manejar los servicios cacheados de MBT'}
+            {activeTab === 'form' ? 'Completa manualmente el formulario para anadir servicios' : 'Ver y manejar los servicios guardados de MBT'}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -607,11 +655,11 @@ const MBTransferService = () => {
           <div className="mt-6 p-4 bg-purple-50 dark:bg-accent-900/20 rounded-lg">
             <h5 className="font-semibold text-accent-700 dark:text-accent-300 mb-2">Form Guidelines:</h5>
             <div className="text-sm text-purple-600 dark:text-accent-400 space-y-1">
-              <p>• Service code should be unique and follow company format</p>
-              <p>• Flight codes are required for arrival services</p>
-              <p>• Use 24-hour format for pickup times (will be converted automatically)</p>
-              <p>• Specify clear pickup and destination locations</p>
-              <p>• Add notes for special requirements or instructions</p>
+              <p>• El codigo del servicio debe ser unico y seguir el formato de la empresa</p>
+              <p>• El codigo de vuelo es obligatorio para servicios de llegada</p>
+              <p>• Usa formato de 24 horas para la hora de recogida</p>
+              <p>• Especifica claramente origen y destino</p>
+              <p>• Agrega notas para requisitos o instrucciones especiales</p>
             </div>
           </div>
         </>

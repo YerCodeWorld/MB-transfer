@@ -75,6 +75,17 @@ export interface Service {
     caption?: string;
     tag?: 'EMERGENCY' | 'IMPORTANT' | 'REMINDER' | 'MINOR' | 'IDEA' | 'SUGGESTION';
   }>;
+  pdfProfile?: {
+    id: string;
+    clientName?: string | null;
+    hotelName?: string | null;
+    pax?: number | null;
+    time?: string | null;
+    flightCode?: string | null;
+    serviceId: string;
+    createdAt?: string;
+    updatedAt?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }

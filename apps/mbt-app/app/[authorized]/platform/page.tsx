@@ -19,14 +19,17 @@ import AuthGuard from "../../../components/guards/AuthGuard";
 // MY BEAUTIFUL HOOKS
 import { NavigationProvider, useNavigation } from "../../../contexts/NavigationContext";
 import { BottomBarProvider } from "../../../contexts/BottomBarContext";
+import { useAuth } from "../../../contexts/AuthContext";
 
 // Please get rid of this asap
 import { ServiceProvider } from "../../../contexts/ServiceContext";
 import { ServiceDataProvider } from "../../../contexts/ServiceDataContext";
+import { apiClient } from "../../../utils/api";
 
 function PlatformContent() {
 
   const { navigation, setCurrentSection } = useNavigation();
+  const { employee, refreshAuth } = useAuth();
   const [open, setOpen] = useState(true);
   const [hovered, setHovered] = useState(false);
   const [mini, setMini] = useState(false);
@@ -96,6 +99,156 @@ function PlatformContent() {
 
   const [selectedBackground, setSelectedBackground] = useState<string>('bg-globes.jpg');
 
+  // Theme presets mapping
+  const themePresets: Record<string, any> = {
+    purple: {
+      "--color-accent-50": "#F1ECFF",
+      "--color-accent-100": "#E2D9FF",
+      "--color-accent-200": "#C3B5FF",
+      "--color-accent-300": "#A391FF",
+      "--color-accent-400": "#8470F5",
+      "--color-accent-500": "#6554E0",
+      "--color-accent-600": "#4E40BF",
+      "--color-accent-700": "#3A3194",
+      "--color-accent-800": "#282263",
+      "--color-accent-900": "#181536",
+    },
+    green: {
+      "--color-accent-50": "#ECF6F1",
+      "--color-accent-100": "#D7EDE0",
+      "--color-accent-200": "#B0DAC1",
+      "--color-accent-300": "#87C5A1",
+      "--color-accent-400": "#63AF86",
+      "--color-accent-500": "#438F6C",
+      "--color-accent-600": "#337055",
+      "--color-accent-700": "#245140",
+      "--color-accent-800": "#17352B",
+      "--color-accent-900": "#0C1F18",
+    },
+    orange: {
+      "--color-accent-50": "#FFF4EA",
+      "--color-accent-100": "#FFE6CC",
+      "--color-accent-200": "#FDD1A3",
+      "--color-accent-300": "#F9B871",
+      "--color-accent-400": "#F39E4A",
+      "--color-accent-500": "#DB7F2F",
+      "--color-accent-600": "#B56223",
+      "--color-accent-700": "#8D4A1B",
+      "--color-accent-800": "#5C3011",
+      "--color-accent-900": "#341C09",
+    },
+    red: {
+      "--color-accent-50": "#FDECEC",
+      "--color-accent-100": "#FAD5D5",
+      "--color-accent-200": "#F4ABAB",
+      "--color-accent-300": "#EB8080",
+      "--color-accent-400": "#DE5A5A",
+      "--color-accent-500": "#C63D3D",
+      "--color-accent-600": "#A13030",
+      "--color-accent-700": "#782424",
+      "--color-accent-800": "#501818",
+      "--color-accent-900": "#301010",
+    },
+    blue: {
+      "--color-accent-50": "#ECF3FF",
+      "--color-accent-100": "#D7E4FF",
+      "--color-accent-200": "#B3CCFF",
+      "--color-accent-300": "#8FAFEE",
+      "--color-accent-400": "#6D92DF",
+      "--color-accent-500": "#4B74C5",
+      "--color-accent-600": "#355CA4",
+      "--color-accent-700": "#28457C",
+      "--color-accent-800": "#1B2E52",
+      "--color-accent-900": "#101C33",
+    },
+    teal: {
+      "--color-accent-50": "#EAF6F6",
+      "--color-accent-100": "#D4ECEB",
+      "--color-accent-200": "#A9D9D7",
+      "--color-accent-300": "#7CC4C1",
+      "--color-accent-400": "#56AEAA",
+      "--color-accent-500": "#3A8E8A",
+      "--color-accent-600": "#2D706C",
+      "--color-accent-700": "#215352",
+      "--color-accent-800": "#153736",
+      "--color-accent-900": "#0C2020",
+    },
+  };
+
+  // Load customization settings from employee data on mount
+  useEffect(() => {
+    if (employee) {
+      // Set mini sidebar from employee.minimized
+      if (employee.minimized !== undefined) {
+        setMini(employee.minimized);
+      }
+
+      // Set background from employee.background
+      if (employee.background) {
+        setSelectedBackground(employee.background);
+      }
+
+      // Set dark mode from employee.darkMode
+      if (employee.darkMode !== undefined) {
+        setDarkmode(employee.darkMode);
+        if (employee.darkMode) {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      }
+
+      // Set accent theme from employee.appAccent
+      if (employee.appAccent && themePresets[employee.appAccent]) {
+        setThemeApp(themePresets[employee.appAccent]);
+      }
+    }
+  }, [employee]);
+
+  // Save customization settings to backend when they change
+  const saveCustomization = async (field: string, value: any) => {
+    if (!employee) return;
+
+    try {
+      await apiClient.put(`/api/v1/employees/${employee.id}`, {
+        [field]: value
+      });
+      // Refresh auth to get updated employee data
+      await refreshAuth();
+    } catch (error) {
+      console.error(`Error saving ${field}:`, error);
+    }
+  };
+
+  // Wrapper for setMini that also saves to backend
+  const handleSetMini = (value: boolean) => {
+    setMini(value);
+    saveCustomization('minimized', value);
+  };
+
+  // Wrapper for setSelectedBackground that also saves to backend
+  const handleSetSelectedBackground = (value: string) => {
+    setSelectedBackground(value);
+    saveCustomization('background', value);
+  };
+
+  // Wrapper for setTheme that also saves to backend
+  const handleSetTheme = (theme: any, themeName?: string) => {
+    setThemeApp(theme);
+    if (themeName) {
+      saveCustomization('appAccent', themeName);
+    }
+  };
+
+  // State for darkmode
+  const [darkmode, setDarkmode] = useState(false);
+
+  // Wrapper for darkmode that also saves to backend
+  const handleSetDarkmode = (value: boolean) => {
+    setDarkmode(value);
+    saveCustomization('darkMode', value);
+  };
+
   useEffect(() => {
     let color;
     for (color in themeApp) {
@@ -140,12 +293,15 @@ function PlatformContent() {
               brandText={"Example"}
               secondary={"Example2"}
               theme={themeApp}
-              setTheme={setThemeApp}
-              hovered={hovered}        
+              setTheme={handleSetTheme}
+              themePresets={themePresets}
+              darkmode={darkmode}
+              setDarkmode={handleSetDarkmode}
+              hovered={hovered}
               mini={mini}
-              setMini={setMini}
+              setMini={handleSetMini}
               selectedBackground={selectedBackground}
-              setSelectedBackground={setSelectedBackground}
+              setSelectedBackground={handleSetSelectedBackground}
             />                      
             <div className="flex-1 overflow-y-auto p-2 !pt-[100px] md:p-2 z-0">
               

@@ -333,6 +333,7 @@ const SacbeTransferService = () => {
 								luggage: s.luggage,
 								pickupLocation: s.pickupLocation, // Send as location name, API will resolve
 								dropoffLocation: s.dropoffLocation, // Send as location name, API will resolve
+								notes: s.notes,
 								vehicleType: s.vehicleType,
 								ally: s.ally, // Send as ally name, API will resolve
 							});
