@@ -5,7 +5,7 @@ import Card from "@/components/single/card";
 import {
   MdEdit, MdPerson, MdEmail, MdBadge, MdWork, MdCircle,
   MdPhone, MdEmergencyShare, MdCake, MdCalendarToday,
-  MdAccessTime, MdAttachMoney, MdDelete
+  MdAccessTime, MdAttachMoney, MdDelete, MdAccountBalance, MdCreditCard
 } from "react-icons/md";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { apiClient } from "@/utils/api";
@@ -106,6 +106,20 @@ export default function EmployeeDetail({ employeeId, onUpdate }: EmployeeDetailP
     MONTHLY: 'Mensual',
     YEARLY: 'Anual',
   };
+  const accountTypeLabels = {
+    AHORROS: 'Ahorros',
+    CORRIENTE: 'Corriente',
+  };
+  const bankAccounts = employee?.bankAccounts?.length
+    ? employee.bankAccounts
+    : (employee?.bank || employee?.accountNumber || employee?.accountType)
+    ? [{
+        id: 'legacy',
+        bank: employee?.bank || '',
+        accountNumber: employee?.accountNumber || '',
+        accountType: (employee?.accountType || 'AHORROS') as 'AHORROS' | 'CORRIENTE',
+      }]
+    : [];
 
   if (loading) {
     return (
@@ -183,8 +197,7 @@ export default function EmployeeDetail({ employeeId, onUpdate }: EmployeeDetailP
             </button>
             <button
               onClick={handleEdit}
-              className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:hover:bg-brand-300"
-            >
+              className="flex items-center gap-2 rounded-xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
               <MdEdit />
               Editar
             </button>
@@ -214,6 +227,16 @@ export default function EmployeeDetail({ employeeId, onUpdate }: EmployeeDetailP
                 <p className="text-sm text-gray-600 dark:text-gray-400">Identificación</p>
                 <p className="font-medium text-navy-700 dark:text-white">
                   {employee.identification || <span className="text-gray-400 italic">No registrada</span>}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <MdBadge className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Número de ID</p>
+                <p className="font-medium text-navy-700 dark:text-white">
+                  {employee.idNumber || <span className="text-gray-400 italic">No registrado</span>}
                 </p>
               </div>
             </div>
@@ -383,6 +406,53 @@ export default function EmployeeDetail({ employeeId, onUpdate }: EmployeeDetailP
             </div>
           </Card>
         )}
+
+        {/* Banking Information */}
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
+          <h2 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
+            Información Bancaria
+          </h2>
+          {bankAccounts.length === 0 ? (
+            <span className="text-gray-400 italic">No registrado</span>
+          ) : (
+            <div className="space-y-4">
+              {bankAccounts.map((account, index) => (
+                <div key={account.id || `${account.accountNumber}-${index}`} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">Cuenta {index + 1}</p>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <MdAccountBalance className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Banco</p>
+                        <p className="font-medium text-navy-700 dark:text-white">
+                          {account.bank}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <MdCreditCard className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Número de Cuenta</p>
+                        <p className="font-medium text-navy-700 dark:text-white">
+                          {account.accountNumber}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <MdCalendarToday className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Tipo de Cuenta</p>
+                        <p className="font-medium text-navy-700 dark:text-white">
+                          {accountTypeLabels[account.accountType]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
 
         {/* App Preferences */}
         <Card extra="p-6">

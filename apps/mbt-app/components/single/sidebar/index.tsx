@@ -5,14 +5,14 @@ import Image from "next/image";
 import logo from "../../../public/layout/ConfiguratorLogo.png";
 import Card from "../card";
 
-import { HiX, HiOutlineCalendar, HiOutlinePencilAlt, HiOutlineUsers, HiOutlineBriefcase, HiOutlineChartBar } from "react-icons/hi";
+import { HiX, HiOutlineCalendar, HiOutlineUsers, HiOutlineBriefcase, HiOutlineChartBar, HiOutlineClock } from "react-icons/hi";
 import { BsPlay } from "react-icons/bs";
 
-type ItemKey = "live" | "itinerary" | "notes" | "employees" | "accounting" | "stats";
+type ItemKey = "live" | "workday" | "itinerary" | "notes" | "employees" | "accounting" | "stats";
 
 function Sidebar(props: {
 	open: boolean;
-	onClose: React.MouseEventHandler<HTMLSpanElement>;
+	onClose: () => void;
 	variant?: string;
 	mini?: boolean;
 	hovered?: boolean;
@@ -31,7 +31,7 @@ function Sidebar(props: {
 	const expanded = !mini;
 
 	const menu: Array<{ key: ItemKey; label: string; Icon: any; title?: string }> = [
-		{ key: 'live', label: "Itinerario", Icon: BsPlay },
+		{ key: "workday", label: "Jornada", Icon: HiOutlineClock },
 		{ key: "itinerary", label: "Servicios", Icon: HiOutlineCalendar, title: "Drives / services" },
 		{ key: "employees", label: "Personal", Icon: HiOutlineUsers },
 		{ key: "accounting",label: "Contabilidad", Icon: HiOutlineBriefcase },
@@ -44,15 +44,24 @@ function Sidebar(props: {
 	};
 
 	return (
-		<div
-			className={
-				`sm:none ${mini === false ? "w-[285px]" : "w-[285px] xl:!w-[120px]"} 
-				duration-175 linear fixed !z-50 min-h-full transition-all md:!z-50 lg:!z-50 xl:!z-0 
-				${variant === "auth" ? "xl:hidden" : "xl:block"} 
-				${open ? "" : "-translate-x-[105%]"}`
-			}
-		>
-			<Card extra="ml-3 w-full h-[96.5vh] sm:mr-4 sm:my-4 m-7 !rounded-[20px] flex flex-col">
+		<>
+			{open && (
+				<button
+					className="fixed inset-0 z-[65] bg-black/35 xl:hidden"
+					onClick={onClose}
+					aria-label="Close sidebar overlay"
+				/>
+			)}
+
+				<div
+					className={
+						`${mini === false ? "w-[285px]" : "w-[285px] xl:!w-[120px]"} 
+					duration-175 linear fixed inset-y-0 left-0 z-[70] min-h-full transition-all md:z-[70] lg:z-[70] xl:!z-0 
+					${variant === "auth" ? "xl:hidden" : "xl:block"} 
+					${open ? "translate-x-0" : "-translate-x-[105%]"} xl:translate-x-0`
+					}
+				>
+				<Card extra="mx-2 my-2 flex h-[calc(100vh-16px)] w-full flex-col !rounded-[20px] xl:ml-3 xl:mr-4 xl:my-4 xl:h-[96.5vh]">
 				{/* Header */}
 				<header className="m-2 flex items-center justify-between px-3 py-2">
 
@@ -72,8 +81,8 @@ function Sidebar(props: {
 				</header>
 
 				{/* Nav */}
-				<nav className={`flex-1 overflow-y-auto px-2 py-3 ${expanded ? "pt-5" : "pt-[20vh]"}`} role="navigation" aria-label="Main">
-				  <ul className={`flex flex-col ${expanded ? "gap-2" : "gap-10"}`}>
+				<nav className={`flex-1 overflow-y-auto px-2 py-3 ${expanded ? "pt-5" : "pt-8 xl:pt-[20vh]"}`} role="navigation" aria-label="Main">
+				  <ul className={`flex flex-col ${expanded ? "gap-2" : "gap-7 xl:gap-10"}`}>
 				    {menu.map(({ key, label, Icon, title }) => {
 				      const isActive = active === key;
 				      return (
@@ -116,10 +125,10 @@ function Sidebar(props: {
 				    )}
 				  </div>
 				</footer>
-			</Card>
-		</div>
+				</Card>
+			</div>
+		</>
 	);
 }
 
 export default Sidebar;
-

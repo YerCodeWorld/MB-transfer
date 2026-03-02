@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Card from "@/components/single/card";
-import { MdEdit, MdPerson, MdPhone, MdCircle, MdLocalShipping, MdDelete } from "react-icons/md";
+import { MdEdit, MdPerson, MdPhone, MdCircle, MdLocalShipping, MdDelete, MdBadge, MdAccountBalance, MdCreditCard } from "react-icons/md";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { apiClient } from "@/utils/api";
 import { Employee, EmployeeState } from "@/types/auth";
@@ -88,6 +88,20 @@ export default function DriverDetail({ driverId, onUpdate }: DriverDetailProps) 
     SUSPENDED: 'text-orange-600 dark:text-orange-400',
     FIRED: 'text-red-600 dark:text-red-400',
   };
+  const accountTypeLabels = {
+    AHORROS: 'Ahorros',
+    CORRIENTE: 'Corriente',
+  };
+  const bankAccounts = driver?.bankAccounts?.length
+    ? driver.bankAccounts
+    : (driver?.bank || driver?.accountNumber || driver?.accountType)
+    ? [{
+        id: 'legacy',
+        bank: driver?.bank || '',
+        accountNumber: driver?.accountNumber || '',
+        accountType: (driver?.accountType || 'AHORROS') as 'AHORROS' | 'CORRIENTE',
+      }]
+    : [];
 
   if (loading) {
     return (
@@ -156,8 +170,7 @@ export default function DriverDetail({ driverId, onUpdate }: DriverDetailProps) 
           <div className="flex items-center gap-2">
             <button
               onClick={handleEdit}
-              className="flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:hover:bg-brand-300"
-            >
+              className="flex items-center gap-2 rounded-xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600">
               <MdEdit />
               Editar
             </button>
@@ -199,6 +212,16 @@ export default function DriverDetail({ driverId, onUpdate }: DriverDetailProps) 
             </div>
 
             <div className="flex items-start gap-3">
+              <MdBadge className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Número de ID</p>
+                <p className="font-medium text-navy-700 dark:text-white">
+                  {driver.idNumber || <span className="text-gray-400 italic">No registrado</span>}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
               <MdCircle className={`text-xl ${stateColors[driver.state]} mt-1`} />
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Estado</p>
@@ -208,6 +231,53 @@ export default function DriverDetail({ driverId, onUpdate }: DriverDetailProps) 
               </div>
             </div>
           </div>
+        </Card>
+
+        {/* Banking Information */}
+        <Card extra="p-6 !rounded-md border border-gray-200 dark:border-white/10">
+          <h2 className="text-lg font-bold text-navy-700 dark:text-white mb-4">
+            Información Bancaria
+          </h2>
+          {bankAccounts.length === 0 ? (
+            <span className="text-gray-400 italic">No registrado</span>
+          ) : (
+            <div className="space-y-4">
+              {bankAccounts.map((account, index) => (
+                <div key={account.id || `${account.accountNumber}-${index}`} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">Cuenta {index + 1}</p>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <MdAccountBalance className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Banco</p>
+                        <p className="font-medium text-navy-700 dark:text-white">
+                          {account.bank}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <MdCreditCard className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Número de Cuenta</p>
+                        <p className="font-medium text-navy-700 dark:text-white">
+                          {account.accountNumber}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <MdBadge className="text-xl text-gray-600 dark:text-gray-400 mt-1" />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Tipo de Cuenta</p>
+                        <p className="font-medium text-navy-700 dark:text-white">
+                          {accountTypeLabels[account.accountType]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
 
         {/* System Information */}

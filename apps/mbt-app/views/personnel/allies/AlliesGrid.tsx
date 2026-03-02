@@ -130,45 +130,68 @@ export default function AlliesGrid() {
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
             <p className="text-gray-600 dark:text-gray-400">
-              No se encontraron aliados que coincidan con "{searchQuery}"
+              No se encontraron aliados que coincidan con &quot;{searchQuery}&quot;
             </p>
           </div>
         </div>
       )}
 
       {filteredAllies.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24 auto-rows-fr">
           {filteredAllies.map((ally: AllyListItem) => (
             <Card
               key={ally.id}
-              extra="p-6 cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02]"
+              extra="h-full !rounded-md !shadow-[0_18px_45px_rgba(15,23,42,0.14)] dark:!shadow-[0_22px_50px_rgba(0,0,0,0.42)] p-0 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:!shadow-[0_24px_60px_rgba(15,23,42,0.2)] border border-gray-200 dark:border-white/10 overflow-hidden group"
               onClick={() => handleViewAlly(ally)}
             >
-              <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500 mb-4">
-                <MdBusiness className="text-2xl text-black dark:text-white" />
-              </div>
-
-              <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-3">{ally.name}</h3>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <MdLanguage className="text-base" />
-                  <span className="truncate">{ally.website || "Sin sitio web"}</span>
+              <div className="flex h-full flex-col">
+                <div className="relative h-32 w-full border-b border-gray-200 dark:border-white/10 bg-gradient-to-br from-brand-500/90 via-brand-500 to-brand-700 dark:from-brand-400 dark:via-brand-500 dark:to-brand-700">
+                  <div className="absolute inset-y-0 left-0 w-1.5 bg-accent-500 group-hover:w-2 transition-all duration-300" />
+                  <div className="flex h-full items-center gap-3 px-5">
+                    <div className="flex h-14 w-14 items-center justify-center bg-white/20 backdrop-blur-sm border border-white/30">
+                      <MdBusiness className="text-2xl text-white" />
+                    </div>
+                    <div>
+                      <h3 className="line-clamp-1 text-lg font-bold text-white">{ally.name}</h3>
+                      <p className="text-sm text-white/90">Aliado</p>
+                    </div>
+                  </div>
+                  <span className="absolute right-3 top-3 px-3 py-1 text-xs font-semibold shadow-sm bg-white/20 text-white border border-white/30">
+                    {ally._count?.services || 0} servicios
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <MdEmail className="text-base" />
-                  <span className="truncate">{ally.email || "Sin correo"}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <MdPhone className="text-base" />
-                  <span className="truncate">{ally.contactNumber || "Sin telefono"}</span>
-                </div>
-              </div>
 
-              <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {ally._count?.services || 0} servicio(s)
-                </span>
+                <div className="flex h-full flex-col p-5">
+                  <div className="grid grid-cols-1 gap-2">
+                    <div className="flex items-center gap-2 border border-gray-200 dark:border-white/10 px-2 py-2 bg-gray-50 dark:bg-navy-800 min-h-[42px]">
+                      <MdLanguage className="text-accent-500 dark:text-accent-400 text-base flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-none">Sitio web</p>
+                        <p className="text-sm font-semibold text-navy-700 dark:text-white truncate">{ally.website || "Sin sitio web"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 border border-gray-200 dark:border-white/10 px-2 py-2 bg-gray-50 dark:bg-navy-800 min-h-[42px]">
+                      <MdEmail className="text-accent-500 dark:text-accent-400 text-base flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-none">Correo</p>
+                        <p className="text-sm font-semibold text-navy-700 dark:text-white truncate">{ally.email || "Sin correo"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 border border-gray-200 dark:border-white/10 px-2 py-2 bg-gray-50 dark:bg-navy-800 min-h-[42px]">
+                      <MdPhone className="text-accent-500 dark:text-accent-400 text-base flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-none">Teléfono</p>
+                        <p className="text-sm font-semibold text-navy-700 dark:text-white truncate">{ally.contactNumber || "Sin teléfono"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto pt-4 border-t border-gray-200 dark:border-white/10">
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                      Creado: {new Date(ally.createdAt).toLocaleDateString("es-DO")}
+                    </p>
+                  </div>
+                </div>
               </div>
             </Card>
           ))}

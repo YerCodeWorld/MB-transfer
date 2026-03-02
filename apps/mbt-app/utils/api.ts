@@ -7,6 +7,18 @@ interface APIResponse<T = any> {
 	errors?: any[];
 }
 
+export interface DeveloperNote {
+	id: string;
+	title: string;
+	content: string;
+	type: 'PATCH' | 'UPDATE' | 'WARNING' | 'INFO';
+	isActive: boolean;
+	startsAt?: string | null;
+	expiresAt?: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
 class APIClient {
 
 	private baseURL: string;
@@ -113,7 +125,7 @@ class APIClient {
 		pax: number;
 		time: string;
 		date: string;
-		company: 'at' | 'st';
+		company: 'at' | 'st' | 'mbt';
 		service_type: 'arrivals' | 'departures';
 		flight_code?: string;
 	}): Promise<Blob> {
@@ -318,6 +330,7 @@ class APIClient {
 		flightCode?: string;
 		pax: number;
 		luggage?: number;
+		notes?: string;
 		pickupId: string;
 		dropoffId: string;
 		driverId?: string;
@@ -340,6 +353,7 @@ class APIClient {
 		flightCode?: string;
 		pax?: number;
 		luggage?: number;
+		notes?: string;
 		pickupId?: string;
 		dropoffId?: string;
 		driverId?: string;
@@ -492,6 +506,23 @@ class APIClient {
 
 	async deleteNote(id: string) {
 		return this.delete<any>(`/api/v1/notes/${id}`);
+	}
+
+	// Developer notes endpoints
+	async getDeveloperNotes(params?: {
+		active?: boolean;
+		type?: 'PATCH' | 'UPDATE' | 'WARNING' | 'INFO';
+		limit?: number;
+		offset?: number;
+	}) {
+		const query = new URLSearchParams();
+		if (params?.active !== undefined) query.set('active', params.active.toString());
+		if (params?.type) query.set('type', params.type);
+		if (params?.limit) query.set('limit', params.limit.toString());
+		if (params?.offset) query.set('offset', params.offset.toString());
+
+		const queryString = query.toString();
+		return this.get<DeveloperNote[]>(`/api/v1/developer-notes${queryString ? `?${queryString}` : ''}`);
 	}
 }
 

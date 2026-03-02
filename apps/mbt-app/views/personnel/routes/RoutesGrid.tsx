@@ -155,7 +155,7 @@ export default function RoutesGrid() {
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
             <p className="text-gray-600 dark:text-gray-400">
-              No se encontraron rutas que coincidan con "{searchQuery}"
+              No se encontraron rutas que coincidan con &quot;{searchQuery}&quot;
             </p>
           </div>
         </div>
@@ -163,72 +163,61 @@ export default function RoutesGrid() {
 
       {/* Grid */}
       {filteredRoutes.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24 auto-rows-fr">
           {filteredRoutes.map((route: Route) => {
             const minPrice = getMinRoutePrice(route);
             return (
               <Card
                 key={route.id}
-                extra="p-6 cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02]"
+                extra="h-full !rounded-md !shadow-[0_18px_45px_rgba(15,23,42,0.14)] dark:!shadow-[0_22px_50px_rgba(0,0,0,0.42)] p-0 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:!shadow-[0_24px_60px_rgba(15,23,42,0.2)] border border-gray-200 dark:border-white/10 overflow-hidden group"
                 onClick={() => handleViewRoute(route)}
               >
-                {/* Icon */}
-                <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500 mb-4">
-                  <MdRoute className="text-2xl text-black dark:text-white" />
-                </div>
-
-                {/* Name */}
-                <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-3">
-                  {route.name}
-                </h3>
-
-                {/* From → To */}
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="flex-1 text-center px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Desde</p>
-                    <p className="text-sm font-semibold text-navy-700 dark:text-white">
-                      {route.from.name}
-                    </p>
-                  </div>
-                  <MdArrowForward className="text-gray-400 flex-shrink-0" />
-                  <div className="flex-1 text-center px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Hasta</p>
-                    <p className="text-sm font-semibold text-navy-700 dark:text-white">
-                      {route.to.name}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Price */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Precio
-                  </span>
-                  {minPrice !== null ? (
-                    <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                      Desde ${minPrice.toFixed(2)} USD
-                    </span>
-                  ) : (
-                    <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
-                      Sin precios
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {route.prices?.length || 0} precio(s) configurado(s)
-                  </span>
-                </div>
-
-                {/* Services Count */}
-                {route._count && route._count.services > 0 && (
-                  <div className="mt-2">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      🚗 {route._count.services} servicio(s)
+                <div className="flex h-full flex-col">
+                  <div className="relative h-32 w-full border-b border-gray-200 dark:border-white/10 bg-gradient-to-br from-accent-500/90 via-accent-500 to-accent-700 dark:from-accent-400 dark:via-accent-500 dark:to-accent-700">
+                    <div className="absolute inset-y-0 left-0 w-1.5 bg-brand-500 group-hover:w-2 transition-all duration-300" />
+                    <div className="flex h-full items-center gap-3 px-5">
+                      <div className="flex h-14 w-14 items-center justify-center bg-white/20 backdrop-blur-sm border border-white/30">
+                        <MdRoute className="text-2xl text-white" />
+                      </div>
+                      <div>
+                        <h3 className="line-clamp-1 text-lg font-bold text-white">{route.name}</h3>
+                        <p className="text-sm text-white/90">Ruta</p>
+                      </div>
+                    </div>
+                    <span className="absolute right-3 top-3 px-3 py-1 text-xs font-semibold shadow-sm bg-white/20 text-white border border-white/30">
+                      {route.prices?.length || 0} precios
                     </span>
                   </div>
-                )}
+
+                  <div className="flex h-full flex-col p-5">
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border border-gray-200 dark:border-white/10 px-2 py-3 bg-gray-50 dark:bg-navy-800">
+                      <div className="min-w-0 text-center">
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-none mb-1">Desde</p>
+                        <p className="text-sm font-semibold text-navy-700 dark:text-white truncate">{route.from.name}</p>
+                      </div>
+                      <MdArrowForward className="text-gray-400 text-lg" />
+                      <div className="min-w-0 text-center">
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-none mb-1">Hasta</p>
+                        <p className="text-sm font-semibold text-navy-700 dark:text-white truncate">{route.to.name}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 border border-gray-200 dark:border-white/10 px-2 py-2 bg-gray-50 dark:bg-navy-800">
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-none">Tarifa mínima</p>
+                      {minPrice !== null ? (
+                        <p className="text-base font-bold text-green-600 dark:text-green-400 mt-1">Desde ${minPrice.toFixed(2)} USD</p>
+                      ) : (
+                        <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mt-1">Sin precios</p>
+                      )}
+                    </div>
+
+                    <div className="mt-auto pt-4 border-t border-gray-200 dark:border-white/10">
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                        {route._count?.services || 0} servicio(s)
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </Card>
             );
           })}

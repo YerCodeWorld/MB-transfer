@@ -63,6 +63,7 @@ const SacbeTransferService = () => {
 	const [dragOver, setDragOver] = useState(false);
 	const [file, setFile] = useState<File | null>(null);
 	const [loading, setLoading] = useState(false);
+	const [savingCount, setSavingCount] = useState(0);
 	const [services, setServices] = useState<ExtractedService[]>([]);
 	const [step, setStep] = useState<'upload' | 'review'>('upload');
 
@@ -271,13 +272,15 @@ const SacbeTransferService = () => {
 					label: "Atrás",
 					Icon: HiChevronLeft,
 					variant: "secondary",
-					onClick: () => popView() // Go back to main itinerary
+					onClick: () => popView(), // Go back to main itinerary
+					disabled: loading
 				},
 				{
 					key: "upload",
 					label: "Actualizar Archivo",
 					Icon: BsUpload,
-					onClick: () => setStep('upload')
+					onClick: () => setStep('upload'),
+					disabled: loading
 				},
 				{
 					key: "export",
@@ -290,15 +293,16 @@ const SacbeTransferService = () => {
 						} else {
 							toast.error('No valid services to export');
 						}
-					}
+					},
+					disabled: loading
 				},
 				{
 					key: "save",
 					label: "Guardar",
 					Icon: HiOutlineSave,
 					variant: "primary",
+					disabled: loading,
 					onClick: async () => {
-						setLoading(true);
 						try {
 							// Only save valid services
 							const validServices = services.filter(s => s.validation.isValid);
@@ -307,6 +311,8 @@ const SacbeTransferService = () => {
 								toast.error('No valid services to save');
 								return;
 							}
+							setSavingCount(validServices.length);
+							setLoading(true);
 
 							// Create services via API (need to convert to API format)
 							const servicesToCreate = validServices.map(s => {
@@ -347,6 +353,7 @@ const SacbeTransferService = () => {
 							toast.error(`Error saving services: ${error.message}`);
 						} finally {
 							setLoading(false);
+							setSavingCount(0);
 						}
 					}
 				}
@@ -539,11 +546,31 @@ const SacbeTransferService = () => {
   };
 
   return (
-    <div className="w-full p-5">
+    <div className="relative w-full p-5">
+      {loading && step === 'review' && (
+        <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <Card extra="w-full max-w-lg">
+            <div className="p-6 text-center">
+              <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-accent-200 border-t-accent-600" />
+              <h3 className="text-lg font-bold text-navy-700 dark:text-white">
+                Guardando Servicios...
+              </h3>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                Estamos cargando {savingCount} servicios de ST a la base de datos.
+              </p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Este proceso puede tardar con archivos grandes. Por favor no cierres la página.
+              </p>
+            </div>
+          </Card>
+        </div>
+      )}
+
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={popView}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+          disabled={loading}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:cursor-not-allowed disabled:opacity-50"
         >
           <BsArrowLeft className="text-xl dark:text-white" />
         </button>

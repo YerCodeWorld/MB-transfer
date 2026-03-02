@@ -9,12 +9,22 @@ export type EmployeeRole =
 export type EmployeeState = 'WORKING' | 'SUSPENDED' | 'FIRED';
 
 export type PayFrequency = 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+export type AccountType = 'AHORROS' | 'CORRIENTE';
 
 export interface AccessKey {
   id: string;
   key: string;
   ips: string[];
   employeeId: string;
+}
+
+export interface EmployeeBankAccount {
+  id: string;
+  bank: string;
+  accountNumber: string;
+  accountType: AccountType;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Employee {
@@ -34,6 +44,11 @@ export interface Employee {
   avrgWorkingHours: number | null;
   payAmount: number | null;
   payFrequency: PayFrequency | null;
+  bank: string | null;
+  accountNumber: string | null;
+  idNumber: string | null;
+  accountType: AccountType | null;
+  bankAccounts?: EmployeeBankAccount[];
   darkMode: boolean;
   appAccent: string | null;
   minimized: boolean;

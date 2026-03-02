@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import Card from "@/components/single/card";
-import { MdSave } from "react-icons/md";
+import { MdAdd, MdDelete, MdSave } from "react-icons/md";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { apiClient } from "@/utils/api";
-import { Employee, EmployeeState } from "@/types/auth";
+import { AccountType, Employee, EmployeeState } from "@/types/auth";
 
 interface DriverFormProps {
   mode: 'create' | 'edit';
@@ -20,9 +20,15 @@ export default function DriverForm({ mode, driverId, onSuccess }: DriverFormProp
     name: '',
     phone: '',
     photo: '',
+    idNumber: '',
     state: 'WORKING',
     role: 'DRIVER',
   });
+  const [bankAccounts, setBankAccounts] = useState<Array<{
+    bank: string;
+    accountNumber: string;
+    accountType?: AccountType;
+  }>>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -45,9 +51,23 @@ export default function DriverForm({ mode, driverId, onSuccess }: DriverFormProp
           name: driver.name,
           phone: driver.phone || '',
           photo: driver.photo || '',
+          idNumber: driver.idNumber || '',
           state: driver.state,
           role: 'DRIVER',
         });
+        setBankAccounts(
+          driver.bankAccounts?.length
+            ? driver.bankAccounts.map((account) => ({
+                bank: account.bank,
+                accountNumber: account.accountNumber,
+                accountType: account.accountType,
+              }))
+            : [{
+                bank: driver.bank || '',
+                accountNumber: driver.accountNumber || '',
+                accountType: driver.accountType || undefined,
+              }].filter((account) => account.bank || account.accountNumber || account.accountType)
+        );
       }
     } catch (err) {
       console.error('Error fetching driver:', err);
@@ -62,6 +82,23 @@ export default function DriverForm({ mode, driverId, onSuccess }: DriverFormProp
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+  const handleBankAccountChange = (
+    index: number,
+    field: 'bank' | 'accountNumber' | 'accountType',
+    value: string | AccountType | undefined
+  ) => {
+    setBankAccounts((prev) =>
+      prev.map((account, accountIndex) =>
+        accountIndex === index ? { ...account, [field]: value } : account
+      )
+    );
+  };
+  const addBankAccount = () => {
+    setBankAccounts((prev) => [...prev, { bank: '', accountNumber: '', accountType: undefined }]);
+  };
+  const removeBankAccount = (index: number) => {
+    setBankAccounts((prev) => prev.filter((_, i) => i !== index));
   };
 
   const validate = (): boolean => {
@@ -86,6 +123,14 @@ export default function DriverForm({ mode, driverId, onSuccess }: DriverFormProp
         name: formData.name,
         phone: formData.phone || undefined,
         photo: formData.photo || undefined,
+        idNumber: formData.idNumber || undefined,
+        bankAccounts: bankAccounts
+          .filter((account) => account.bank.trim() && account.accountNumber.trim() && account.accountType)
+          .map((account) => ({
+            bank: account.bank.trim(),
+            accountNumber: account.accountNumber.trim(),
+            accountType: account.accountType,
+          })),
         state: formData.state,
         role: 'DRIVER',
       };
@@ -110,6 +155,10 @@ export default function DriverForm({ mode, driverId, onSuccess }: DriverFormProp
     { value: 'WORKING', label: 'Activo' },
     { value: 'SUSPENDED', label: 'Suspendido' },
     { value: 'FIRED', label: 'Despedido' },
+  ];
+  const accountTypeOptions: { value: AccountType; label: string }[] = [
+    { value: 'AHORROS', label: 'Ahorros' },
+    { value: 'CORRIENTE', label: 'Corriente' },
   ];
 
   if (loading && mode === 'edit') {
@@ -198,6 +247,99 @@ export default function DriverForm({ mode, driverId, onSuccess }: DriverFormProp
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                Número de ID
+              </label>
+              <input
+                type="text"
+                value={formData.idNumber || ''}
+                onChange={(e) => handleInputChange('idNumber', e.target.value)}
+                className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
+                placeholder="Ej: A001234567"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-semibold text-navy-700 dark:text-white">
+                Cuentas Bancarias
+              </label>
+              <button
+                type="button"
+                onClick={addBankAccount}
+                className="flex items-center gap-2 rounded-lg border border-brand-500 bg-brand-500 px-3 py-2 text-sm font-semibold text-black hover:bg-brand-600 dark:text-white"
+              >
+                <MdAdd />
+                Agregar cuenta
+              </button>
+            </div>
+
+            {bankAccounts.map((account, index) => (
+              <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div>
+                  <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                    Banco
+                  </label>
+                  <input
+                    type="text"
+                    value={account.bank}
+                    onChange={(e) => handleBankAccountChange(index, 'bank', e.target.value)}
+                    className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
+                    placeholder="Ej: Banreservas"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                    Número de Cuenta
+                  </label>
+                  <input
+                    type="text"
+                    value={account.accountNumber}
+                    onChange={(e) => handleBankAccountChange(index, 'accountNumber', e.target.value)}
+                    className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
+                    placeholder="Ej: 1234567890"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                    Tipo de Cuenta
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={account.accountType || ''}
+                      onChange={(e) => handleBankAccountChange(index, 'accountType', (e.target.value as AccountType) || undefined)}
+                      className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
+                    >
+                      <option value="">Seleccionar...</option>
+                      {accountTypeOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => removeBankAccount(index)}
+                      className="rounded-lg bg-red-500 p-3 text-white hover:bg-red-600"
+                    >
+                      <MdDelete />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {bankAccounts.length === 0 && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                No hay cuentas agregadas.
+              </p>
+            )}
           </div>
 
           {errors.submit && (

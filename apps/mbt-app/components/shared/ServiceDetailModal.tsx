@@ -13,9 +13,11 @@ import { toast } from "sonner";
 interface ServiceDetailModalProps {
   service: ServiceInput | null;
   onClose: () => void;
+  onEdit?: () => void;
+  onRemove?: () => void;
 }
 
-const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
+const ServiceDetailModal = ({ service, onClose, onEdit, onRemove }: ServiceDetailModalProps) => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -35,6 +37,42 @@ const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
   }, [service]);
 
   if (!service || !mounted) return null;
+
+  const getNotesText = (notes: unknown): string => {
+    if (!notes) return '';
+    if (typeof notes === 'string') return notes.trim();
+
+    if (Array.isArray(notes)) {
+      return notes
+        .map((note) => {
+          if (typeof note === 'string') return note.trim();
+          if (!note || typeof note !== 'object') return '';
+          const item = note as { title?: string; caption?: string; content?: string };
+          const content = typeof item.content === 'string' ? item.content.trim() : '';
+          if (content) return content;
+          return [item.title, item.caption]
+            .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+            .join(' - ')
+            .trim();
+        })
+        .filter(Boolean)
+        .join('\n');
+    }
+
+    if (typeof notes === 'object') {
+      const item = notes as { title?: string; caption?: string; content?: string };
+      const content = typeof item.content === 'string' ? item.content.trim() : '';
+      if (content) return content;
+      return [item.title, item.caption]
+        .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+        .join(' - ')
+        .trim();
+    }
+
+    return '';
+  };
+
+  const notesText = getNotesText(service.notes);
 
   const formatPickupTime = (value?: string) => {
     const input = String(value || '').trim();
@@ -248,14 +286,14 @@ const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
           </div>
 
           {/* Additional Notes */}
-          {service.notes && (
+          {notesText && (
             <div className="bg-gray-50 dark:bg-navy-700 rounded-lg p-4">
               <h3 className="flex items-center gap-2 text-lg font-semibold text-navy-700 dark:text-white mb-3">
                 <FaInfoCircle className="text-purple-500" />
                 Notas Adicionales 
               </h3>
               <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                {service.notes}
+                {notesText}
               </p>
             </div>
           )}
@@ -263,6 +301,22 @@ const ServiceDetailModal = ({ service, onClose }: ServiceDetailModalProps) => {
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+          {onRemove && (
+            <button
+              onClick={onRemove}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+            >
+              Eliminar
+            </button>
+          )}
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+            >
+              Editar
+            </button>
+          )}
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"

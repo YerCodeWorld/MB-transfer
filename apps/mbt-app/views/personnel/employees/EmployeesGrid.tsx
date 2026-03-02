@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Card from "@/components/single/card";
 import { FiSearch } from "react-icons/fi";
-import { MdAdd, MdPerson, MdEmail, MdPhone, MdCircle } from "react-icons/md";
+import { MdAdd, MdPerson, MdEmail, MdPhone, MdBadge } from "react-icons/md";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { apiClient } from "@/utils/api";
 import { Employee, EmployeeRole, EmployeeState } from "@/types/auth";
@@ -11,7 +11,6 @@ import EmployeeDetail from "./EmployeeDetail";
 import EmployeeForm from "./EmployeeForm";
 
 export default function EmployeesGrid() {
-  console.log('🔥 NEW EmployeesGrid component loaded!');
   const { pushView } = useNavigation();
   const [searchQuery, setSearchQuery] = useState("");
   const [employeesData, setEmployeesData] = useState<Employee[]>([]);
@@ -150,66 +149,72 @@ export default function EmployeesGrid() {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-24 auto-rows-fr">
         {filteredEmployees.map((employee) => (
           <Card
             key={employee.id}
-            extra="p-6 cursor-pointer hover:shadow-xl transition-shadow"
+            extra="h-full !rounded-md !shadow-[0_18px_45px_rgba(15,23,42,0.14)] dark:!shadow-[0_22px_50px_rgba(0,0,0,0.42)] p-0 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:!shadow-[0_24px_60px_rgba(15,23,42,0.2)] border border-gray-200 dark:border-white/10 overflow-hidden group"
             onClick={() => handleViewEmployee(employee)}
           >
-	   <div className="flex gap-6">
-            {/* Header with avatar and status */}
-            <div className="flex-column h-full">
-              <div className="flex h-14 w-14 items-center justify-center bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500 overflow-hidden">
-                {employee.photo ? (
-                  <img
-                    src={employee.photo}
-                    alt={employee.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="text-xl font-bold text-white">
-                    {employee.name.charAt(0).toUpperCase()}
-                  </span>
-                )}
+            <div className="flex h-full flex-col">
+              <div className="relative h-32 w-full border-b border-gray-200 dark:border-white/10 bg-gradient-to-br from-brand-500/90 via-brand-500 to-brand-700 dark:from-brand-400 dark:via-brand-500 dark:to-brand-700">
+                <div className="absolute inset-y-0 left-0 w-1.5 bg-accent-500 group-hover:w-2 transition-all duration-300" />
+                <div className="flex h-full items-center gap-3 px-5">
+                  <div className="flex h-14 w-14 items-center justify-center overflow-hidden bg-white/20 backdrop-blur-sm border border-white/30">
+                    {employee.photo ? (
+                      <img
+                        src={employee.photo}
+                        alt={employee.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl font-bold text-white">
+                        {employee.name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="line-clamp-1 text-lg font-bold text-white">{employee.name}</h3>
+                    <p className="text-sm text-white/90">{getRoleLabel(employee.role)}</p>
+                  </div>
+                </div>
+                <span className={`absolute right-3 top-3 px-3 py-1 text-xs font-semibold shadow-sm ${getStateColor(employee.state)}`}>
+                  {getStateLabel(employee.state)}
+                </span>
               </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStateColor(employee.state)}`}>
-                {getStateLabel(employee.state)}
-              </span>
-            </div>
 
-            {/* Name and Role */}
-            <div className="flex-column">
-            <h3 className="text-lg font-bold text-navy-700 dark:text-white mb-1 truncate">
-              {employee.name}
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              {getRoleLabel(employee.role)}
-            </p>
+              <div className="flex h-full flex-col p-5">
+                <div className="grid grid-cols-1 gap-2">
+                  <div className="flex items-center gap-2 border border-gray-200 dark:border-white/10 px-2 py-2 bg-gray-50 dark:bg-navy-800 min-h-[42px]">
+                    <MdEmail className="text-accent-500 dark:text-accent-400 text-base flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-none">Correo</p>
+                      <p className="text-sm font-semibold text-navy-700 dark:text-white truncate">{employee.email || "Sin correo"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 border border-gray-200 dark:border-white/10 px-2 py-2 bg-gray-50 dark:bg-navy-800 min-h-[42px]">
+                    <MdPhone className="text-accent-500 dark:text-accent-400 text-base flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-none">Teléfono</p>
+                      <p className="text-sm font-semibold text-navy-700 dark:text-white truncate">{employee.phone || "Sin teléfono"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 border border-gray-200 dark:border-white/10 px-2 py-2 bg-gray-50 dark:bg-navy-800 min-h-[42px]">
+                    <MdBadge className="text-accent-500 dark:text-accent-400 text-base flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-none">Identificación</p>
+                      <p className="text-sm font-semibold text-navy-700 dark:text-white truncate">{employee.idNumber || employee.identification || "Sin ID"}</p>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Contact Info */}
-            <div className="space-y-2">
-              {employee.email && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <MdEmail className="text-base flex-shrink-0" />
-                  <span className="truncate">{employee.email}</span>
+                <div className="mt-auto pt-4 border-t border-gray-200 dark:border-white/10">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                    Creado: {employee.createdAt ? new Date(employee.createdAt).toLocaleDateString("es-DO") : "N/A"}
+                  </p>
                 </div>
-              )}
-              {employee.phone && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <MdPhone className="text-base flex-shrink-0" />
-                  <span>{employee.phone}</span>
-                </div>
-              )}
-              {employee.identification && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <MdPerson className="text-base flex-shrink-0" />
-                  <span className="truncate">{employee.identification}</span>
-                </div>
-              )}
+              </div>
             </div>
-	    </div>
-	   </div>
           </Card>
         ))}
       </div>

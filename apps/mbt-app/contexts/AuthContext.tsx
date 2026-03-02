@@ -20,6 +20,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  const setAuthCookie = () => {
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 7);
+    const secureAttr = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `mbt-auth=authenticated; path=/; expires=${expiryDate.toUTCString()}; SameSite=Lax${secureAttr}`;
+  };
+
+  const clearAuthCookie = () => {
+    document.cookie = 'mbt-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    document.cookie = 'mbt-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure';
+  };
+
   // Auto-initialize from localStorage on mount
   useEffect(() => {
     const initAuth = async () => {
@@ -49,10 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               // Update stored employee data
               localStorage.setItem('mbt-employee', JSON.stringify(response.data.employee));
 
-              // Ensure cookie is still set
-              const expiryDate = new Date();
-              expiryDate.setDate(expiryDate.getDate() + 7);
-              document.cookie = `mbt-auth=authenticated; path=/; expires=${expiryDate.toUTCString()}; SameSite=Lax; Secure`;
+              // Ensure cookie is still set for middleware route protection
+              setAuthCookie();
             } else {
               // Token invalid, clear storage
               clearAuthStorage();
@@ -92,10 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('mbt-token', token);
         localStorage.setItem('mbt-employee', JSON.stringify(employeeData));
 
-        // Set cookie for middleware (with longer expiry and proper settings)
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + 7); // 7 days
-        document.cookie = `mbt-auth=authenticated; path=/; expires=${expiryDate.toUTCString()}; SameSite=Lax; Secure`;
+        // Set cookie for middleware route protection
+        setAuthCookie();
 
         // Set token in API client
         apiClient.setToken(token);
@@ -146,9 +154,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearAuthStorage = () => {
     localStorage.removeItem('mbt-token');
     localStorage.removeItem('mbt-employee');
-    // Clear cookie with all possible attributes
-    document.cookie = 'mbt-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    document.cookie = 'mbt-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure';
+    // Clear cookie with both HTTP/HTTPS variants
+    clearAuthCookie();
     apiClient.clearToken();
   };
 

@@ -12,6 +12,7 @@ import BottomBar from "../../../components/single/bottombar";
 import ItineraryView from "../../../views/itinerary";
 import PersonnelView from "../../../views/personnel";
 import StatisticsView from "../../../views/statistics";
+import WorkdayView from "../../../views/workday";
 
 // A guard to get trash out
 import AuthGuard from "../../../components/guards/AuthGuard";
@@ -30,7 +31,7 @@ function PlatformContent() {
 
   const { navigation, setCurrentSection } = useNavigation();
   const { employee, refreshAuth } = useAuth();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [mini, setMini] = useState(false);
 
@@ -62,6 +63,7 @@ function PlatformContent() {
     return (
       <>
         {
+          section === 'workday' ? <WorkdayView /> :
           section === 'itinerary' ? <ItineraryView /> :
           section === 'employees' ? <PersonnelView /> :
           section === 'stats' ? <StatisticsView /> :
@@ -76,9 +78,13 @@ function PlatformContent() {
   };
 
   useEffect(() => {
-    window.addEventListener("resize", () =>
-      window.innerWidth < 1200 ? setOpen(false) : setOpen(true)
-    );    
+    const syncSidebarWithViewport = () => {
+      setOpen(window.innerWidth >= 1200);
+    };
+
+    syncSidebarWithViewport();
+    window.addEventListener("resize", syncSidebarWithViewport);
+    return () => window.removeEventListener("resize", syncSidebarWithViewport);
   }, []);
 
   const [themeApp, setThemeApp] = useState<any>({
@@ -99,6 +105,7 @@ function PlatformContent() {
 
   const [selectedBackground, setSelectedBackground] = useState<string>('bg-globes.jpg');
   const [currentAccent, setCurrentAccent] = useState<string>('purple');
+  const [darkmode, setDarkmode] = useState(false);
 
   // Theme presets mapping
   const themePresets: Record<string, any> = {
@@ -230,7 +237,7 @@ function PlatformContent() {
       // Refresh auth to get updated employee data
       await refreshAuth();
     } catch (error) {
-      console.error(`Error saving ${field}:`, error);
+      console.error("Error saving customization:", error);
     }
   };
 
@@ -255,9 +262,6 @@ function PlatformContent() {
     }
   };
 
-  // State for darkmode
-  const [darkmode, setDarkmode] = useState(false);
-
   // Wrapper for darkmode that also saves to backend
   const handleSetDarkmode = (value: boolean) => {
     setDarkmode(value);
@@ -269,7 +273,7 @@ function PlatformContent() {
     for (color in themeApp) {
       document.documentElement.style.setProperty(color, themeApp[color]);
     }
-  })
+  }, [themeApp]);
   
   return (
     <AuthGuard>
@@ -304,7 +308,7 @@ function PlatformContent() {
         >
           <div className="h-full w-full bg-white/90 dark:bg-dark-700/90 flex flex-col">
             <NavBar
-              onOpenSidenav={() => setOpen(!open)}
+              onOpenSidenav={() => setOpen((prev) => !prev)}
               brandText={"Example"}
               secondary={"Example2"}
               theme={themeApp}
@@ -355,5 +359,3 @@ export default function Home() {
 		</NavigationProvider>
 	);
 }
-
-

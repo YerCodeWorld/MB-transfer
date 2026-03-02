@@ -59,6 +59,11 @@ export default function BottomBar({ section, mini = false, className = "" }: Bot
       { key: "refresh", label: "Refresh", Icon: HiOutlineRefresh },
       { key: "settings", label: "Settings", Icon: HiOutlineCog },
     ],
+    workday: [
+      { key: "refresh", label: "Actualizar", Icon: HiOutlineRefresh, variant: "primary" },
+      { key: "search", label: "Buscar", Icon: HiOutlineSearch },
+      { key: "export", label: "Exportar", Icon: HiOutlineDownload },
+    ],
     notes: [
       { key: "note", label: "New Note", Icon: PiNotebookBold, variant: "primary" },
       { key: "event", label: "New Event", Icon: PiBellRingingBold },

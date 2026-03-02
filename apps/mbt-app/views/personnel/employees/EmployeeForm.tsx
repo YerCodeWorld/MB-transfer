@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import Card from "@/components/single/card";
-import { MdChevronLeft, MdChevronRight, MdSave } from "react-icons/md";
+import { MdAdd, MdChevronLeft, MdChevronRight, MdDelete, MdSave } from "react-icons/md";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { apiClient } from "@/utils/api";
-import { Employee, EmployeeRole, EmployeeState } from "@/types/auth";
+import { AccountType, Employee, EmployeeRole, EmployeeState } from "@/types/auth";
 
 interface EmployeeFormProps {
   mode: 'create' | 'edit';
@@ -34,10 +34,16 @@ export default function EmployeeForm({ mode, employeeId, defaultRole, onSuccess 
     avrgWorkingHours: undefined,
     payAmount: undefined,
     payFrequency: undefined,
+    idNumber: '',
     darkMode: false,
     appAccent: null,
     minimized: false,
   });
+  const [bankAccounts, setBankAccounts] = useState<Array<{
+    bank: string;
+    accountNumber: string;
+    accountType?: AccountType;
+  }>>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -71,11 +77,25 @@ export default function EmployeeForm({ mode, employeeId, defaultRole, onSuccess 
           avrgWorkingHours: employee.avrgWorkingHours || undefined,
           payAmount: employee.payAmount || undefined,
           payFrequency: employee.payFrequency || undefined,
+          idNumber: employee.idNumber || '',
           darkMode: employee.darkMode,
           appAccent: employee.appAccent || null,
           minimized: employee.minimized,
           accessKey: employee.accessKey, // Keep the full object for reference
         });
+        setBankAccounts(
+          employee.bankAccounts?.length
+            ? employee.bankAccounts.map((account) => ({
+                bank: account.bank,
+                accountNumber: account.accountNumber,
+                accountType: account.accountType,
+              }))
+            : [{
+                bank: employee.bank || '',
+                accountNumber: employee.accountNumber || '',
+                accountType: employee.accountType || undefined,
+              }].filter((account) => account.bank || account.accountNumber || account.accountType)
+        );
         // Don't populate accessKeyValue in edit mode (password shouldn't be shown)
         setAccessKeyValue('');
       }
@@ -90,7 +110,8 @@ export default function EmployeeForm({ mode, employeeId, defaultRole, onSuccess 
   const steps = [
     { label: 'Información Personal', fields: ['name', 'identification', 'photo', 'age', 'birthdate'] },
     { label: 'Contacto & Empleo', fields: ['email', 'phone', 'emergencyPhone', 'role', 'state', 'startedOn', 'avrgWorkingHours'] },
-    { label: 'Compensación & Preferencias', fields: ['payAmount', 'payFrequency', 'darkMode', 'appAccent', 'minimized'] },
+    { label: 'Compensación & Banca', fields: ['payAmount', 'payFrequency', 'bankAccounts', 'idNumber'] },
+    { label: 'Preferencias', fields: ['darkMode', 'appAccent', 'minimized'] },
   ];
 
   const handleInputChange = (field: keyof Employee, value: any) => {
@@ -98,6 +119,23 @@ export default function EmployeeForm({ mode, employeeId, defaultRole, onSuccess 
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+  const handleBankAccountChange = (
+    index: number,
+    field: 'bank' | 'accountNumber' | 'accountType',
+    value: string | AccountType | undefined
+  ) => {
+    setBankAccounts((prev) =>
+      prev.map((account, accountIndex) =>
+        accountIndex === index ? { ...account, [field]: value } : account
+      )
+    );
+  };
+  const addBankAccount = () => {
+    setBankAccounts((prev) => [...prev, { bank: '', accountNumber: '', accountType: undefined }]);
+  };
+  const removeBankAccount = (index: number) => {
+    setBankAccounts((prev) => prev.filter((_, i) => i !== index));
   };
 
   const validateStep = (step: number): boolean => {
@@ -168,6 +206,17 @@ export default function EmployeeForm({ mode, employeeId, defaultRole, onSuccess 
         avrgWorkingHours: formData.avrgWorkingHours || undefined,
         payAmount: formData.payAmount?.toString() || undefined,
         payFrequency: formData.payFrequency || undefined,
+        bankAccounts: bankAccounts
+          .filter((account) => account.bank.trim() && account.accountNumber.trim() && account.accountType)
+          .map((account) => ({
+            bank: account.bank.trim(),
+            accountNumber: account.accountNumber.trim(),
+            accountType: account.accountType,
+          })),
+        bank: bankAccounts[0]?.bank?.trim() || undefined,
+        accountNumber: bankAccounts[0]?.accountNumber?.trim() || undefined,
+        idNumber: formData.idNumber || undefined,
+        accountType: bankAccounts[0]?.accountType || undefined,
         darkMode: formData.darkMode,
         appAccent: formData.appAccent || undefined,
         minimized: formData.minimized,
@@ -222,6 +271,10 @@ export default function EmployeeForm({ mode, employeeId, defaultRole, onSuccess 
     { value: 'WEEKLY', label: 'Semanal' },
     { value: 'MONTHLY', label: 'Mensual' },
     { value: 'YEARLY', label: 'Anual' },
+  ];
+  const accountTypeOptions: { value: AccountType; label: string }[] = [
+    { value: 'AHORROS', label: 'Ahorros' },
+    { value: 'CORRIENTE', label: 'Corriente' },
   ];
 
   const accentColors = [
@@ -506,7 +559,7 @@ export default function EmployeeForm({ mode, employeeId, defaultRole, onSuccess 
             </div>
           )}
 
-          {/* Step 2: Compensation & Preferences */}
+          {/* Step 2: Compensation & Banking */}
           {currentStep === 2 && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -546,7 +599,105 @@ export default function EmployeeForm({ mode, employeeId, defaultRole, onSuccess 
                   </select>
                 </div>
               </div>
-	      
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                    Número de ID
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.idNumber || ''}
+                    onChange={(e) => handleInputChange('idNumber', e.target.value)}
+                    className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
+                    placeholder="Ej: A001234567"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-semibold text-navy-700 dark:text-white">
+                    Cuentas Bancarias
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addBankAccount}
+                    className="flex items-center gap-2 rounded-lg border border-brand-500 bg-brand-500 px-3 py-2 text-sm font-semibold text-black hover:bg-brand-600 dark:text-white"
+                  >
+                    <MdAdd />
+                    Agregar cuenta
+                  </button>
+                </div>
+
+                {bankAccounts.map((account, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div>
+                      <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                        Banco
+                      </label>
+                      <input
+                        type="text"
+                        value={account.bank}
+                        onChange={(e) => handleBankAccountChange(index, 'bank', e.target.value)}
+                        className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
+                        placeholder="Ej: Banreservas"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                        Número de Cuenta
+                      </label>
+                      <input
+                        type="text"
+                        value={account.accountNumber}
+                        onChange={(e) => handleBankAccountChange(index, 'accountNumber', e.target.value)}
+                        className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
+                        placeholder="Ej: 1234567890"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
+                        Tipo de Cuenta
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={account.accountType || ''}
+                          onChange={(e) => handleBankAccountChange(index, 'accountType', (e.target.value as AccountType) || undefined)}
+                          className="w-full rounded-lg border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-800 text-navy-700 dark:text-white px-4 py-3 outline-none focus:border-brand-500 dark:focus:border-brand-400"
+                        >
+                          <option value="">Seleccionar...</option>
+                          {accountTypeOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => removeBankAccount(index)}
+                          className="rounded-lg bg-red-500 p-3 text-white hover:bg-red-600"
+                        >
+                          <MdDelete />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {bankAccounts.length === 0 && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                    No hay cuentas agregadas.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: App Preferences */}
+          {currentStep === 3 && (
+            <div className="space-y-4">
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <h3 className="text-sm font-semibold text-navy-700 dark:text-white mb-4">
                   Preferencias de Aplicación

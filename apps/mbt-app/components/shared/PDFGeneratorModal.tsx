@@ -177,8 +177,8 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
         serviceType = 'arrivals';
       }
 
-      // Map company (mbt not supported by PDF service, default to at)
-      const company: 'at' | 'st' = service.serviceType === 'st' ? 'st' : 'at';
+      // Use company abbreviation directly (at/st/mbt)
+      const company: 'at' | 'st' | 'mbt' = service.serviceType;
 
       // Smart hotel/location logic
       let hotelLocation = 'Hotel';
@@ -219,7 +219,11 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
       const url = window.URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `voucher_${service.clientName.replace(/[^a-zA-Z0-9]/g, '_')}_${selectedDate}.pdf`;
+      const safeName = (service.pdfData?.clientName || service.clientName || 'service')
+        .trim()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9_-]/g, '');
+      link.download = `${safeName}_${serviceType}_${company}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

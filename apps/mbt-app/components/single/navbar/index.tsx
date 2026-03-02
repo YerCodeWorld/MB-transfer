@@ -2,20 +2,17 @@
 
 import React from "react";
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useDeveloperNotes } from "@/hooks/useDeveloperNotes";
+import type { DeveloperNote } from "@/utils/api";
 
 import Image from "next/image";
 import Dropdown from "../../../components/single/dropdown";
-import Link from "next/link";
 import Configurator from "./Configurator";
 
-import { BsArrowBarUp } from "react-icons/bs";
-import { FiSearch } from "react-icons/fi";
-import { RiMoonFill, RiSunFill } from 'react-icons/ri';
 import { FiAlignJustify } from "react-icons/fi";
-import { IoMdNotificationsOutline, IoMdInformationCircleOutline } from "react-icons/io";
-
-import avatar from  "../../../public/bg-water.jpg";
+import { IoMdNotificationsOutline, IoMdInformationCircleOutline, IoMdWarning } from "react-icons/io";
 
 const Navbar = (props: {
   onOpenSidenav: () => void;
@@ -39,6 +36,11 @@ const Navbar = (props: {
   } = props;
 
 	const { employee } = useAuth();
+  const { data: developerNotes = [], isLoading: loadingDeveloperNotes } = useDeveloperNotes({
+    active: true,
+    limit: 8,
+  });
+  const [isDeveloperNotesOpen, setIsDeveloperNotesOpen] = useState(false);
 
   function capitalize(s: string): string {
     if (s.length < 2) return "";
@@ -46,10 +48,8 @@ const Navbar = (props: {
   }
 
   const [now, setNow] = useState<Date | null>(null);          // null on SSR
-  const [mounted, setMounted] = useState(false);
-
   useEffect(() => {
-    setMounted(true);                                         // gate client-only UI
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNow(new Date());
     const id = setInterval(() => {
       setNow(prevNow => {
@@ -105,26 +105,144 @@ const Navbar = (props: {
     return "Buenas noches";
   }, [timeData.hour]);
 
+  const getDeveloperNoteIcon = (type: DeveloperNote["type"]) => {
+    if (type === "WARNING") return <IoMdWarning className="text-2xl text-white" />;
+    if (type === "PATCH" || type === "UPDATE") return <IoMdNotificationsOutline className="text-2xl text-white" />;
+    return <IoMdInformationCircleOutline className="text-2xl text-white" />;
+  };
+
+  const getDeveloperNoteColor = (type: DeveloperNote["type"]) => {
+    if (type === "WARNING") return "from-red-400 to-red-500";
+    if (type === "PATCH") return "from-brand-400 to-brand-500";
+    if (type === "UPDATE") return "from-blue-400 to-blue-500";
+    return "from-gray-400 to-gray-500";
+  };
+
+  const formatDeveloperNoteDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const nowDate = new Date();
+    const diffMs = nowDate.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours < 1) return "Hace menos de 1h";
+    if (diffHours < 24) return `Hace ${diffHours}h`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `Hace ${diffDays}d`;
+    return date.toLocaleDateString("es-DO");
+  };
+
+  useEffect(() => {
+    if (!isDeveloperNotesOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsDeveloperNotesOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isDeveloperNotesOpen]);
+
+  const developerNotesModal = isDeveloperNotesOpen && typeof window !== "undefined"
+    ? createPortal(
+      <div
+        className="fixed inset-0 z-[50000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            setIsDeveloperNotesOpen(false);
+          }
+        }}
+      >
+        <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-[20px] bg-white p-4 shadow-xl shadow-shadow-500 dark:!bg-navy-700 dark:text-white dark:shadow-none sm:p-5">
+          <div className="mb-3 flex items-center justify-between border-b border-gray-200 pb-3 dark:border-white/10">
+            <p className="text-base font-bold text-navy-700 dark:text-white">
+              Developer Notes
+            </p>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-300">
+                {developerNotes.length} activas
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsDeveloperNotesOpen(false)}
+                className="rounded-lg px-2 py-1 text-sm font-semibold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-navy-600"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+
+          {loadingDeveloperNotes && (
+            <div className="py-6 text-center text-sm text-gray-600 dark:text-gray-300">
+              Cargando notas...
+            </div>
+          )}
+          {!loadingDeveloperNotes && developerNotes.length === 0 && (
+            <div className="py-6 text-center text-sm text-gray-600 dark:text-gray-300">
+              No hay notas de desarrollo activas.
+            </div>
+          )}
+          {!loadingDeveloperNotes && developerNotes.length > 0 && (
+            <div className="space-y-2 overflow-y-auto pr-1">
+              {developerNotes.map((note) => (
+                <div key={note.id} className="flex w-full items-start rounded-xl border border-gray-200 p-2 dark:border-white/10">
+                  <div className={`flex h-full min-h-[64px] w-[64px] items-center justify-center rounded-xl bg-gradient-to-b ${getDeveloperNoteColor(note.type)} text-2xl text-white`}>
+                    {getDeveloperNoteIcon(note.type)}
+                  </div>
+                  <div className="ml-2 flex h-full w-full flex-col justify-center rounded-lg px-1 text-sm">
+                    <p className="mb-1 text-left text-sm font-bold text-gray-900 dark:text-white">
+                      {note.title}
+                    </p>
+                    <p className="whitespace-pre-wrap text-left text-xs text-gray-700 dark:text-gray-200">
+                      {note.content}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-300">
+                      <span>{note.type}</span>
+                      <span>{formatDeveloperNoteDate(note.createdAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>,
+      document.body
+    )
+    : null;
+
   return (
+    <>
     <nav
-      className={`duration-175 linear fixed top-3 right-3 flex flex-row flex-wrap items-center justify-between rounded-xl bg-white/30 transition-all ${
+      className={`duration-175 linear fixed top-2 left-3 right-3 z-50 flex flex-row items-center justify-between rounded-xl bg-white/30 p-2 backdrop-blur-xl transition-all dark:bg-[#0b14374d] md:top-4 xl:top-[20px] xl:left-auto xl:right-[30px] ${
         mini === false
-          ? "w-[calc(100vw_-_6%)] md:w-[calc(100vw_-_8%)] lg:w-[calc(100vw_-_6%)] xl:w-[calc(100vw_-_350px)] 2xl:w-[calc(100vw_-_365px)]"
+          ? "xl:w-[calc(100vw_-_350px)] 2xl:w-[calc(100vw_-_365px)]"
           : mini === true && hovered === true
-          ? "w-[calc(100vw_-_6%)] md:w-[calc(100vw_-_8%)] lg:w-[calc(100vw_-_6%)] xl:w-[calc(100vw_-_350px)] 2xl:w-[calc(100vw_-_365px)]"
-          : "w-[calc(100vw_-_6%)] md:w-[calc(100vw_-_8%)] lg:w-[calc(100vw_-_6%)] xl:w-[calc(100vw_-_180px)] 2xl:w-[calc(100vw_-_195px)]"
-      }  p-2 backdrop-blur-xl dark:bg-[#0b14374d] md:top-4 md:right-[30px] xl:top-[20px] z-50`}
+          ? "xl:w-[calc(100vw_-_350px)] 2xl:w-[calc(100vw_-_365px)]"
+          : "xl:w-[calc(100vw_-_180px)] 2xl:w-[calc(100vw_-_195px)]"
+      }`}
     >
 
 	{/** TIME INFO, GREETING **/}
-      <div className="ml-[6px]">
-        <h2 className="text-accent-500 dark:text-accent-100">{mounted ? `${message}!` : ""}</h2>
-        <p className="flex items-center gap-2 rounded-x1 text-[1.3rem] text-accent-800 dark:text-accent-50 tabular-nums">
-          <span>{timeData.dayName} {timeData.dayNum} de {timeData.month} | {timeData.time} </span>
+      <div className="ml-[6px] min-w-0">
+        <h2 className="truncate text-xs text-accent-500 dark:text-accent-100 sm:text-sm">
+          {now ? `${message}!` : ""}
+        </h2>
+        <p className="flex items-center gap-2 rounded-x1 text-sm text-accent-800 dark:text-accent-50 tabular-nums md:text-[1.3rem]">
+          <span className="hidden md:inline">
+            {timeData.dayName} {timeData.dayNum} de {timeData.month} | {timeData.time}
+          </span>
+          <span className="md:hidden">{timeData.time}</span>
         </p>
       </div>
 
-      <div className="relative mt-[3px] flex h-[61px] items-center gap-3 rounded-full bg-white px-4 py-2 shadow-xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none">
+      <div className="relative mt-[3px] flex h-[52px] items-center gap-2 rounded-full bg-white px-2 py-2 shadow-xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none sm:h-[61px] sm:gap-3 sm:px-4">
         <span
           className="flex cursor-pointer text-xl text-gray-600 dark:text-white xl:hidden"
           onClick={onOpenSidenav}
@@ -132,53 +250,17 @@ const Navbar = (props: {
           <FiAlignJustify className="h-5 w-5" />
         </span>
         {/* Notification */}
-        <Dropdown
-          button={
-            <div className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-navy-700 transition-colors cursor-pointer">
-              <IoMdNotificationsOutline className="h-5 w-5 text-gray-600 dark:text-white" />
-            </div>
-          }
-          animation="origin-[65%_0%] md:origin-top-right transition-all duration-300 ease-in-out"
+        <button
+          type="button"
+          onClick={() => setIsDeveloperNotesOpen(true)}
+          className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-navy-700 transition-colors cursor-pointer"
+          aria-label="Abrir developer notes"
         >
-          <div className="flex w-[360px] flex-col gap-3 rounded-[20px] bg-white p-4 shadow-xl shadow-shadow-500 dark:!bg-navy-700 dark:text-white dark:shadow-none sm:w-[460px]">
-            <div className="flex items-center justify-between">
-              <p className="text-base font-bold text-navy-700 dark:text-white">
-                Notificación
-              </p>
-              <p className="text-sm font-bold text-navy-700 dark:text-white">
-                Marcar todos como leídos
-              </p>
-            </div>
-
-            <button className="flex w-full items-center">
-              <div className="flex h-full w-[85px] items-center justify-center rounded-xl bg-gradient-to-b from-brand-400 to-brand-500 py-4 text-2xl text-white">
-                <BsArrowBarUp />
-              </div>
-              <div className="ml-2 flex h-full w-full flex-col justify-center rounded-lg px-1 text-sm">
-                <p className="mb-1 text-left text-base font-bold text-gray-900 dark:text-white">
-                  New Update: Horizon UI Dashboard PRO
-                </p>
-                <p className="font-base text-left text-xs text-gray-900 dark:text-white">
-                  A new update for your downloaded item is available!
-                </p>
-              </div>
-            </button>
-
-            <button className="flex w-full items-center">
-              <div className="flex h-full w-[85px] items-center justify-center rounded-xl bg-gradient-to-b from-brand-400 to-brand-500 py-4 text-2xl text-white">
-                <BsArrowBarUp />
-              </div>
-              <div className="ml-2 flex h-full w-full flex-col justify-center rounded-lg px-1 text-sm">
-                <p className="mb-1 text-left text-base font-bold text-gray-900 dark:text-white">
-                  New Update: Horizon UI Dashboard PRO
-                </p>
-                <p className="font-base text-left text-xs text-gray-900 dark:text-white">
-                  A new update for your downloaded item is available!
-                </p>
-                </div>
-            </button>
-          </div>
-        </Dropdown>
+          <IoMdNotificationsOutline className="h-5 w-5 text-gray-600 dark:text-white" />
+          {developerNotes.length > 0 && (
+            <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-red-500" />
+          )}
+        </button>
 
         {/* Settings/Configurator */}
         <div className="flex h-10 w-10 items-center justify-center">
@@ -245,6 +327,8 @@ const Navbar = (props: {
         </Dropdown>
       </div>
     </nav>
+    {developerNotesModal}
+    </>
   );
 };
 

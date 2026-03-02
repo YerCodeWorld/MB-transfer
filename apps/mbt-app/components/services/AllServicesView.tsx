@@ -15,18 +15,19 @@ import {
   SORT_OPTIONS, 
   SERVICE_KIND_OPTIONS, 
   SERVICE_TYPE_THEMES, 
-  STATUS_COLORS, 
   SERVICE_TYPE_LABELS 
 } from '../../constants/allServicesOptions';
 
 import FlightComparisonModal from '../shared/FlightComparisonModal';
 import AddServiceModal from '../shared/AddServiceModal';
 import PDFGeneratorModal from '../shared/PDFGeneratorModal';
+import ServiceDetailModal from '../shared/ServiceDetailModal';
+import HoursVisualizationModal, { ServiceHoursRow } from '../shared/HoursVisualizationModal';
 
 import Card from '../single/card';
 
-import {  BsArrowLeft, BsSearch, BsFilter, BsEye, BsPlay, BsPencil, BsTrash, BsCheckCircle, BsExclamationTriangle, BsClock, BsFilePdf, BsDownload } from 'react-icons/bs';
-import { FaHashtag, FaUser, FaClock, FaUsers, FaRoute, FaMapSigns, FaTags, FaCar, FaUserTie, FaPlus } from 'react-icons/fa';
+import {  BsArrowLeft, BsSearch, BsFilter, BsEye, BsClock, BsClockHistory, BsFilePdf, BsDownload } from 'react-icons/bs';
+import { FaHashtag, FaUser, FaClock, FaUsers, FaRoute, FaMapSigns, FaTags, FaPlus } from 'react-icons/fa';
 import { HiOutlineViewList } from 'react-icons/hi';
 
 import { toast } from "sonner";
@@ -41,6 +42,8 @@ interface ExtendedService extends ServiceInput {
   status: ServiceStatus;
   assignedDriver?: string;
   assignedVehicle?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 type ServiceNoteLike = {
@@ -60,9 +63,6 @@ const AllServicesView = () => {
   const { services: dbServices, selectedDate, createService, updateService, deleteService, refetchServices } = useServiceData();
   const { setActions, clearActions } = useBottomBar();
   
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'overview' | 'live'>('overview');
-  
   // Services data
   const [allServices, setAllServices] = useState<ExtendedService[]>([]);
   const [filteredServices, setFilteredServices] = useState<ExtendedService[]>([]);
@@ -77,6 +77,7 @@ const AllServicesView = () => {
   
   // Edit modal state
   const [editingService, setEditingService] = useState<ExtendedService | null>(null);
+  const [detailService, setDetailService] = useState<ExtendedService | null>(null);
   const [mounted, setMounted] = useState(false);
   
   // Flight comparison modal state
@@ -87,6 +88,8 @@ const AllServicesView = () => {
   
   // PDF generator modal state
   const [showPDFGenerator, setShowPDFGenerator] = useState(false);
+  const [showHoursVisualization, setShowHoursVisualization] = useState(false);
+  const [originalPickupTimesByServiceId, setOriginalPickupTimesByServiceId] = useState<Record<string, string>>({});
 
   // Handle mounting for portal
   useEffect(() => {
@@ -166,6 +169,63 @@ const AllServicesView = () => {
     return '';
   };
 
+  const displayTimeFromService = (value?: string): string => {
+    if (!value) return '';
+    const input = String(value).trim();
+    if (!input) return '';
+
+    if (isIsoLikeDateTime(input)) {
+      return convertIsoStringTo12h(input);
+    }
+
+    if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(input)) {
+      return input.toUpperCase().replace(/\s+/g, ' ');
+    }
+
+    if (/^\d{1,2}:\d{2}$/.test(input)) {
+      return convertIsoStringTo12h(`${selectedDate}T${input.padStart(5, '0')}:00.000Z`);
+    }
+
+    return input;
+  };
+
+  const displayTimeToMinutes = (displayTime: string): number | null => {
+    const value = String(displayTime || '').trim();
+    if (!value) return null;
+
+    const ampm = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (ampm) {
+      let hours = Number(ampm[1]);
+      const minutes = Number(ampm[2]);
+      const period = ampm[3].toUpperCase();
+      if (period === 'PM' && hours !== 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+      return hours * 60 + minutes;
+    }
+
+    const hhmm = value.match(/^(\d{1,2}):(\d{2})$/);
+    if (hhmm) {
+      return Number(hhmm[1]) * 60 + Number(hhmm[2]);
+    }
+
+    return null;
+  };
+
+  const minutesTo12h = (minutes: number): string => {
+    const normalized = ((minutes % 1440) + 1440) % 1440;
+    const hours24 = Math.floor(normalized / 60);
+    const mins = normalized % 60;
+    const period = hours24 >= 12 ? 'PM' : 'AM';
+    const hours12 = hours24 % 12 || 12;
+    return `${hours12}:${String(mins).padStart(2, '0')} ${period}`;
+  };
+
+  const getOffsetDisplayTime = (displayTime: string, offsetMinutes: number): string => {
+    const baseMinutes = displayTimeToMinutes(displayTime);
+    if (baseMinutes === null) return displayTime;
+    return minutesTo12h(baseMinutes + offsetMinutes);
+  };
+
   // Map database services to ExtendedService format
   useEffect(() => {
     const extended: ExtendedService[] = dbServices.map(service => ({
@@ -194,10 +254,24 @@ const AllServicesView = () => {
       serviceType: mapAllyToServiceType(service.ally?.name, service.code),
       status: (service.state?.toLowerCase() as ServiceStatus) || 'pending',
       assignedDriver: service.driver?.name,
-      assignedVehicle: service.vehicle?.name
+      assignedVehicle: service.vehicle?.name,
+      createdAt: service.createdAt,
+      updatedAt: service.updatedAt,
     }));
 
     setAllServices(extended);
+  }, [dbServices]);
+
+  useEffect(() => {
+    setOriginalPickupTimesByServiceId((previous) => {
+      const next = { ...previous };
+      dbServices.forEach((service) => {
+        if (service.id && !next[service.id]) {
+          next[service.id] = service.pickupTime;
+        }
+      });
+      return next;
+    });
   }, [dbServices]);
   
   // Apply filters and sorting
@@ -285,65 +359,22 @@ const AllServicesView = () => {
     setFilteredServices(filtered);
   }, [allServices, filterType, filterStatus, searchTerm, sortField, sortDirection]);
   
-  // Update bottom bar actions based on active tab
-  useEffect(() => {
-    if (activeTab === 'overview') {
-      setActions([
-        {
-          key: "check-time",
-          label: "Confirmar Vuelos",
-          Icon: BsClock,
-          onClick: checkTimeData
-        },
-        {
-          key: "get-pdfs",
-          label: "Generar Diseños",
-          Icon: BsFilePdf,
-          onClick: getPDFs
-        },
-        {
-          key: "add-service",
-          label: "Añadir Servicio",
-          Icon: FaPlus,
-          onClick: () => setShowAddService(true)
-        },
-        {
-          key: "export-csv",
-          label: "Exportar CSV",
-          Icon: BsDownload,
-          onClick: exportToCSV
-        }
-      ]);
-    } else {
-      setActions([
-        {
-          key: "overview-tab",
-          label: "Overview",
-          Icon: BsEye,
-          onClick: () => setActiveTab('overview')
-        },
-        {
-          key: "live-tab",
-          label: "Live Mode",
-          Icon: BsPlay,
-          variant: "primary",
-          onClick: () => setActiveTab('live')
-        }
-      ]);
-    }
-
-    return () => {
-      clearActions();
-    };
-  }, [activeTab, clearActions, setActions]);
-
-  const checkTimeData = () => {
+  const checkTimeData = useCallback(() => {
     setShowFlightComparison(true);
-  };
+  }, []);
   
-  const getPDFs = () => {
+  const getPDFs = useCallback(() => {
     setShowPDFGenerator(true);
-  };
+  }, []);
+
+  function getCompanyName(serviceType: string) {
+    switch (serviceType) {
+      case 'at': return 'Airport Transfer';
+      case 'st': return 'Sacbé Transfer';
+      case 'mbt': return 'MB Transfer';
+      default: return serviceType.toUpperCase();
+    }
+  }
   
   const handleAddService = async (newService: ServiceInput & { serviceType?: 'at' | 'st' | 'mbt' }) => {
     // Determine ally based on serviceType
@@ -351,7 +382,8 @@ const AllServicesView = () => {
     const companyName = getCompanyName(cacheType);
 
     // Clean the service to remove serviceType before saving
-    const { serviceType: _, ...cleanService } = newService;
+    const cleanService = { ...newService };
+    delete cleanService.serviceType;
 
     const normalizePickupTimeToIso = (raw: string): string => {
       const input = String(raw || '').trim();
@@ -412,10 +444,6 @@ const AllServicesView = () => {
     }
   };
   
-  const handleEditService = (service: ExtendedService) => {
-    setEditingService(service);
-  };
-
   const normalizeOptionalString = (value: unknown): string | undefined => {
     if (typeof value !== 'string') return undefined;
     const trimmed = value.trim();
@@ -444,6 +472,37 @@ const AllServicesView = () => {
       .join(' | ');
 
     return normalizeOptionalString(notesText);
+  };
+
+  const normalizeNotesForEditor = (value: unknown): string => {
+    if (typeof value === 'string') return value;
+    if (!Array.isArray(value)) return '';
+
+    return value
+      .map((note) => {
+        if (!note || typeof note !== 'object') return '';
+        const item = note as ServiceNoteLike;
+        if (typeof item.content === 'string' && item.content.trim().length > 0) {
+          return item.content.trim();
+        }
+        return [item.title, item.caption]
+          .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+          .join(' - ')
+          .trim();
+      })
+      .filter(Boolean)
+      .join('\n');
+  };
+
+  const handleEditService = (service: ExtendedService) => {
+    setEditingService({
+      ...service,
+      notes: normalizeNotesForEditor(service.notes),
+    });
+  };
+
+  const handleViewService = (service: ExtendedService) => {
+    setDetailService(service);
   };
   
   const handleSaveEdit = async (updatedService: ExtendedService) => {
@@ -527,14 +586,6 @@ const AllServicesView = () => {
   };
 
   const exportToCSV = useCallback(() => {
-    console.log('🔍🔍🔍 DEBUG: AllServices exportToCSV called 🔍🔍🔍');
-    console.log('🔍 activeTab:', activeTab);
-    console.log('🔍 allServices length:', allServices.length);
-    console.log('🔍 filteredServices length:', filteredServices.length);
-    console.log('🔍 First filtered service:', filteredServices[0]);
-
-    alert(`DEBUG: About to export ${filteredServices.length} services`);
-
     // CSV Headers
     const headers = [
       'Empresa',
@@ -572,21 +623,15 @@ const AllServicesView = () => {
         service.assignedVehicle || '',
         service.assignedDriver || '',
         service.status || 'pending',
-        service.notes || ''
+        normalizeNotesForEditor(service.notes)
       ].map(field => `"${String(field).replace(/"/g, '""')}"`); // Escape quotes, ensure string
 
       return row;
     });
 
-    console.log('🔍 CSV rows count:', csvRows.length);
-    console.log('🔍 First CSV row:', csvRows[0]);
-
     // Combine headers and rows
     const csvContent = [headers.join(','), ...csvRows.map(row => row.join(','))]
       .join('\n');
-
-    console.log('🔍 CSV content length:', csvContent.length);
-    console.log('🔍 CSV preview:', csvContent.substring(0, 200));
 
     // Create and download file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -607,15 +652,6 @@ const AllServicesView = () => {
     });
   }, [filteredServices, selectedDate]);
 
-  const getCompanyName = (serviceType: string) => {
-    switch (serviceType) {
-      case 'at': return 'Airport Transfer';
-      case 'st': return 'Sacbé Transfer';
-      case 'mbt': return 'MB Transfer';
-      default: return serviceType.toUpperCase();
-    }
-  };
-  
   const handleRemoveService = async (service: ExtendedService) => {
     if (confirm(`Are you sure you want to remove service ${service.code}?`)) {
       const result = await deleteService(service.id);
@@ -640,9 +676,45 @@ const AllServicesView = () => {
     return SERVICE_TYPE_THEMES[serviceType] || SERVICE_TYPE_THEMES.default;
   };
   
-  const getStatusColor = (status: ServiceStatus) => {
-    return STATUS_COLORS[status] || STATUS_COLORS.default;
-  };
+  // Update bottom bar actions
+  useEffect(() => {
+    setActions([
+      {
+        key: "hours-tab",
+        label: "Visualización de Horas",
+        Icon: BsClockHistory,
+        onClick: () => setShowHoursVisualization(true)
+      },
+      {
+        key: "check-time",
+        label: "Confirmar Vuelos",
+        Icon: BsClock,
+        onClick: checkTimeData
+      },
+      {
+        key: "get-pdfs",
+        label: "Generar Diseños",
+        Icon: BsFilePdf,
+        onClick: getPDFs
+      },
+      {
+        key: "add-service",
+        label: "Añadir Servicio",
+        Icon: FaPlus,
+        onClick: () => setShowAddService(true)
+      },
+      {
+        key: "export-csv",
+        label: "Exportar CSV",
+        Icon: BsDownload,
+        onClick: exportToCSV
+      }
+    ]);
+
+    return () => {
+      clearActions();
+    };
+  }, [checkTimeData, clearActions, exportToCSV, getPDFs, setActions]);
   
   const kindOfElement = (kind: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER') => {
     const base = 'px-2 py-1 rounded-full text-xs font-semibold text-white inline-block';
@@ -658,6 +730,28 @@ const AllServicesView = () => {
         return <span className={`${base} bg-gray-400`}>DESCONOCIDO</span>;
     }
   };
+
+  const hoursRows: ServiceHoursRow[] = filteredServices.map((service) => {
+    const originalRawTime = originalPickupTimesByServiceId[service.id] || service.pickupTime;
+    const modifiedTime = displayTimeFromService(service.pickupTime);
+    const originalTime = displayTimeFromService(originalRawTime);
+    const updatedFromDb =
+      Boolean(service.createdAt) &&
+      Boolean(service.updatedAt) &&
+      String(service.createdAt) !== String(service.updatedAt);
+    const isModified = updatedFromDb || modifiedTime !== originalTime;
+
+    return {
+      id: service.id || service.code || `${service.clientName}-${service.pickupTime}`,
+      code: service.code,
+      clientName: service.clientName,
+      kindOf: service.kindOf,
+      modifiedTime: isModified ? (modifiedTime || 'N/A') : null,
+      originalTime: originalTime || 'N/A',
+      offset15Time: service.kindOf === 'ARRIVAL' ? getOffsetDisplayTime(modifiedTime, -15) : undefined,
+      isModified,
+    };
+  });
 
   const renderFilters = () => (
     <Card extra="w-full mb-6">
@@ -828,7 +922,7 @@ const AllServicesView = () => {
                   </th>
                   <th className="px-4 py-3 text-center">
                     <span className="text-xs font-semibold uppercase text-gray-500">
-                      Acciones 
+                      Detalle 
                     </span>
                   </th>
                 </tr>
@@ -860,9 +954,13 @@ const AllServicesView = () => {
                     </td>
                     <td className="px-4 py-4">
                       <span className="text-sm text-gray-900 dark:text-gray-100">
-                        {isIsoLikeDateTime(service.pickupTime)
-                          ? convertIsoStringTo12h(service.pickupTime)
-                          : service.pickupTime}
+                        {(() => {
+                          const baseTime = displayTimeFromService(service.pickupTime);
+                          if (service.kindOf === 'ARRIVAL') {
+                            return getOffsetDisplayTime(baseTime, -15);
+                          }
+                          return baseTime;
+                        })()}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
@@ -886,23 +984,15 @@ const AllServicesView = () => {
                     <td className="px-4 py-4">
                       {kindOfElement(service.kindOf)}
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEditService(service)}
-                          className="p-2 text-blue-300 dark:text-blue-100 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                          title="Edit Service"
-                        >
-                          <BsPencil />
-                        </button>
-                        <button
-                          onClick={() => handleRemoveService(service)}
-                          className="p-2 bg-red-100 text-red-400 hover:bg-red-50 dark:text-red-900 dark:bg-red-200 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          title="Remove Service"
-                        >
-                          <BsTrash />
-                        </button>
-                      </div>
+                    <td className="px-4 py-4 text-center">
+                      <button
+                        onClick={() => handleViewService(service)}
+                        className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-800/50 dark:bg-blue-900/20 dark:text-blue-200 dark:hover:bg-blue-900/30"
+                        title="Ver detalle de servicio"
+                      >
+                        <BsEye />
+                        Detalle
+                      </button>
                     </td>
                   </tr>
                   );
@@ -1116,7 +1206,7 @@ const AllServicesView = () => {
                   Notas
                 </label>
                 <textarea
-                  value={editingService.notes || ''}
+                  value={normalizeNotesForEditor(editingService.notes)}
                   onChange={(e) => setEditingService({ ...editingService, notes: e.target.value })}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-navy-700 dark:border-gray-600 dark:text-white"
@@ -1146,24 +1236,6 @@ const AllServicesView = () => {
     return createPortal(modalContent, document.body);
   };
 
-  const renderLiveMode = () => (
-    <Card extra="w-full">
-      <div className="p-8 text-center">
-        <BsPlay className="text-6xl text-gray-400 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-navy-700 dark:text-white mb-2">
-          Live Mode
-        </h3>
-        <p className="text-gray-600 dark:text-gray-300 mb-6">
-          Live tracking functionality will be implemented here. This will provide real-time monitoring of all active services.
-        </p>
-        <div className="flex items-center justify-center gap-2 text-yellow-600">
-          <BsExclamationTriangle />
-          <span className="text-sm font-medium">Coming Soon</span>
-        </div>
-      </div>
-    </Card>
-  );
-	
   return (
     <div className="m-10">
       <div className="flex items-center gap-4 mb-6">
@@ -1178,10 +1250,7 @@ const AllServicesView = () => {
             Itinerario General De Operaciones
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
-            {activeTab === 'overview' 
-              ? 'Maneja todos los servicios de Airport Transfer, Sacbé Transfer, y MB Transfer de la fecha elegida.' 
-              : 'Monitorea y maneja los servicios en tiempo real.'
-            }
+            Maneja todos los servicios de Airport Transfer, Sacbé Transfer, y MB Transfer de la fecha elegida.
           </p>
           <p className="text-sm text-accent-600 dark:text-accent-400 mt-1">
             Servicios del: <i>{new Date(selectedDate).toLocaleDateString('es-ES', { 
@@ -1198,35 +1267,48 @@ const AllServicesView = () => {
         </div>
       </div>
       
-      {activeTab === 'overview' ? (
-        <>
-          {renderFilters()}
-          {renderServicesTable()}
-          {renderEditModal()}
-          <FlightComparisonModal
-            isOpen={showFlightComparison}
-            onClose={() => setShowFlightComparison(false)}
-            services={allServices}
-            selectedDate={selectedDate}
-            onUpdateServiceTime={handleFlightTimeUpdate}
-          />
-          <AddServiceModal
-            isOpen={showAddService}
-            onClose={() => setShowAddService(false)}
-            onSave={handleAddService}
-            selectedDate={selectedDate}
-          />
-          <PDFGeneratorModal
-            isOpen={showPDFGenerator}
-            onClose={() => setShowPDFGenerator(false)}
-            services={filteredServices}
-            selectedDate={selectedDate}
-            onServiceUpdate={handlePDFServiceUpdate}
-          />
-        </>
-      ) : (
-        renderLiveMode()
-      )}
+      {renderFilters()}
+      {renderServicesTable()}
+      {renderEditModal()}
+      <ServiceDetailModal
+        service={detailService}
+        onClose={() => setDetailService(null)}
+        onEdit={() => {
+          if (!detailService) return;
+          handleEditService(detailService);
+          setDetailService(null);
+        }}
+        onRemove={() => {
+          if (!detailService) return;
+          handleRemoveService(detailService);
+          setDetailService(null);
+        }}
+      />
+      <FlightComparisonModal
+        isOpen={showFlightComparison}
+        onClose={() => setShowFlightComparison(false)}
+        services={filteredServices}
+        selectedDate={selectedDate}
+        onUpdateServiceTime={handleFlightTimeUpdate}
+      />
+      <AddServiceModal
+        isOpen={showAddService}
+        onClose={() => setShowAddService(false)}
+        onSave={handleAddService}
+        selectedDate={selectedDate}
+      />
+      <PDFGeneratorModal
+        isOpen={showPDFGenerator}
+        onClose={() => setShowPDFGenerator(false)}
+        services={filteredServices}
+        selectedDate={selectedDate}
+        onServiceUpdate={handlePDFServiceUpdate}
+      />
+      <HoursVisualizationModal
+        isOpen={showHoursVisualization}
+        onClose={() => setShowHoursVisualization(false)}
+        rows={hoursRows}
+      />
     </div>
   );
 };

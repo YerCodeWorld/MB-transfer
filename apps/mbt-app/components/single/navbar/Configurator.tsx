@@ -96,6 +96,19 @@ export default function HeaderLinks(props: { [x: string]: any }) {
       document.removeEventListener("fullscreenchange", onFullscreenChange);
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
   return (
     <>
       <button        
@@ -104,24 +117,17 @@ export default function HeaderLinks(props: { [x: string]: any }) {
         <MdSettings className="h-[18px] w-[18px] text-gray-400 dark:text-white" />
       </button>
       
-      {/* DaisyUI Drawer */}
-      <div className={`drawer-end z-2`}>
-        <input 
-          id="config-drawer" 
-          type="checkbox" 
-          className="drawer-toggle" 
-          checked={open}
-          onChange={(e) => setOpen(e.target.checked)}
-        />
-        
-        {/* Backdrop */}
-        <div className="drawer-side">
-                    
-          {/* Drawer Content */}
-          <div className="max-w-[25vw] rounded-[40px] bg-white dark:bg-navy-800 shadow-[-20px_17px_40px_4px_rgba(112,_144,_176,_0.18)]">
+      {open && (
+        <div className="fixed inset-0 z-[120]">
+          <button
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setOpen(false)}
+            aria-label="Cerrar configuración"
+          />
+          <div className="absolute right-0 top-0 h-screen w-[92vw] max-w-[460px] bg-white shadow-[-20px_17px_40px_4px_rgba(112,_144,_176,_0.18)] dark:bg-navy-800">
             
             {/* Header */}
-            <div className="p-4 w-full">
+            <div className="w-full p-4">
               <div className="flex items-center justify-between bg-white dark:bg-navy-800">
                 <div className="flex items-center p-4">
 
@@ -132,7 +138,7 @@ export default function HeaderLinks(props: { [x: string]: any }) {
                     <p className="text-md flex font-medium text-gray-600 dark:text-accent-50/80">
                       Plataforma MBT
                       <span className="ml-1.5 flex items-center rounded-3xl bg-brand-50 px-2 text-sm font-semibold text-brand-500 dark:bg-white/10 dark:text-white">
-                        v0.1.153
+                        v0.1.2
                       </span>
                     </p>
                   </div>
@@ -141,7 +147,7 @@ export default function HeaderLinks(props: { [x: string]: any }) {
                 {/* Close Button */}
                 <button
                   onClick={() => setOpen(false)}
-                  className="btn btn-sm btn-ghost"
+                  className="rounded-md p-2 transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
                 >
                   <MdClose className="h-4 w-4 text-gray-900 dark:text-white" />
                 </button>
@@ -150,7 +156,7 @@ export default function HeaderLinks(props: { [x: string]: any }) {
             </div>
 
             {/* Body */}
-            <div className="overflow-y-auto px-7 pt-0 pb-6 w-full max-h-[calc(100vh-200px)]">
+            <div className="max-h-[calc(100vh-160px)] w-full overflow-y-auto px-5 pb-6 pt-0 sm:px-7">
               <div className="flex flex-col">
                 <p className="mb-3 font-bold text-gray-900 dark:text-white">
                   Tema
@@ -370,7 +376,7 @@ export default function HeaderLinks(props: { [x: string]: any }) {
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Background Selection Modal */}
       {showBackgroundModal && mounted && createPortal(
