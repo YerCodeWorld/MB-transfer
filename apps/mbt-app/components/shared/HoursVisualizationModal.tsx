@@ -27,8 +27,10 @@ export default function HoursVisualizationModal({
 }: HoursVisualizationModalProps) {
   if (!isOpen || typeof window === "undefined") return null;
 
-  const arrivals = rows.filter((row) => row.kindOf === "DEPARTURE");
-  const others = rows.filter((row) => row.kindOf !== "DEPARTURE");
+  const arrivals = rows.filter((row) => row.kindOf === "ARRIVAL");
+  const departures = rows.filter((row) => row.kindOf === "DEPARTURE");
+  const transfers = rows.filter((row) => row.kindOf === "TRANSFER");
+
   return createPortal(
     <div
       className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4"
@@ -64,19 +66,58 @@ export default function HoursVisualizationModal({
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Código</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Cliente</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Hora Modificada</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Offset -15 min</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Hora Original</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {arrivals.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">
+                      <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">
                         No hay servicios de llegada para mostrar.
                       </td>
                     </tr>
                   ) : (
                     arrivals.map((row) => (
+                      <tr key={row.id}>
+                        <td className="px-4 py-3 text-sm text-navy-700 dark:text-white">{row.code || "N/A"}</td>
+                        <td className="px-4 py-3 text-sm text-navy-700 dark:text-white">{row.clientName}</td>
+                        <td className="px-4 py-3 text-sm text-navy-700 dark:text-white">
+                          {row.modifiedTime ?? "—"}
+                          {row.isModified && <span className="ml-2 text-xs text-green-600 dark:text-green-400">actualizada</span>}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{row.originalTime}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-navy-700 dark:text-white mb-3">
+              Salidas (DEPARTURE)
+            </h3>
+            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+              <table className="min-w-full">
+                <thead className="bg-gray-50 dark:bg-navy-700/60">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Código</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Cliente</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Hora Modificada</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Offset -15 min</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Hora Original</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {departures.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">
+                        No hay servicios de salida para mostrar.
+                      </td>
+                    </tr>
+                  ) : (
+                    departures.map((row) => (
                       <tr key={row.id}>
                         <td className="px-4 py-3 text-sm text-navy-700 dark:text-white">{row.code || "N/A"}</td>
                         <td className="px-4 py-3 text-sm text-navy-700 dark:text-white">{row.clientName}</td>
@@ -96,7 +137,7 @@ export default function HoursVisualizationModal({
 
           <div>
             <h3 className="text-lg font-semibold text-navy-700 dark:text-white mb-3">
-              Salidas y Transferencias
+              Transferencias (TRANSFER)
             </h3>
             <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
               <table className="min-w-full">
@@ -109,14 +150,14 @@ export default function HoursVisualizationModal({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {others.length === 0 ? (
+                  {transfers.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">
-                        No hay servicios de salida/transferencia para mostrar.
+                        No hay transferencias para mostrar.
                       </td>
                     </tr>
                   ) : (
-                    others.map((row) => (
+                    transfers.map((row) => (
                       <tr key={row.id}>
                         <td className="px-4 py-3 text-sm text-navy-700 dark:text-white">{row.code || "N/A"}</td>
                         <td className="px-4 py-3 text-sm text-navy-700 dark:text-white">{row.clientName}</td>

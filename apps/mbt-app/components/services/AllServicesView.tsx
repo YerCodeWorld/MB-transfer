@@ -721,7 +721,7 @@ const AllServicesView = () => {
       kindOf: service.kindOf,
       modifiedTime: isModified ? (modifiedTime || 'N/A') : null,
       originalTime: originalTime || 'N/A',
-      offset15Time: service.kindOf === 'ARRIVAL' ? getOffsetDisplayTime(modifiedTime, -15) : undefined,
+      offset15Time: service.kindOf === 'DEPARTURE' ? getOffsetDisplayTime(modifiedTime, -15) : undefined,
       isModified,
     };
   });
