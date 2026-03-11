@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { RiMoonFill, RiSunFill } from "react-icons/ri";
 
 type FixedSwitchProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 export default function FixedSwitch(props: FixedSwitchProps) {
 
-  const [darkmode, setDarkmode] = useState<boolean>(false);
-
-  useEffect(() => {    
-    setDarkmode(document.documentElement.classList.contains("dark"));    
-  }, []);
+  const [darkmode, setDarkmode] = useState<boolean>(() =>
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark")
+  );
 
   const toggleTheme = () => {
   
@@ -43,4 +41,3 @@ export default function FixedSwitch(props: FixedSwitchProps) {
     </button>
   );
 }
-

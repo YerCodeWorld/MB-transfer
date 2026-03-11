@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 // MY BEAUTIFUL BARS
 import NavBar from "../../../components/single/navbar";
@@ -26,13 +26,14 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { ServiceDataProvider } from "../../../contexts/ServiceDataContext";
 import { apiClient } from "../../../utils/api";
 
+type ThemeVars = Record<string, string>;
+
 function PlatformContent() {
 
   const { navigation, setCurrentSection } = useNavigation();
   const { employee, refreshAuth } = useAuth();
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [mini, setMini] = useState(false);
 
   const section = navigation.currentSection;
 
@@ -86,7 +87,7 @@ function PlatformContent() {
     return () => window.removeEventListener("resize", syncSidebarWithViewport);
   }, []);
 
-  const [themeApp, setThemeApp] = useState<any>({
+  const defaultTheme = useMemo(() => ({
     "--background-100": "#FFFFFF",
     "--background-900": "#070f2e",
     "--shadow-100": "rgba(112, 144, 176, 0.08)",
@@ -100,14 +101,10 @@ function PlatformContent() {
     "--color-accent-700": "#2111A5",
     "--color-accent-800": "#190793",
     "--color-accent-900": "#11047A",
-  });
-
-  const [selectedBackground, setSelectedBackground] = useState<string>('bg-globes.jpg');
-  const [currentAccent, setCurrentAccent] = useState<string>('purple');
-  const [darkmode, setDarkmode] = useState(false);
+  }), []);
 
   // Theme presets mapping
-  const themePresets: Record<string, any> = {
+  const themePresets: Record<string, ThemeVars> = useMemo(() => ({
     purple: {
       "--color-accent-50": "#F1ECFF",
       "--color-accent-100": "#E2D9FF",
@@ -180,38 +177,19 @@ function PlatformContent() {
       "--color-accent-800": "#153736",
       "--color-accent-900": "#0C2020",
     },
-  };
+  }), []);
 
-  // Load customization settings from employee data on mount
-  useEffect(() => {
-    if (employee) {
-      // Set mini sidebar from employee.minimized
-      if (employee.minimized !== undefined) {
-        setMini(employee.minimized);
-      }
+  const [miniOverride, setMiniOverride] = useState<boolean | null>(null);
+  const [selectedBackgroundOverride, setSelectedBackgroundOverride] = useState<string | null>(null);
+  const [currentAccentOverride, setCurrentAccentOverride] = useState<string | null>(null);
+  const [darkmodeOverride, setDarkmodeOverride] = useState<boolean | null>(null);
+  const [themeOverride, setThemeOverride] = useState<Record<string, string> | null>(null);
 
-      // Set background from employee.background
-      if (employee.background) {
-        setSelectedBackground(employee.background);
-      }
-
-      // Set dark mode from employee.darkMode
-      if (employee.darkMode !== undefined) {
-        setDarkmode(employee.darkMode);
-        if (employee.darkMode) {
-          document.documentElement.classList.add("dark");
-        } else {
-          document.documentElement.classList.remove("dark");
-        }
-      }
-
-      // Set accent theme from employee.appAccent
-      if (employee.appAccent && themePresets[employee.appAccent]) {
-        setThemeApp(themePresets[employee.appAccent]);
-        setCurrentAccent(employee.appAccent);
-      }
-    }
-  }, [employee]);
+  const mini = miniOverride ?? employee?.minimized ?? false;
+  const selectedBackground = selectedBackgroundOverride ?? employee?.background ?? 'bg-globes.jpg';
+  const currentAccent = currentAccentOverride ?? employee?.appAccent ?? 'purple';
+  const darkmode = darkmodeOverride ?? employee?.darkMode ?? false;
+  const themeApp = themeOverride ?? themePresets[currentAccent] ?? defaultTheme;
 
   // Save customization settings to backend when they change
   const saveCustomization = async (changes: {
@@ -242,28 +220,28 @@ function PlatformContent() {
 
   // Wrapper for setMini that also saves to backend
   const handleSetMini = (value: boolean) => {
-    setMini(value);
+    setMiniOverride(value);
     saveCustomization({ minimized: value });
   };
 
   // Wrapper for setSelectedBackground that also saves to backend
   const handleSetSelectedBackground = (value: string) => {
-    setSelectedBackground(value);
+    setSelectedBackgroundOverride(value);
     saveCustomization({ background: value });
   };
 
   // Wrapper for setTheme that also saves to backend
-  const handleSetTheme = (theme: any, themeName?: string) => {
-    setThemeApp(theme);
+  const handleSetTheme = (theme: ThemeVars, themeName?: string) => {
+    setThemeOverride(theme);
     if (themeName) {
-      setCurrentAccent(themeName);
+      setCurrentAccentOverride(themeName);
       saveCustomization({ appAccent: themeName });
     }
   };
 
   // Wrapper for darkmode that also saves to backend
   const handleSetDarkmode = (value: boolean) => {
-    setDarkmode(value);
+    setDarkmodeOverride(value);
     saveCustomization({ darkMode: value });
   };
 
@@ -273,6 +251,10 @@ function PlatformContent() {
       document.documentElement.style.setProperty(color, themeApp[color]);
     }
   }, [themeApp]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkmode);
+  }, [darkmode]);
   
   return (
     <AuthGuard>

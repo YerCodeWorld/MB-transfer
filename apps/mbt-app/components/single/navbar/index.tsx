@@ -22,9 +22,7 @@ const Navbar = (props: {
 }) => {
   const {
     onOpenSidenav,
-    brandText,
     mini,
-    setMini,
     theme,
     setTheme,
     themePresets,

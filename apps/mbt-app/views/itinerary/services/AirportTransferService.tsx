@@ -36,7 +36,7 @@ const AirportTransferService = () => {
 	const [loading, setLoading] = useState(false);
 	const [selected, setSelected] = useState<any | null>(null);
 	const [services, setServices] = useState<ServicePreview[]>([]);
-	const [step, setStep] = useState<'fetch' | 'review' | 'confirm'>('review');
+	const [step] = useState<'fetch' | 'review' | 'confirm'>('review');
 
 	useEffect(() => {
 		// Keep AT view aligned with persisted services for the selected date.
@@ -226,27 +226,6 @@ const AirportTransferService = () => {
 				status: 'pending' as const
 			}));      
 
-			// Update global state with fetched services
-			const serviceInputs: ServiceInput[] = servicesWithStatus.map(s => {
-
-				return {
-					id: s.id,
-					code: s.code,
-					kindOf: s.kindOf,
-					clientName: s.clientName,
-					pickupTime: s.pickupTime, // Keep ISO format for API
-					flightCode: s.flightCode,
-					pax: s.pax,
-					luggage: s.luggage,
-					pickupLocation: s.pickupLocation,
-					dropoffLocation: s.dropoffLocation,
-					notes: s.notes,
-					vehicleType: s.vehicleType,
-					ally: s.ally
-				};
-
-			});
-
 			setServices(servicesWithStatus);
 			// setStep('review');
 
@@ -257,15 +236,6 @@ const AirportTransferService = () => {
 		}
 	};
 
-	const confirmServices = () => {
-		// Here we would send the services to the backend for approval
-		console.log('Services confirmed for review:', services);
-		alert(`${services.length} services submitted for approval`);
-		clearActions(); // Clear bottom bar actions before leaving
-		popView();
-	};
-
-  
   const renderFetchStep = () => {    
     
     const formattedDate = new Date(selectedDate).toLocaleDateString("es-ES", {

@@ -17,6 +17,18 @@ import { usePlace, useDeletePlace } from "@/hooks/usePlaces";
 import PlaceForm from "./PlaceForm";
 import { toast } from "sonner";
 
+const PLACE_ICONS = {
+  AIRPORT: MdAirplanemodeActive,
+  HOTEL: MdHotel,
+  OTHER: MdPlace,
+} as const;
+
+const PLACE_LABELS = {
+  AIRPORT: 'Aeropuerto',
+  HOTEL: 'Hotel',
+  OTHER: 'Otro',
+} as const;
+
 interface PlaceDetailProps {
   placeId: string;
   onUpdate?: () => void;
@@ -67,22 +79,8 @@ export default function PlaceDetail({ placeId, onUpdate }: PlaceDetailProps) {
     }
   };
 
-  const getPlaceIcon = (kind: string) => {
-    const icons = {
-      AIRPORT: MdAirplanemodeActive,
-      HOTEL: MdHotel,
-      OTHER: MdPlace,
-    };
-    return icons[kind as keyof typeof icons] || MdPlace;
-  };
-
   const getPlaceLabel = (kind: string) => {
-    const labels = {
-      AIRPORT: 'Aeropuerto',
-      HOTEL: 'Hotel',
-      OTHER: 'Otro',
-    };
-    return labels[kind as keyof typeof labels] || 'Otro';
+    return PLACE_LABELS[kind as keyof typeof PLACE_LABELS] || 'Otro';
   };
 
   if (isLoading) {
@@ -117,7 +115,7 @@ export default function PlaceDetail({ placeId, onUpdate }: PlaceDetailProps) {
     );
   }
 
-  const Icon = getPlaceIcon(place.kind);
+  const Icon = PLACE_ICONS[place.kind as keyof typeof PLACE_ICONS] || MdPlace;
 
   return (
     <div className="w-full h-full p-6 pb-24 overflow-y-auto">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import Card from "@/components/single/card";
 import { MdSave, MdLocationOn, MdMap } from "react-icons/md";
 import { useNavigation } from "@/contexts/NavigationContext";
@@ -35,33 +35,37 @@ export default function PlaceForm({ mode, placeId, onSuccess }: PlaceFormProps) 
   const createPlaceMutation = useCreatePlace();
   const updatePlaceMutation = useUpdatePlace();
 
-  const [formData, setFormData] = useState<PlaceFormData>({
-    kind: 'HOTEL',
-    name: '',
-    iata: '',
-    latitude: undefined,
-    longitude: undefined,
-    zoneId: '',
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showMapPicker, setShowMapPicker] = useState(false);
-
-  useEffect(() => {
+  const initialFormData = useMemo<PlaceFormData>(() => {
     if (mode === 'edit' && place) {
-      setFormData({
+      return {
         kind: place.kind,
         name: place.name,
         iata: place.iata || '',
         latitude: place.latitude || undefined,
         longitude: place.longitude || undefined,
         zoneId: place.zone?.id || '',
-      });
+      };
     }
+
+    return {
+      kind: 'HOTEL',
+      name: '',
+      iata: '',
+      latitude: undefined,
+      longitude: undefined,
+      zoneId: '',
+    };
   }, [mode, place]);
 
+  const [formData, setFormData] = useState<PlaceFormData | null>(null);
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showMapPicker, setShowMapPicker] = useState(false);
+
+  const currentFormData = formData ?? initialFormData;
+
   const handleInputChange = (field: keyof PlaceFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...(prev ?? currentFormData), [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -70,23 +74,23 @@ export default function PlaceForm({ mode, placeId, onSuccess }: PlaceFormProps) 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name?.trim()) {
+    if (!currentFormData.name?.trim()) {
       newErrors.name = 'El nombre es requerido';
     }
 
-    if (formData.kind === 'AIRPORT') {
-      if (!formData.iata?.trim()) {
+    if (currentFormData.kind === 'AIRPORT') {
+      if (!currentFormData.iata?.trim()) {
         newErrors.iata = 'El código IATA es requerido para aeropuertos';
-      } else if (formData.iata.length !== 3) {
+      } else if (currentFormData.iata.length !== 3) {
         newErrors.iata = 'El código IATA debe tener exactamente 3 caracteres';
       }
     }
 
-    if (formData.latitude !== undefined && (formData.latitude < -90 || formData.latitude > 90)) {
+    if (currentFormData.latitude !== undefined && (currentFormData.latitude < -90 || currentFormData.latitude > 90)) {
       newErrors.latitude = 'La latitud debe estar entre -90 y 90';
     }
 
-    if (formData.longitude !== undefined && (formData.longitude < -180 || formData.longitude > 180)) {
+    if (currentFormData.longitude !== undefined && (currentFormData.longitude < -180 || currentFormData.longitude > 180)) {
       newErrors.longitude = 'La longitud debe estar entre -180 y 180';
     }
 
@@ -101,12 +105,12 @@ export default function PlaceForm({ mode, placeId, onSuccess }: PlaceFormProps) 
 
     try {
       const payload: any = {
-        kind: formData.kind,
-        name: formData.name.trim(),
-        iata: formData.kind === 'AIRPORT' && formData.iata ? formData.iata.toUpperCase() : undefined,
-        latitude: formData.latitude || undefined,
-        longitude: formData.longitude || undefined,
-        zoneId: formData.zoneId || undefined,
+        kind: currentFormData.kind,
+        name: currentFormData.name.trim(),
+        iata: currentFormData.kind === 'AIRPORT' && currentFormData.iata ? currentFormData.iata.toUpperCase() : undefined,
+        latitude: currentFormData.latitude || undefined,
+        longitude: currentFormData.longitude || undefined,
+        zoneId: currentFormData.zoneId || undefined,
       };
 
       if (mode === 'create') {
@@ -170,7 +174,7 @@ export default function PlaceForm({ mode, placeId, onSuccess }: PlaceFormProps) 
                 Tipo <span className="text-red-500">*</span>
               </label>
               <select
-                value={formData.kind}
+                value={currentFormData.kind}
                 onChange={(e) => handleInputChange('kind', e.target.value)}
                 className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
               >
@@ -192,7 +196,7 @@ export default function PlaceForm({ mode, placeId, onSuccess }: PlaceFormProps) 
               </label>
               <input
                 type="text"
-                value={formData.name}
+                value={currentFormData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 placeholder="Ej: Excellence Punta Cana"
                 className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
@@ -203,14 +207,14 @@ export default function PlaceForm({ mode, placeId, onSuccess }: PlaceFormProps) 
             </div>
 
             {/* IATA Code (only for airports) */}
-            {formData.kind === 'AIRPORT' && (
+            {currentFormData.kind === 'AIRPORT' && (
               <div>
                 <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">
                   Código IATA <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  value={formData.iata}
+                  value={currentFormData.iata}
                   onChange={(e) => handleInputChange('iata', e.target.value.toUpperCase())}
                   placeholder="PUJ"
                   maxLength={3}
@@ -231,7 +235,7 @@ export default function PlaceForm({ mode, placeId, onSuccess }: PlaceFormProps) 
                 Zona (Opcional)
               </label>
               <select
-                value={formData.zoneId}
+                value={currentFormData.zoneId}
                 onChange={(e) => handleInputChange('zoneId', e.target.value)}
                 className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
               >
@@ -273,7 +277,7 @@ export default function PlaceForm({ mode, placeId, onSuccess }: PlaceFormProps) 
                 <input
                   type="number"
                   step="any"
-                  value={formData.latitude || ''}
+                  value={currentFormData.latitude || ''}
                   onChange={(e) => handleInputChange('latitude', e.target.value ? parseFloat(e.target.value) : undefined)}
                   placeholder="18.5601"
                   className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
@@ -291,7 +295,7 @@ export default function PlaceForm({ mode, placeId, onSuccess }: PlaceFormProps) 
                 <input
                   type="number"
                   step="any"
-                  value={formData.longitude || ''}
+                  value={currentFormData.longitude || ''}
                   onChange={(e) => handleInputChange('longitude', e.target.value ? parseFloat(e.target.value) : undefined)}
                   placeholder="-68.3725"
                   className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
@@ -350,8 +354,8 @@ export default function PlaceForm({ mode, placeId, onSuccess }: PlaceFormProps) 
       {/* Map Picker Modal */}
       {showMapPicker && (
         <MapPicker
-          latitude={formData.latitude}
-          longitude={formData.longitude}
+          latitude={currentFormData.latitude}
+          longitude={currentFormData.longitude}
           onLocationSelect={(lat, lng) => {
             setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
             if (errors.latitude) setErrors(prev => ({ ...prev, latitude: '' }));

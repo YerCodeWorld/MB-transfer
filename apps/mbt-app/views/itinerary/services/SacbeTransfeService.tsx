@@ -255,13 +255,6 @@ const SacbeTransferService = () => {
 		}
 	};
 
-	const confirmServices = () => {
-		const validServices = services.filter(s => s.validation.isValid);    
-		toast.info(`${validServices.length} services submitted for approval`);
-		clearActions();
-		popView();
-	};
-
 	useEffect(() => {
 		if (step === 'upload') {
 			setActions([
@@ -585,7 +578,7 @@ const SacbeTransferService = () => {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-navy-700 dark:text-white">
-            "Sacbé Transfer" Importación de Servicios
+            &quot;Sacbé Transfer&quot; Importación de Servicios
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
             Suba el archivo de *excel* con los servicios

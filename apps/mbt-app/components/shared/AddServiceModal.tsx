@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { ServiceInput } from '../../types/services';
-import { parseServiceMessage, convertParsedToServiceInput, getExampleMessage, ParsedServiceMessage } from '../../utils/messageParser';
+import { parseServiceMessage, convertParsedToServiceInput, getExampleMessage } from '../../utils/messageParser';
 import { 
   BsCheckCircle, 
   BsExclamationTriangle, 
@@ -20,6 +20,7 @@ import {
   FaTags,
   FaHashtag
 } from 'react-icons/fa';
+import { useIsClient } from '@/hooks/useIsClient';
 
 interface AddServiceModalProps {
   isOpen: boolean;
@@ -29,13 +30,11 @@ interface AddServiceModalProps {
 }
 
 const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceModalProps) => {
-  const [mounted, setMounted] = useState(false);
+  const isClient = useIsClient();
   const [activeTab, setActiveTab] = useState<'message' | 'manual'>('message');
   
   // Message parser state
   const [messageText, setMessageText] = useState('');
-  const [parsedData, setParsedData] = useState<ParsedServiceMessage | null>(null);
-  const [parseError, setParsedError] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'departure' | 'arrival'>('departure');
   
   // Manual form state
@@ -53,11 +52,6 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
   const [selectedCompany, setSelectedCompany] = useState<'at' | 'st' | 'mbt'>('mbt');
 
   useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
-  useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -68,22 +62,18 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
     };
   }, [isOpen]);
 
-  // Parse message when messageText changes
-  useEffect(() => {
-    if (messageText.trim()) {
-      const parsed = parseServiceMessage(messageText);
-      if (parsed) {
-        setParsedData(parsed);
-        setParsedError(null);
-      } else {
-        setParsedData(null);
-        setParsedError('Unable to parse message. Please check the format.');
-      }
-    } else {
-      setParsedData(null);
-      setParsedError(null);
+  const parsedResult = useMemo(() => {
+    if (!messageText.trim()) {
+      return { parsedData: null, parseError: null as string | null };
     }
+
+    const parsed = parseServiceMessage(messageText);
+    return parsed
+      ? { parsedData: parsed, parseError: null }
+      : { parsedData: null, parseError: 'Unable to parse message. Please check the format.' };
   }, [messageText]);
+
+  const { parsedData, parseError } = parsedResult;
 
   const handlePasteExample = () => {
     setMessageText(getExampleMessage(messageType));
@@ -103,7 +93,7 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
   const handleSaveFromManual = async () => {
     if (manualService.clientName && manualService.code && manualService.pickupTime) {
       const service = {
-        id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: `manual_${crypto.randomUUID()}`,
         code: manualService.code!,
         kindOf: manualService.kindOf!,
         clientName: manualService.clientName!,
@@ -123,8 +113,6 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
 
   const handleClose = () => {
     setMessageText('');
-    setParsedData(null);
-    setParsedError(null);
     setMessageType('departure');
     setManualService({
       code: '',
@@ -141,7 +129,7 @@ const AddServiceModal = ({ isOpen, onClose, onSave, selectedDate }: AddServiceMo
     onClose();
   };
 
-  if (!mounted || !isOpen) return null;
+  if (!isClient || !isOpen) return null;
 
   const modalContent = (
     <div 

@@ -12,26 +12,30 @@ interface MapPickerProps {
 
 export default function MapPicker({ latitude, longitude, onLocationSelect, onClose }: MapPickerProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markerRef = useRef<google.maps.Marker | null>(null);
   const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(
     latitude && longitude ? { lat: latitude, lng: longitude } : null
   );
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(
+    () => typeof window !== "undefined" && Boolean(window.google?.maps)
+  );
+  const [error, setError] = useState<string | null>(
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+      ? null
+      : "Google Maps API key not configured. Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your .env file."
+  );
 
   // Load Google Maps script
   useEffect(() => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
-      setError("Google Maps API key not configured. Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your .env file.");
       return;
     }
 
     // Check if Google Maps is already loaded
     if (window.google && window.google.maps) {
-      setIsLoaded(true);
       return;
     }
 
@@ -50,7 +54,7 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, onClo
 
   // Initialize map when loaded
   useEffect(() => {
-    if (!isLoaded || !mapRef.current || map) return;
+    if (!isLoaded || !mapRef.current || mapInstanceRef.current) return;
 
     const initialCenter = selectedCoords || { lat: 18.7357, lng: -70.1627 }; // Dominican Republic
 
@@ -62,7 +66,7 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, onClo
       fullscreenControl: false,
     });
 
-    setMap(newMap);
+    mapInstanceRef.current = newMap;
 
     // Add click listener
     newMap.addListener("click", (e: google.maps.MapMouseEvent) => {
@@ -72,14 +76,15 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, onClo
         setSelectedCoords({ lat, lng });
       }
     });
-  }, [isLoaded, mapRef, map, selectedCoords]);
+  }, [isLoaded, selectedCoords]);
 
   // Update marker when coords change
   useEffect(() => {
+    const map = mapInstanceRef.current;
     if (!map || !selectedCoords) return;
 
-    if (marker) {
-      marker.setMap(null);
+    if (markerRef.current) {
+      markerRef.current.setMap(null);
     }
 
     const newMarker = new google.maps.Marker({
@@ -96,9 +101,15 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, onClo
       }
     });
 
-    setMarker(newMarker);
+    markerRef.current = newMarker;
     map.panTo(selectedCoords);
-  }, [selectedCoords, map]);
+    return () => {
+      newMarker.setMap(null);
+      if (markerRef.current === newMarker) {
+        markerRef.current = null;
+      }
+    };
+  }, [selectedCoords]);
 
   const handleConfirm = () => {
     if (selectedCoords) {

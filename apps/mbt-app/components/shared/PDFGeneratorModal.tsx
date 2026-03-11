@@ -6,9 +6,10 @@ import { apiClient } from '../../utils/api';
 import { ServiceInput } from '../../types/services';
 import { convertIsoStringTo12h, convertTo12Hour } from '../../utils/services';
 
-import { BsFilePdf, BsDownload, BsX, BsCheckCircle, BsExclamationTriangle, BsPencil } from 'react-icons/bs';
+import { BsFilePdf, BsDownload, BsX, BsPencil } from 'react-icons/bs';
 import { FaSpinner } from 'react-icons/fa';
 import { toast } from "sonner";
+import { useIsClient } from '@/hooks/useIsClient';
 
 interface ExtendedService extends ServiceInput {
   serviceType: 'at' | 'st' | 'mbt';
@@ -29,7 +30,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
   selectedDate,
   onServiceUpdate
 }) => {
-  const [mounted, setMounted] = useState(false);
+  const isClient = useIsClient();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingService, setGeneratingService] = useState<string | null>(null);
   const [editingService, setEditingService] = useState<ExtendedService | null>(null);
@@ -49,11 +50,6 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
     const typeMatch = filterType === 'all' || service.kindOf === filterType;
     return companyMatch && typeMatch;
   });
-
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -154,11 +150,6 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
     toast.warning("El servicio no fue actualizado", {
       className: "bg-card text-card-foreground border-border"
     });
-  };
-
-  const formatDateForAPI = (dateStr: string): string => {
-    // Convert YYYY-MM-DD to YYYY-MM-DD (API expects this format)
-    return dateStr;
   };
 
   const handleDownloadPDF = async (service: ExtendedService) => {
@@ -289,7 +280,7 @@ const PDFGeneratorModal: React.FC<PDFGeneratorModalProps> = ({
     };
   };
 
-  if (!mounted || !isOpen) return null;
+  if (!isClient || !isOpen) return null;
 
   const modalContent = (
     <div

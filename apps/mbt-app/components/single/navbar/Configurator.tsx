@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from 'react-dom';
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useIsClient } from "@/hooks/useIsClient";
 
 import Light from "../../../public/layout/Light.png";
 import Dark from "../../../public/layout/Dark.png";
@@ -12,7 +13,6 @@ import DefaultSidebar from "../../../public/layout/DefaultSidebar.png";
 import DefaultSidebarDark from "../../../public/layout/DefaultSidebarDark.png";
 import MiniSidebar from "../../../public/layout/MiniSidebar.png";
 import MiniSidebarDark from "../../../public/layout/MiniSidebarDark.png";
-import ConfiguratorLogo from "../../../public/layout/ConfiguratorLogo.png";
 
 // Assets
 import {
@@ -26,29 +26,20 @@ import {
 import ConfiguratorRadio from "./ConfiguratorRadio";
 
 export default function HeaderLinks(props: { [x: string]: any }) {
-  const { mini, setMini, theme, setTheme, themePresets, darkmode, setDarkmode, selectedBackground, setSelectedBackground } = props;
+  const { setMini, setTheme, themePresets, darkmode, setDarkmode, selectedBackground, setSelectedBackground } = props;
   const { logout, employee } = useAuth();
   const router = useRouter();
+  const isClient = useIsClient();
 
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState("purple");
-  const btnRef = React.useRef<HTMLButtonElement>(null);
-
-  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [activeOverride, setActiveOverride] = useState<string | null>(null);
   const [showBackgroundModal, setShowBackgroundModal] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const active = activeOverride ?? employee?.appAccent ?? "purple";
 
   const handleLogout = () => {
     logout();
     router.push('/');
   };
-
-  // Load active accent from employee data
-  useEffect(() => {
-    if (employee && employee.appAccent) {
-      setActive(employee.appAccent);
-    }
-  }, [employee]);
 
   // Available backgrounds
   const backgrounds = [
@@ -63,14 +54,9 @@ export default function HeaderLinks(props: { [x: string]: any }) {
   const changeTheme = (themeName: string) => {
     if (themePresets && themePresets[themeName]) {
       setTheme(themePresets[themeName], themeName);
-      setActive(themeName);
+      setActiveOverride(themeName);
     }
   };
-
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
 
   useEffect(() => {
     if (showBackgroundModal) {
@@ -379,7 +365,7 @@ export default function HeaderLinks(props: { [x: string]: any }) {
       )}
 
       {/* Background Selection Modal */}
-      {showBackgroundModal && mounted && createPortal(
+      {showBackgroundModal && isClient && createPortal(
         <div 
           className="fixed inset-0 z-[50000] flex items-center justify-center bg-black/50 p-4"
           onClick={(e) => {

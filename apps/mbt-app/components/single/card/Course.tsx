@@ -14,7 +14,7 @@ const Course = (props: {
   extra?: string;
   onClick?: () => void;
 }) => {
-  const { bgBox, icon, title, desc, day, date, topics, time, extra, onClick } = props;
+  const { bgBox, title, desc, time, extra, onClick } = props;
   const serviceIcon = (compName: string): React.ReactElement => {
     switch (compName) {
       case 'MB Transfer':

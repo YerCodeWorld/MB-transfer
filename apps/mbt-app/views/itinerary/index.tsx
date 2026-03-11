@@ -1,6 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 
-import { useAuth } from "../../contexts/AuthContext";
 import { useNavigation } from "../../contexts/NavigationContext";
 import { useServiceData } from "../../contexts/ServiceDataContext";
 import { useBottomBar } from '../../contexts/BottomBarContext';
@@ -15,7 +14,6 @@ import Schedule from "./components/Schedule";
 
 // Constants
 import { serviceCompanies } from "../../constants/serviceCompanies";
-import { itineraryTabs } from "../../constants/itineraryTabs";
 
 // Service components
 import AirportTransferService from "./services/AirportTransferService";
@@ -36,15 +34,11 @@ import { FaGlobe, FaCog, FaWhatsapp, FaRegStickyNote } from "react-icons/fa";
 // Change the default name 
 const Courses = () => {
 	
-	const { employee } = useAuth();
 	const { pushView, navigation } = useNavigation();
 	const { selectedDate } = useServiceData();
-	const { setActions, clearActions } = useBottomBar();
+	const { setActions } = useBottomBar();
 	const [activeTab, setActiveTab] = useState<'itinerary' | 'webhooks' | 'settings' | 'notes'>('itinerary');
 	const [carouselIndex, setCarouselIndex] = useState(0);
-	
-	// always true, just a flag to update later
-	const hasAccess = employee?.role !== "ANY";
 
 	useEffect(() => {
 		if (navigation.stack.length === 0) {

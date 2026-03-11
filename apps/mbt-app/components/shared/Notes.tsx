@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   FaPlus,
@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fa';
 import { apiClient } from '@/utils/api';
 import { Note as NoteType } from '@/types/services';
+import { useIsClient } from '@/hooks/useIsClient';
 
 interface NotesProps {
   selectedDate: string;
@@ -29,36 +30,17 @@ interface NoteModalProps {
 }
 
 const NoteModal = ({ note, isOpen, onClose, onSave, selectedDate }: NoteModalProps) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    caption: '',
-    tag: 'REMINDER' as NoteType['tag'],
-  });
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
-  useEffect(() => {
-    if (note) {
-      setFormData({
-        title: note.title,
-        content: note.content,
-        caption: note.caption || '',
-        tag: note.tag || 'REMINDER',
-      });
-    } else {
-      setFormData({
-        title: '',
-        content: '',
-        caption: '',
-        tag: 'REMINDER',
-      });
-    }
-  }, [note, isOpen]);
+  const isClient = useIsClient();
+  const initialFormData = useMemo(
+    () => ({
+      title: note?.title || '',
+      content: note?.content || '',
+      caption: note?.caption || '',
+      tag: (note?.tag || 'REMINDER') as NoteType['tag'],
+    }),
+    [note]
+  );
+  const [formData, setFormData] = useState(initialFormData);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -86,19 +68,7 @@ const NoteModal = ({ note, isOpen, onClose, onSave, selectedDate }: NoteModalPro
     };
   }, [isOpen]);
 
-  if (!isOpen || !mounted) return null;
-
-  const getTagColor = (tag: string) => {
-    switch (tag) {
-      case 'EMERGENCY': return 'text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-300';
-      case 'IMPORTANT': return 'text-orange-600 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-300';
-      case 'REMINDER': return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-300';
-      case 'MINOR': return 'text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-300';
-      case 'IDEA': return 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-300';
-      case 'SUGGESTION': return 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-300';
-      default: return 'text-accent-600 bg-accent-50 dark:bg-accent-900/20 dark:text-accent-300';
-    }
-  };
+  if (!isOpen || !isClient) return null;
 
   const modalContent = (
     <div
@@ -455,16 +425,19 @@ const Notes = ({ selectedDate, className = "" }: NotesProps) => {
       </div>
 
       {/* Note Modal */}
-      <NoteModal
-        note={editingNote}
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingNote(null);
-        }}
-        onSave={handleSaveNote}
-        selectedDate={selectedDate}
-      />
+      {isModalOpen && (
+        <NoteModal
+          key={editingNote?.id || "new-note"}
+          note={editingNote}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingNote(null);
+          }}
+          onSave={handleSaveNote}
+          selectedDate={selectedDate}
+        />
+      )}
     </div>
   );
 };

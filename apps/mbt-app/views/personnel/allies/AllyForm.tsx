@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import Card from "@/components/single/card";
 import { MdSave } from "react-icons/md";
 import { useNavigation } from "@/contexts/NavigationContext";
@@ -28,32 +28,36 @@ export default function AllyForm({ mode, allyId, onSuccess }: AllyFormProps) {
   const createAllyMutation = useCreateAlly();
   const updateAllyMutation = useUpdateAlly();
 
-  const [formData, setFormData] = useState<AllyFormData>({
-    name: "",
-    website: "",
-    logo: "",
-    email: "",
-    contactNumber: "",
-    notes: "",
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
+  const initialFormData = useMemo<AllyFormData>(() => {
     if (mode === "edit" && ally) {
-      setFormData({
+      return {
         name: ally.name || "",
         website: ally.website || "",
         logo: ally.logo || "",
         email: ally.email || "",
         contactNumber: ally.contactNumber || "",
         notes: ally.notes || "",
-      });
+      };
     }
-  }, [mode, ally]);
+
+    return {
+      name: "",
+      website: "",
+      logo: "",
+      email: "",
+      contactNumber: "",
+      notes: "",
+    };
+  }, [ally, mode]);
+
+  const [formData, setFormData] = useState<AllyFormData | null>(null);
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const currentFormData = formData ?? initialFormData;
 
   const handleInputChange = (field: keyof AllyFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...(prev ?? currentFormData), [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -62,24 +66,24 @@ export default function AllyForm({ mode, allyId, onSuccess }: AllyFormProps) {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
+    if (!currentFormData.name.trim()) {
       newErrors.name = "El nombre es requerido";
     }
 
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (currentFormData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(currentFormData.email)) {
       newErrors.email = "Correo invalido";
     }
 
     if (
-      formData.website &&
-      !/^https?:\/\/.+/i.test(formData.website)
+      currentFormData.website &&
+      !/^https?:\/\/.+/i.test(currentFormData.website)
     ) {
       newErrors.website = "El sitio web debe iniciar con http:// o https://";
     }
 
     if (
-      formData.logo &&
-      !/^https?:\/\/.+/i.test(formData.logo)
+      currentFormData.logo &&
+      !/^https?:\/\/.+/i.test(currentFormData.logo)
     ) {
       newErrors.logo = "La URL del logo debe iniciar con http:// o https://";
     }
@@ -94,12 +98,12 @@ export default function AllyForm({ mode, allyId, onSuccess }: AllyFormProps) {
     if (!validateForm()) return;
 
     const payload = {
-      name: formData.name.trim(),
-      website: formData.website.trim() || undefined,
-      logo: formData.logo.trim() || undefined,
-      email: formData.email.trim() || undefined,
-      contactNumber: formData.contactNumber.trim() || undefined,
-      notes: formData.notes.trim() || undefined,
+      name: currentFormData.name.trim(),
+      website: currentFormData.website.trim() || undefined,
+      logo: currentFormData.logo.trim() || undefined,
+      email: currentFormData.email.trim() || undefined,
+      contactNumber: currentFormData.contactNumber.trim() || undefined,
+      notes: currentFormData.notes.trim() || undefined,
     };
 
     try {
@@ -155,7 +159,7 @@ export default function AllyForm({ mode, allyId, onSuccess }: AllyFormProps) {
               </label>
               <input
                 type="text"
-                value={formData.name}
+                value={currentFormData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Nombre del aliado"
                 className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
@@ -169,7 +173,7 @@ export default function AllyForm({ mode, allyId, onSuccess }: AllyFormProps) {
               </label>
               <input
                 type="text"
-                value={formData.website}
+                value={currentFormData.website}
                 onChange={(e) => handleInputChange("website", e.target.value)}
                 placeholder="https://example.com"
                 className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
@@ -183,7 +187,7 @@ export default function AllyForm({ mode, allyId, onSuccess }: AllyFormProps) {
               </label>
               <input
                 type="text"
-                value={formData.logo}
+                value={currentFormData.logo}
                 onChange={(e) => handleInputChange("logo", e.target.value)}
                 placeholder="https://..."
                 className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
@@ -197,7 +201,7 @@ export default function AllyForm({ mode, allyId, onSuccess }: AllyFormProps) {
               </label>
               <input
                 type="email"
-                value={formData.email}
+                value={currentFormData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 placeholder="correo@empresa.com"
                 className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
@@ -211,7 +215,7 @@ export default function AllyForm({ mode, allyId, onSuccess }: AllyFormProps) {
               </label>
               <input
                 type="text"
-                value={formData.contactNumber}
+                value={currentFormData.contactNumber}
                 onChange={(e) => handleInputChange("contactNumber", e.target.value)}
                 placeholder="809-555-1234"
                 className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-navy-900 px-4 py-2 text-navy-700 dark:text-white outline-none focus:border-brand-500"
@@ -222,7 +226,7 @@ export default function AllyForm({ mode, allyId, onSuccess }: AllyFormProps) {
           <div>
             <label className="block text-sm font-semibold text-navy-700 dark:text-white mb-2">Notas</label>
             <textarea
-              value={formData.notes}
+              value={currentFormData.notes}
               onChange={(e) => handleInputChange("notes", e.target.value)}
               rows={4}
               placeholder="Notas internas sobre el aliado..."

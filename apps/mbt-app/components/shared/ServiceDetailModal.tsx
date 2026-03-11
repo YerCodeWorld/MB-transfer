@@ -3,12 +3,13 @@
 import { ServiceInput } from '../../types/services';
 import { convertIsoStringTo12h, convertTo12Hour } from '../../utils/services';
 import { createPortal } from 'react-dom';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   FaUser, FaClock, FaUsers, FaRoute, FaInfoCircle, FaTimes, FaCopy, FaMapSigns,
 } from "react-icons/fa";
 import { PiAirplaneBold } from 'react-icons/pi';
 import { toast } from "sonner";
+import { useIsClient } from '@/hooks/useIsClient';
 
 interface ServiceDetailModalProps {
   service: ServiceInput | null;
@@ -18,12 +19,7 @@ interface ServiceDetailModalProps {
 }
 
 const ServiceDetailModal = ({ service, onClose, onEdit, onRemove }: ServiceDetailModalProps) => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
+  const isClient = useIsClient();
 
   useEffect(() => {
     if (service) {
@@ -36,7 +32,7 @@ const ServiceDetailModal = ({ service, onClose, onEdit, onRemove }: ServiceDetai
     };
   }, [service]);
 
-  if (!service || !mounted) return null;
+  if (!service || !isClient) return null;
 
   const getNotesText = (notes: unknown): string => {
     if (!notes) return '';

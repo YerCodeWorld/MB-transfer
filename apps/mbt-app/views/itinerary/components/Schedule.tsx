@@ -1,12 +1,7 @@
 import { useServiceData } from "../../../contexts/ServiceDataContext";
-import { useNavigation } from "../../../contexts/NavigationContext";
-
-import { BsCalendarCheck } from "react-icons/bs";
-
 // Needs to be attached with DB's data
 const Schedule = () => {
 	const { selectedDate, services, getServicesByAlly } = useServiceData();
-	const { pushView } = useNavigation();
 
 	// Get services for selected date and calculate statistics
 	const allServices = services;

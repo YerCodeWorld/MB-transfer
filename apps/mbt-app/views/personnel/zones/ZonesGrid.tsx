@@ -143,7 +143,7 @@ export default function ZonesGrid() {
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
             <p className="text-gray-600 dark:text-gray-400">
-              No se encontraron zonas que coincidan con "{searchQuery}"
+              No se encontraron zonas que coincidan con &quot;{searchQuery}&quot;
             </p>
           </div>
         </div>

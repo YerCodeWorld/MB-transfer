@@ -4,7 +4,7 @@ function Card(props: {
   children?: React.ReactNode;
   [x: string]: any;
 }) {
-  const { variant, extra, children, ...rest } = props;
+  const { extra, children, ...rest } = props;
 
   return (
     <div

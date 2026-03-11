@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../../../contexts/AuthContext";
 
 import Image from "next/image";
@@ -6,8 +6,6 @@ import logo from "../../../public/layout/ConfiguratorLogo.png";
 import Card from "../card";
 
 import { HiX, HiOutlineCalendar, HiOutlineUsers, HiOutlineBriefcase, HiOutlineChartBar, HiOutlineClock } from "react-icons/hi";
-import { BsPlay } from "react-icons/bs";
-
 type ItemKey = "live" | "workday" | "itinerary" | "notes" | "employees" | "accounting" | "stats";
 
 function Sidebar(props: {
@@ -21,7 +19,7 @@ function Sidebar(props: {
 	onSelect?: (k: ItemKey) => void;      // notify parent (optional)
 	[x: string]: any;
 }) {
-	const { open, onClose, variant, mini, hovered, setHovered, activeKey, onSelect } = props;
+	const { open, onClose, variant, mini, activeKey, onSelect } = props;
 
 	const [localActive, setLocalActive] = useState<ItemKey>("itinerary");
 	const active = activeKey ?? localActive;

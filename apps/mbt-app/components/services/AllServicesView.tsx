@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigation } from '../../contexts/NavigationContext';
 import { useServiceData } from '../../contexts/ServiceDataContext';
@@ -31,6 +31,7 @@ import { FaHashtag, FaUser, FaClock, FaUsers, FaRoute, FaMapSigns, FaTags, FaPlu
 import { HiOutlineViewList } from 'react-icons/hi';
 
 import { toast } from "sonner";
+import { useIsClient } from '@/hooks/useIsClient';
 
 // ===========================
 type ServiceStatus = 'pending' | 'assigned' | 'in-progress' | 'completed' | 'cancelled';
@@ -59,13 +60,10 @@ type VehicleOption = {
 };
 
 const AllServicesView = () => {
+  const isClient = useIsClient();
   const { popView } = useNavigation();
   const { services: dbServices, selectedDate, createService, updateService, deleteService, refetchServices } = useServiceData();
   const { setActions, clearActions } = useBottomBar();
-  
-  // Services data
-  const [allServices, setAllServices] = useState<ExtendedService[]>([]);
-  const [filteredServices, setFilteredServices] = useState<ExtendedService[]>([]);
   const [vehicleOptions, setVehicleOptions] = useState<VehicleOption[]>([]);
   
   // Filters and sorting
@@ -78,7 +76,6 @@ const AllServicesView = () => {
   // Edit modal state
   const [editingService, setEditingService] = useState<ExtendedService | null>(null);
   const [detailService, setDetailService] = useState<ExtendedService | null>(null);
-  const [mounted, setMounted] = useState(false);
   
   // Flight comparison modal state
   const [showFlightComparison, setShowFlightComparison] = useState(false);
@@ -89,13 +86,6 @@ const AllServicesView = () => {
   // PDF generator modal state
   const [showPDFGenerator, setShowPDFGenerator] = useState(false);
   const [showHoursVisualization, setShowHoursVisualization] = useState(false);
-  const [originalPickupTimesByServiceId, setOriginalPickupTimesByServiceId] = useState<Record<string, string>>({});
-
-  // Handle mounting for portal
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
 
   // Handle body scroll when modal is open
   useEffect(() => {
@@ -226,9 +216,7 @@ const AllServicesView = () => {
     return minutesTo12h(baseMinutes + offsetMinutes);
   };
 
-  // Map database services to ExtendedService format
-  useEffect(() => {
-    const extended: ExtendedService[] = dbServices.map(service => ({
+  const allServices = useMemo<ExtendedService[]>(() => dbServices.map(service => ({
       id: service.id,
       code: service.code,
       kindOf: service.kindOf,
@@ -257,32 +245,20 @@ const AllServicesView = () => {
       assignedVehicle: service.vehicle?.name,
       createdAt: service.createdAt,
       updatedAt: service.updatedAt,
-    }));
+    })), [dbServices]);
 
-    setAllServices(extended);
-  }, [dbServices]);
+  const originalPickupTimesByServiceId = useMemo(
+    () =>
+      Object.fromEntries(
+        dbServices
+          .filter((service) => Boolean(service.id))
+          .map((service) => [service.id, service.pickupTime])
+      ) as Record<string, string>,
+    [dbServices]
+  );
 
-  useEffect(() => {
-    setOriginalPickupTimesByServiceId((previous) => {
-      const next = { ...previous };
-      dbServices.forEach((service) => {
-        if (service.id && !next[service.id]) {
-          next[service.id] = service.pickupTime;
-        }
-      });
-      return next;
-    });
-  }, [dbServices]);
-  
-  // Apply filters and sorting
-  useEffect(() => {
-    console.log('🔍 FILTER DEBUG - Starting with', allServices.length, 'services');
-    console.log('🔍 filterType:', filterType);
-    console.log('🔍 filterStatus:', filterStatus);
-    console.log('🔍 searchTerm:', searchTerm);
-
+  const filteredServices = useMemo(() => {
     let filtered = [...allServices];
-    console.log('🔍 After copy:', filtered.length);
 
     // Apply type filter
     if (filterType !== 'all') {
@@ -295,13 +271,11 @@ const AllServicesView = () => {
       } else {
         filtered = filtered.filter(s => s.kindOf === filterType);
       }
-      console.log('🔍 After type filter:', filtered.length);
     }
     
     // Apply status filter
     if (filterStatus !== 'all') {
       filtered = filtered.filter(s => s.status === filterStatus);
-      console.log('🔍 After status filter:', filtered.length);
     }
     
     // Apply search term
@@ -355,8 +329,7 @@ const AllServicesView = () => {
       return 0;
     });
 
-    console.log('🔍 FINAL filtered count:', filtered.length);
-    setFilteredServices(filtered);
+    return filtered;
   }, [allServices, filterType, filterStatus, searchTerm, sortField, sortDirection]);
   
   const checkTimeData = useCallback(() => {
@@ -1006,7 +979,7 @@ const AllServicesView = () => {
   );
 
   const renderEditModal = () => {
-    if (!editingService || !mounted) return null;
+    if (!editingService || !isClient) return null;
     
     const modalContent = (
       <div 

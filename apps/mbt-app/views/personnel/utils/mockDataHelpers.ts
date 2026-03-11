@@ -1,3 +1,6 @@
+import { resetEmployeesData } from '../employees/mockEmployees';
+import { resetVehiclesData } from '../vehicles/mockVehicles';
+
 /**
  * Mock Data Helpers - Centralized exports for local mock CRUD operations.
  *
@@ -28,9 +31,6 @@ export {
 
 // Utility function to reset all data to initial state
 export function resetAllData() {
-  const { resetEmployeesData } = require('../employees/mockEmployees');
-  const { resetVehiclesData } = require('../vehicles/mockVehicles');
-
   resetEmployeesData();
   resetVehiclesData();
 }

@@ -14,7 +14,7 @@ import authImg from "../public/world.jpg";
 export default function Auth() {
 
 	const router = useRouter();
-	const { authenticate, employee } = useAuth();
+	const { authenticate } = useAuth();
 	const [identifier, setIdentifier] = useState("");
 	const [accessKey, setAccessKey] = useState("");
 	const [error, setError] = useState("");
@@ -46,7 +46,7 @@ export default function Auth() {
 				setError("Credenciales inválidas. Acceso denegado.");
 				setIsLoading(false);
 			}
-		} catch (err) {
+		} catch {
 			setError("Error al conectar con el servidor. Intente nuevamente.");
 			setIsLoading(false);
 		}
@@ -170,4 +170,3 @@ export default function Auth() {
 		</div>
 	);
 }
-
