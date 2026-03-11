@@ -29,7 +29,7 @@ export default function HotelsGrid() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Using React Query hook
-  const { data: places = [], isLoading, error, refetch } = usePlaces({ limit: 100 });
+  const { data: places = [], isLoading, error, refetch } = usePlaces({ limit: 400 });
 
   const filteredPlaces = places.filter((place: Place) =>
     place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

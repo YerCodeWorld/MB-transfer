@@ -27,9 +27,8 @@ export default function HoursVisualizationModal({
 }: HoursVisualizationModalProps) {
   if (!isOpen || typeof window === "undefined") return null;
 
-  const arrivals = rows.filter((row) => row.kindOf === "ARRIVAL");
-  const others = rows.filter((row) => row.kindOf !== "ARRIVAL");
-
+  const arrivals = rows.filter((row) => row.kindOf === "DEPARTURE");
+  const others = rows.filter((row) => row.kindOf !== "DEPARTURE");
   return createPortal(
     <div
       className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4"

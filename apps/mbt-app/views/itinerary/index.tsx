@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 
+import { useAuth } from "../../contexts/AuthContext";
 import { useNavigation } from "../../contexts/NavigationContext";
 import { useServiceData } from "../../contexts/ServiceDataContext";
 import { useBottomBar } from '../../contexts/BottomBarContext';
@@ -29,34 +30,63 @@ import { ItinerarySettingsTab } from "./views/Settings";
 //... more & more & more icons
 import { GoCodescan, GoFileDiff } from "react-icons/go";
 import { PiAddressBookThin, PiAirplaneBold } from "react-icons/pi";
-import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
-import { FaGlobe, FaCog } from "react-icons/fa";
+import { BsChevronLeft, BsChevronRight, BsEye } from "react-icons/bs";
+import { FaGlobe, FaCog, FaWhatsapp, FaRegStickyNote } from "react-icons/fa";
 
 // Change the default name 
 const Courses = () => {
+	
+	const { employee } = useAuth();
+	const { pushView, navigation } = useNavigation();
+	const { selectedDate } = useServiceData();
+	const { setActions, clearActions } = useBottomBar();
+	const [activeTab, setActiveTab] = useState<'itinerary' | 'webhooks' | 'settings' | 'notes'>('itinerary');
+	const [carouselIndex, setCarouselIndex] = useState(0);
+	
+	// always true, just a flag to update later
+	const hasAccess = employee?.role !== "ANY";
 
-  const { pushView } = useNavigation();
-  const { selectedDate } = useServiceData();
-  const { setActions, clearActions } = useBottomBar();
-  const [activeTab, setActiveTab] = useState<'itinerary' | 'webhooks' | 'settings' | 'notes'>('itinerary');
-  const [carouselIndex, setCarouselIndex] = useState(0);
+	useEffect(() => {
+		if (navigation.stack.length === 0) {
+			setActions([
+				{
+					key: "itinerary",
+					label: "Itinerario",
+					Icon: BsEye,
+					variant: activeTab === 'itinerary' ? 'primary' : 'secondary',
+					onClick: () => setActiveTab('itinerary'),
+				},
+				{
+					key: "notes",
+					label: "Notes",
+					Icon: FaRegStickyNote,
+					variant: activeTab === 'notes' ? 'primary' : 'secondary',
+					onClick: () => setActiveTab('notes'),
+				},
+				{
+					key: "webhooks",
+					label: "Webhooks", 
+					Icon: FaWhatsapp,
+					variant: activeTab === 'webhooks' ? 'primary' : 'secondary',
+					onClick: () => setActiveTab('webhooks'),
+				},
+				{
+					key: "settings",
+					label: "Configuración",
+					Icon: FaCog,
+					variant: activeTab === 'settings' ? 'primary' : 'secondary',
+					onClick: () => setActiveTab('settings'),
+				}
+			]);
+		}
 
-  const updateActions = useCallback(() => {
-    const actions = itineraryTabs.map(tab => ({
-      key: tab.key,
-      label: tab.label,
-      Icon: tab.Icon,
-      variant: activeTab === tab.key ? "primary" : "secondary",
-      onClick: () => setActiveTab(tab.key)
-    }));
+		return () => {
+			if (navigation.stack.length === 0) {
+				setActions([]);
+			}
+		};
 
-    setActions(actions);
-  }, [activeTab, setActions]);
-
-  useEffect(() => {
-    updateActions();
-    return () => { clearActions(); };
-  }, [updateActions, clearActions]);
+	}, [setActions, navigation.stack.length]);
 
   const handleServiceClick = (serviceType: string, title: string) => {
     let component;

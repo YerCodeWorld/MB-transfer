@@ -23,7 +23,6 @@ import { BottomBarProvider } from "../../../contexts/BottomBarContext";
 import { useAuth } from "../../../contexts/AuthContext";
 
 // Please get rid of this asap
-import { ServiceProvider } from "../../../contexts/ServiceContext";
 import { ServiceDataProvider } from "../../../contexts/ServiceDataContext";
 import { apiClient } from "../../../utils/api";
 
@@ -349,13 +348,11 @@ function PlatformContent() {
 export default function Home() {
 	return (
 		<NavigationProvider>
-			<ServiceProvider>
-				<ServiceDataProvider>
-					<BottomBarProvider>
-						<PlatformContent />
-					</BottomBarProvider>
-				</ServiceDataProvider>
-			</ServiceProvider>
+			<ServiceDataProvider>
+				<BottomBarProvider>
+					<PlatformContent />
+				</BottomBarProvider>
+			</ServiceDataProvider>
 		</NavigationProvider>
 	);
 }
