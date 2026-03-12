@@ -929,7 +929,7 @@ const AllServicesView = () => {
                       <span className="text-sm text-gray-900 dark:text-gray-100">
                         {(() => {
                           const baseTime = displayTimeFromService(service.pickupTime);
-                          if (service.kindOf === 'ARRIVAL') {
+                          if (service.kindOf === 'DEPARTURE') {
                             return getOffsetDisplayTime(baseTime, -15);
                           }
                           return baseTime;

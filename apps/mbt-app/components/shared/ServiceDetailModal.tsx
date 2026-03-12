@@ -70,16 +70,40 @@ const ServiceDetailModal = ({ service, onClose, onEdit, onRemove }: ServiceDetai
 
   const notesText = getNotesText(service.notes);
 
-  const formatPickupTime = (value?: string) => {
+  const formatPickupTime = (value?: string, kind?: ServiceInput["kindOf"]) => {
     const input = String(value || '').trim();
     if (!input) return 'N/A';
+
+    const applyDepartureOffset = (formattedTime: string) => {
+      if (kind !== 'DEPARTURE') return formattedTime;
+
+      const match = formattedTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (!match) return formattedTime;
+
+      let hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      const period = match[3].toUpperCase();
+
+      if (period === 'PM' && hours !== 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+
+      const totalMinutes = (hours * 60 + minutes - 15 + 24 * 60) % (24 * 60);
+      const adjustedHour24 = Math.floor(totalMinutes / 60);
+      const adjustedMinutes = totalMinutes % 60;
+      const adjustedPeriod = adjustedHour24 >= 12 ? 'PM' : 'AM';
+      let adjustedHour12 = adjustedHour24 % 12;
+      if (adjustedHour12 === 0) adjustedHour12 = 12;
+
+      return `${adjustedHour12}:${adjustedMinutes.toString().padStart(2, '0')} ${adjustedPeriod}`;
+    };
+
     if (/^\d{4}-\d{2}-\d{2}[T\s]/.test(input) || input.endsWith('Z')) {
-      return convertIsoStringTo12h(input);
+      return applyDepartureOffset(convertIsoStringTo12h(input));
     }
     if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(input)) {
-      return convertTo12Hour(input);
+      return applyDepartureOffset(convertTo12Hour(input));
     }
-    return input;
+    return applyDepartureOffset(input);
   };
 
   const kindOfElement = (kind: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER') => {
@@ -201,7 +225,7 @@ const ServiceDetailModal = ({ service, onClose, onEdit, onRemove }: ServiceDetai
                   Hora 
                 </label>
                 <p className="text-sm font-medium text-navy-700 dark:text-white">
-                  {formatPickupTime(service.pickupTime)}
+                  {formatPickupTime(service.pickupTime, service.kindOf)}
                 </p>
               </div>
               {service.flightCode && (

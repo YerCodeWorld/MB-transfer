@@ -104,15 +104,13 @@ export default function HoursVisualizationModal({
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Código</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Cliente</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Hora Modificada</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Offset -15 min</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Hora Original</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {departures.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">
+                      <td colSpan={3} className="px-4 py-6 text-center text-sm text-gray-500">
                         No hay servicios de salida para mostrar.
                       </td>
                     </tr>
@@ -121,12 +119,7 @@ export default function HoursVisualizationModal({
                       <tr key={row.id}>
                         <td className="px-4 py-3 text-sm text-navy-700 dark:text-white">{row.code || "N/A"}</td>
                         <td className="px-4 py-3 text-sm text-navy-700 dark:text-white">{row.clientName}</td>
-                        <td className="px-4 py-3 text-sm text-navy-700 dark:text-white">
-                          {row.modifiedTime ?? "—"}
-                          {row.isModified && <span className="ml-2 text-xs text-green-600 dark:text-green-400">actualizada</span>}
-                        </td>
                         <td className="px-4 py-3 text-sm font-semibold text-indigo-700 dark:text-indigo-300">{row.offset15Time || "N/A"}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{row.originalTime}</td>
                       </tr>
                     ))
                   )}
