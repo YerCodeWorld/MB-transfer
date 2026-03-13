@@ -1,16 +1,20 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { useNavigation } from '../../contexts/NavigationContext';
-import { useServiceData } from '../../contexts/ServiceDataContext';
-import { useBottomBar } from '../../contexts/BottomBarContext';
-import { ServiceInput } from '../../types/services';
-import { convertTo12Hour, convertTo24Hour } from '../../utils/services';
-import { toDDMMYY } from "../../utils/dateUtils";
+
+import { useNavigation } from '../../../contexts/NavigationContext';
+import { useServiceData } from '../../../contexts/ServiceDataContext';
+import { useBottomBar } from '../../../contexts/BottomBarContext';
+
+import { ServiceInput } from '../../../types/services';
+
+import { convertTo12Hour, convertTo24Hour } from '../../../utils/services';
+import { toDDMMYY } from "../../../utils/dateUtils";
+
 import * as XLSX from 'xlsx';
 
-import ServiceTable from '../shared/ServiceTable';
-import Card from "../single/card";
+import ServiceTable from '../../../components/shared/ServiceTable';
+import Card from "../../../components/single/card";
 
 import { toast } from 'sonner';
 
@@ -68,6 +72,7 @@ const SacbeTransferService = () => {
 	const [step, setStep] = useState<'upload' | 'review'>('upload');
 
 	useEffect(() => {
+		// Hydrate ST tab from persisted services for selected date (same behavior as AT).
 		const persistedSt = getServicesByAlly('Sacbé Transfer');
 		if (!persistedSt.length) {
 			setServices([]);
@@ -90,7 +95,11 @@ const SacbeTransferService = () => {
 			vehicleType: s.vehicleTypeName || s.vehicleType,
 			ally: s.ally?.name || 'Sacbé Transfer',
 			rowIndex: idx + 1,
-			validation: { isValid: true, errors: [], warnings: [] },
+			validation: {
+				isValid: true,
+				errors: [],
+				warnings: [],
+			},
 		}));
 
 		setServices(mapped);
@@ -113,7 +122,6 @@ const SacbeTransferService = () => {
 			const arrayBuffer = await file.arrayBuffer();
 			const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 
-			// Get the last sheet (as requested by the workflow of the company)
 			const worksheet = workbook.Sheets[toDDMMYY(selectedDate)];
 			if (!worksheet) { 
 				toast.error( 
@@ -123,7 +131,6 @@ const SacbeTransferService = () => {
 				);
 			}
 			
-			// Convert to JSON with headers
 			const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
 
 			if (jsonData.length < 2) {
@@ -132,13 +139,12 @@ const SacbeTransferService = () => {
 
 			// Get headers (first row) and normalize them
 			// NOTE: Apparently the company in charge of sending the XLSX makes small unnecessary changes from time to time,
-			// which no matter how small can easyly break this logic, as it's not solid. We need to implement a dynamic header
+			// which no matter how small can easily break this logic, as it's not solid. We need to implement a dynamic header
 			// mapping system, something among the lines of allowing the worker to visualize the file and set it up from there.
 			const headers = (jsonData[1] as string[]).map(h =>  
 				h.toString().toLowerCase().trim()
 			);      
 
-			// Map headers to our field names
 			const fieldMapping: { [key: number]: string } = {};
 			headers.forEach((header, index) => {        
 				const mappedField = HEADER_MAPPING[header as keyof typeof HEADER_MAPPING];        
@@ -147,7 +153,6 @@ const SacbeTransferService = () => {
 				}
 			});            
 
-			// Process data rows
 			const extractedServices: ExtractedService[] = [];
 
 			for (let i = 2; i < jsonData.length; i++) {
@@ -249,6 +254,14 @@ const SacbeTransferService = () => {
 	useEffect(() => {
 		if (step === 'upload') {
 			setActions([
+				{
+					key: "back",
+					label: "Atrás",
+					Icon: HiChevronLeft,
+					variant: "secondary",
+					onClick: () => popView(), // Go back to main itinerary
+					disabled: loading
+				},
 				{
 					key: "upload",
 					label: "Subir Archivo",
@@ -558,24 +571,6 @@ const SacbeTransferService = () => {
           </Card>
         </div>
       )}
-
-      <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={popView}
-          disabled={loading}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <BsArrowLeft className="text-xl dark:text-white" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-navy-700 dark:text-white">
-            &quot;Sacbé Transfer&quot; Importación de Servicios
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Suba el archivo de *excel* con los servicios
-          </p>
-        </div>
-      </div>
 
       {step === 'upload' && renderUploadStep()}
       {step === 'review' && renderReviewStep()}

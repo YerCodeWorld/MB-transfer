@@ -109,6 +109,7 @@ export interface Note {
   caption?: string;
   content: string;
   tag?: 'EMERGENCY' | 'IMPORTANT' | 'REMINDER' | 'MINOR' | 'IDEA' | 'SUGGESTION';
+  isPinned?: boolean;
   serviceId?: string;
   itineraryId?: string;
   vehicleId?: string;
@@ -119,6 +120,22 @@ export interface Note {
   employeeId?: string;
   transactionId?: string;
   spendingId?: string;
+  createdBy?: {
+    id: string;
+    name: string;
+    photo?: string | null;
+    role: string;
+  } | null;
+  seenBy?: Array<{
+    id: string;
+    seenAt: string;
+    employee: {
+      id: string;
+      name: string;
+      photo?: string | null;
+      role: string;
+    };
+  }>;
   createdAt: string;
   updatedAt: string;
 }

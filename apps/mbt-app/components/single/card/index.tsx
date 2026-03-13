@@ -8,7 +8,7 @@ function Card(props: {
 
   return (
     <div
-      className={`!z-5 relative flex flex-col rounded-[20px] bg-white bg-clip-border ${
+      className={`!z-5 relative flex flex-col bg-white bg-clip-border ${
         props.default
           ? "shadow-[0_8px_20px_rgba(0,0,0,0.12)]"
           : "shadow-[0_4px_12px_rgba(0,0,0,0.08)]"

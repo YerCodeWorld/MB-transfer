@@ -13,11 +13,13 @@ export default function Breadcrumb({ className = "" }: BreadcrumbProps) {
 
   const getSectionLabel = (section: string): string => {
     const sectionLabels: Record<string, string> = {
-      itinerary: "Itinerary",
-      employees: "Personal", 
-      notes: "Agenda",
-      accounting: "Accounting",
-      stats: "Statistics"
+      workday: "Jornada",
+      "service-management": "Manejo de Servicios",
+      "service-creation": "Creación de Servicios",
+      messages: "Mensajes",
+      personnel: "Personal",
+      accounting: "Contabilidad",
+      stats: "Estadísticas"
     };
     return sectionLabels[section] || section;
   };

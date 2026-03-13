@@ -136,7 +136,7 @@ const ServiceTable = ({
       <div className="w-full space-y-3">
         {/* CARD WRAPPER */}
         <div
-          className={`rounded-2xl shadow-sm border ${theme.border} overflow-hidden bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm`}
+          className={`shadow-sm border ${theme.border} overflow-hidden bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm`}
         >
           {/* COLORFUL HEADER */}
           <div className={`${theme.headerBg} ${theme.headerText} px-6 py-4`}>
@@ -169,7 +169,7 @@ const ServiceTable = ({
                   className={`px-3 py-1 rounded-full ${theme.chipBg} ${theme.chipText} flex items-center gap-2 shadow-sm`}
                 >
                   <span className="inline-flex h-2 w-2 rounded-full bg-lime-400 animate-pulse" />
-                  <span>{services.length > 0 ? "Active list" : "No services"}</span>
+                  <span>{services.length > 0 ? "Lista Activa" : "Sin Servicios"}</span>
                 </div>
               </div>
             </div>
@@ -177,7 +177,7 @@ const ServiceTable = ({
 
           {/* TABLE CONTAINER */}
           <div className="px-2 pb-3 pt-2 md:px-4">
-            <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
+            <div className="overflow-x-auto border border-gray-100 dark:border-gray-800">
               <table className="min-w-full text-xs md:text-sm">
                 <thead
                   className={`${theme.tableHeadBg} text-[0.7rem] md:text-xs font-semibold uppercase text-gray-500 dark:text-gray-300`}

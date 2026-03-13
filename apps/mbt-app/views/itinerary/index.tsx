@@ -1,319 +1,154 @@
-import { useEffect, useState } from "react";
-
+import { useMemo } from "react";
 import { useNavigation } from "../../contexts/NavigationContext";
-import { useServiceData } from "../../contexts/ServiceDataContext";
-import { useBottomBar } from '../../contexts/BottomBarContext';
 
-import Course from "../../components/single/card/Course";
 import MiniCalendar from "../../components/single/minicalendar";
 import Card from "../../components/single/card";
-import Notes from "../../components/shared/Notes";
-import NotesWidget from "../../components/shared/NotesWidget";
 
-import Schedule from "./components/Schedule";
+import AT from "./services/AirportTransferService";
+import ST from "./services/SacbeTransferService";
+import MBT from "./services/MBTransferService";
 
-// Constants
-import { serviceCompanies } from "../../constants/serviceCompanies";
-
-// Service components
-import AirportTransferService from "./services/AirportTransferService";
-import ST from "./services/SacbeTransfeService";
-// import SacbeTransferService from "../../components/services/SacbeTransferService";
-import MBTransferService from "../../components/services/MBTransferService";
-import AllServicesView from "../../components/services/AllServicesView";
-
-// BottomBarTabs
-import { ItinerarySettingsTab } from "./views/Settings";
-
-//... more & more & more icons
+import { BsArrowRight } from "react-icons/bs";
 import { GoCodescan, GoFileDiff } from "react-icons/go";
 import { PiAddressBookThin, PiAirplaneBold } from "react-icons/pi";
-import { BsChevronLeft, BsChevronRight, BsEye } from "react-icons/bs";
-import { FaGlobe, FaCog, FaWhatsapp, FaRegStickyNote } from "react-icons/fa";
 
-// Change the default name 
-const Courses = () => {
-	
-	const { pushView, navigation } = useNavigation();
-	const { selectedDate } = useServiceData();
-	const { setActions } = useBottomBar();
-	const [activeTab, setActiveTab] = useState<'itinerary' | 'webhooks' | 'settings' | 'notes'>('itinerary');
-	const [carouselIndex, setCarouselIndex] = useState(0);
+export interface ServiceCompany {
+	id: string;
+	bgBox: string;
+	icon: any;
+	title: string;
+	desc: string;
+	day: string;
+	date: string;
+}
 
-	useEffect(() => {
-		if (navigation.stack.length === 0) {
-			setActions([
-				{
-					key: "itinerary",
-					label: "Itinerario",
-					Icon: BsEye,
-					variant: activeTab === 'itinerary' ? 'primary' : 'secondary',
-					onClick: () => setActiveTab('itinerary'),
-				},
-				{
-					key: "notes",
-					label: "Notes",
-					Icon: FaRegStickyNote,
-					variant: activeTab === 'notes' ? 'primary' : 'secondary',
-					onClick: () => setActiveTab('notes'),
-				},
-				{
-					key: "webhooks",
-					label: "Webhooks", 
-					Icon: FaWhatsapp,
-					variant: activeTab === 'webhooks' ? 'primary' : 'secondary',
-					onClick: () => setActiveTab('webhooks'),
-				},
-				{
-					key: "settings",
-					label: "Configuración",
-					Icon: FaCog,
-					variant: activeTab === 'settings' ? 'primary' : 'secondary',
-					onClick: () => setActiveTab('settings'),
-				}
-			]);
+export const serviceCompanies: ServiceCompany[] = [
+	{
+		id: 'at',
+		bgBox: "bg-[url('/at-website.png')]",
+		icon: GoCodescan,
+		title: "AirportTransfer",
+		desc: "Consigue los servicios de AT automáticamente con la utilidad que intercepta una solicitud a su base de datos.",
+		day: "AT",
+		date: "HTTPS",
+	},
+	{
+		id: 'st',
+		bgBox: "bg-[url('/st-website.png')]",
+		icon: GoFileDiff,
+		title: "Sacbé Transfer",
+		desc: "Consigue los servicios de ST subiendo el XLSX actualizado. La página a utilizar se detecta automáticamente.",
+		day: "ST",
+		date: "XLSX",
+	},
+	{
+		id: 'mbt',
+		bgBox: "bg-[url('/mbt-website.png')]",
+		icon: PiAddressBookThin,
+		title: "MB Transfer",
+		desc: "Crea los servicios de MBT utilizando los formularios de la plataforma.",
+		day: "MBT",
+		date: "FORM",
+	}
+];
+
+const ServiceCreationView = () => {
+	const { pushView } = useNavigation();
+
+	const handleServiceClick = (serviceType: string, title: string) => {
+		let component;
+
+		switch (serviceType) {
+			case 'at':
+				component = AT;
+				break;
+			case 'st':
+				component = ST;
+				break;
+			case 'mbt':
+				component = MBT;
+				break;
+			default:
+				component = undefined;
 		}
 
-		return () => {
-			if (navigation.stack.length === 0) {
-				setActions([]);
-			}
-		};
-
-	}, [setActions, navigation.stack.length]);
-
-  const handleServiceClick = (serviceType: string, title: string) => {
-    let component;
-    
-    switch (serviceType) {
-      case 'at':
-        component = AirportTransferService;
-        break;
-      case 'st':
-        component = ST;
-        break;
-      case 'mbt':
-        component = MBTransferService;
-        break;
-      case 'all':
-        component = AllServicesView;
-        break;
-      default:
-        component = undefined;
-    }
-
-    pushView({
-      id: `service-${serviceType}`,
-      label: title,
-      data: { serviceType, title },
-      component
-    });
-  };
-
-  const companies: string[] = ['All', 'AirportTransfer', 'Sacbé Transfer', 'MB Transfer'];
-
-  const serviceIcon = (compName: string): React.ReactElement => {
-    switch (compName) {
-      case 'MB Transfer':
-        return <PiAddressBookThin/>;
-        
-      case 'AirportTransfer':
-        return <GoCodescan/>;
-        
-      case 'Sacbé Transfer':
-        return <GoFileDiff/>;
-
-      default:
-        return <PiAirplaneBold />;
-    }
-  }
-
-  const renderItineraryTab = () => {
-    const currentService = serviceCompanies[carouselIndex];
-    
-    return (
-      <div className="relative p-10 flex-col justify-between">
-      
-        {/* Carousel Navigation Header */}
-        <div className="mb-6 flex items-center justify-between rounded-lg bg-white p-4 shadow-md dark:bg-navy-800">
-          <button
-            onClick={prevCarouselItem}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-colors hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-            disabled={serviceCompanies.length <= 1}
-          >
-            <BsChevronLeft className="h-5 w-5" />
-          </button>
-          
-          <div className="flex-1 text-center">
-            <h3 className="text-lg font-bold text-navy-700 dark:text-white">
-              {currentService.title}
-            </h3>
-            <div className="mt-1 flex justify-center gap-1">
-              {serviceCompanies.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCarouselIndex(index)}
-                  className={`h-2 w-2 rounded-full transition-colors ${
-                    index === carouselIndex 
-                      ? 'bg-accent-500' 
-                      : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                />
-              ))}
-            </div>            
-          </div>
-          
-          <button
-            onClick={nextCarouselItem}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-colors hover:bg-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-            disabled={serviceCompanies.length <= 1}
-          >
-            <BsChevronRight className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Current Service Card */}
-        <div className="transition-all duration-300 ease-in-out">
-          <Course
-            key={currentService.id}
-            bgBox={currentService.bgBox}
-            icon={currentService.icon}
-            title={currentService.title}
-            desc={currentService.desc}
-            day={currentService.day}
-            date={currentService.date}
-            topics={currentService.topics}
-            time={currentService.time}
-            onClick={() => handleServiceClick(currentService.id, currentService.title)}
-          />
-        </div>
-
-        {/* Quick Navigation Grid */}
-        <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {serviceCompanies.map((service, index) => (
-            <button
-              key={service.id}
-              onClick={() => setCarouselIndex(index)}
-              className={`rounded-lg border-2 p-3 text-center text-xs transition-all ${
-                index === carouselIndex
-                  ? 'border-accent-500 bg-accent-50 text-blue-700 dark:bg-accent-900/20 dark:text-accent-300'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-navy-800 dark:text-gray-300 dark:hover:bg-navy-700'
-              }`}
-            >
-              <div className="mb-1 flex justify-center">
-                <span className="text-lg">{serviceIcon(companies[index])}</span>
-              </div>
-              <div className="font-medium">{service.day}</div>
-              <div className="text-xs opacity-75">{service.date}</div>
-            </button>
-          ))}
-        </div>
-
-        {/* Service Counter */}
-        <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-          Mostrando servicios {carouselIndex + 1} de {serviceCompanies.length}
-        </div>
-        
-        {/* Notes Widget */}
-        <div className="w-full mt-4">
-          <NotesWidget 
-            selectedDate={selectedDate}
-            onViewAll={() => setActiveTab('notes')}
-          />
-        </div>   
-      </div>
-    );
-  };
-
-  const renderWebhooksTab = () => (
-    <div className="rounded-[20px] bg-white p-8 shadow-xl dark:bg-navy-800">
-      <div className="text-center">
-        <FaGlobe className="mx-auto mb-4 h-16 w-16 text-accent-500" />
-        <h2 className="mb-4 text-2xl font-bold text-navy-700 dark:text-white">
-          Integracíon de Webhooks
-        </h2>
-        <p className="mb-8 text-gray-600 dark:text-gray-300">
-          Configurar las conexiones de mbt platform con plataformas web externas 
-        </p>
-      </div>
-      
-      <div className="space-y-6">
-        <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-700">
-          <h3 className="mb-3 text-lg font-semibold text-navy-700 dark:text-white">
-            Integración Whatsapp 
-          </h3>
-          <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">
-            Enviar notificaciones automáticas a clientes, PDFs a grupos y notificaciones a números establecidos 
-          </p>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
-            <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
-              En Desarrollo 
-            </span>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-gray-200 p-6 dark:border-gray-700">
-          <h3 className="mb-3 text-lg font-semibold text-navy-700 dark:text-white">
-            Integración Email 
-          </h3>
-          <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">
-            Automáticamente envia correos y notificaciones a los aliados establecidos 
-          </p>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
-            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-              En Planificación 
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderNotesTab = () => (
-    <div className="p-10">
-      <Notes selectedDate={selectedDate} />
-    </div>
-  );
-  const nextCarouselItem = () => {
-    setCarouselIndex((prev) => (prev + 1) % serviceCompanies.length);
-  };
-
-  const prevCarouselItem = () => {
-    setCarouselIndex((prev) => (prev - 1 + serviceCompanies.length) % serviceCompanies.length);
-  };
+		pushView({
+			id: `service-${serviceType}`,
+			label: title,
+			data: { serviceType, title },
+			component
+		});
+	};
 
   return (
     <main className="flex w-full flex-col font-dm md:gap-7 lg:flex-row">
-      
-      {/* RIGHT SECTION */}
-      <div className="m-5 flex h-full w-full min-w-[50vh] flex-col items-center rounded-[20px] bg-white px-4 py-4 shadow-2xl shadow-gray-100 dark:!bg-navy-800 dark:shadow-none lg:w-[275px] 3xl:w-[470px] relative z-0">      
-        {/* Calendar */}
-        <Card extra={`max-w-full`}>          
-          <MiniCalendar />
-        </Card>
-        
-        {/* Schedule with enhanced design */}
-        <Card extra={"w-full mt-4"}>
-          <Schedule />
-        </Card>
-                
-      </div>
-        
-      {/* separator */}
-      <div className="h-0 w-0 bg-gray-300 dark:!bg-navy-700 lg:h-[1050px] lg:w-px" />
+      <div className="flex-1 p-5 pt-0 lg:pt-5">
+        <div className="mb-6 bg-white p-6 shadow-xl dark:bg-navy-800">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-accent-500">
+            Creación de Servicios
+          </p>
+          <h1 className="mt-2 text-2xl font-bold text-navy-700 dark:text-white">
+            Herramientas de captura y creación
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
+            Selecciona una herramienta para obtener o crear servicios. Cada opción te lleva al flujo detallado que ya existe para Airport Transfer, Sacbé Transfer y MB Transfer.
+          </p>
+        </div>
 
-      {/* LEFT SECTION: Tab-based content with overflow support */}
-      <div className="h-full w-full">                 
-        {activeTab === 'itinerary' && renderItineraryTab()}
-        {activeTab === 'webhooks' && renderWebhooksTab()}
-        {activeTab === 'notes' && renderNotesTab()}
-        {activeTab === 'settings' && <ItinerarySettingsTab/>}     
+        <div className="flex flex-col gap-4">
+          {serviceCompanies.map((service) => {
+            const ServiceIcon = service.icon;
+
+            return (
+              <button
+                key={service.id}
+                type="button"
+                onClick={() => handleServiceClick(service.id, service.title)}
+                className="group w-full overflow-hidden rounded-[24px] border border-gray-200 bg-white text-left shadow-lg transition-all duration-200 hover:-translate-y-1 hover:border-accent-300 hover:shadow-2xl dark:border-white/10 dark:bg-navy-800 dark:hover:border-accent-500/40"
+              >
+                <div className="flex flex-col md:flex-row">
+                  <div className={`min-h-[180px] md:min-h-[220px] md:w-[240px] m-3 rounded-2xl ${service.bgBox} bg-cover bg-center`} />
+
+                  <div className="flex flex-1 items-center justify-between gap-6 p-6 md:p-8">
+                    <div className="flex items-start gap-4">
+                      <div className="mt-1 rounded-2xl bg-accent-50 p-4 text-accent-600 transition-colors group-hover:bg-accent-100 dark:bg-accent-900/20 dark:text-accent-200">
+                        <ServiceIcon className="text-3xl" />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-3">
+                          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:bg-white/10 dark:text-gray-300">
+                            {service.day}
+                          </span>
+                          <span className="text-xs font-medium uppercase tracking-wide text-accent-500">
+                            {service.date}
+                          </span>
+                        </div>
+
+                        <h2 className="mt-3 text-2xl font-bold text-navy-700 dark:text-white">
+                          {service.title}
+                        </h2>
+                        <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">
+                          {service.desc}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="hidden shrink-0 items-center gap-3 md:flex">
+                      <div className="rounded-full bg-accent-500 p-3 text-white transition-transform duration-200 group-hover:translate-x-1">
+                        <BsArrowRight className="text-xl" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
-    
-    </main>        
+
+    </main>
   );
 };
 
-export default Courses;
+export default ServiceCreationView;

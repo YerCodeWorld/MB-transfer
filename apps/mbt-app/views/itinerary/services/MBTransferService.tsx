@@ -1,30 +1,31 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigation } from '../../contexts/NavigationContext';
-import { useServiceData } from '../../contexts/ServiceDataContext';
-import { useBottomBar } from '../../contexts/BottomBarContext';
-import { ServiceInput } from '../../types/services';
-import { apiClient } from '../../utils/api';
-import ServiceTable from '../shared/ServiceTable';
 
-import Card from "../single/card";
+import { useNavigation } from '../../../contexts/NavigationContext';
+import { useServiceData } from '../../../contexts/ServiceDataContext';
+import { useBottomBar } from '../../../contexts/BottomBarContext';
+import { apiClient } from '../../../utils/api';
+
+import { ServiceInput } from '../../../types/services';
+import ServiceTable from '../../../components/shared/ServiceTable';
+
+import Card from "../../../components/single/card";
 import { toast } from 'sonner';
 
 import { BsArrowLeft, BsCheckCircle, BsPlus, BsTrash, BsList } from 'react-icons/bs';
 import { PiAddressBookThin } from 'react-icons/pi';
 import { HiOutlineDownload, HiOutlineSave, HiClipboardList, HiChevronLeft } from 'react-icons/hi';
 
-
 interface FormService extends ServiceInput {
-  id: string;
-  errors: { [key: string]: string };
+	id: string;
+	errors: { [key: string]: string };
 }
 
 interface VehicleOption {
-  id: string;
-  name: string;
-  paxCapacity?: number;
+	id: string;
+	name: string;
+	paxCapacity?: number;
 }
 
 const MBTransferService = () => {
@@ -596,11 +597,11 @@ const MBTransferService = () => {
           })}`}
           subtitle={
             <span>
-              Servicios MBTransfer ingresados manualmente para la fecha seleccionada.
+              Servicios MB Transfer ingresados manualmente para la fecha seleccionada.
             </span>
           }
           company="MBT"
-        />
+         />
       ) : (
         <Card extra="w-full">
           <div className="p-8 text-center">
@@ -624,50 +625,33 @@ const MBTransferService = () => {
     </div>
   );
 
-  return (
-    <div className="w-full">
-      <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={popView}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-        >
-          <BsArrowLeft className="text-xl text-brand dark:text-white" />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-navy-700 dark:text-white">
-		Manejo de los Servicios de MBT
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            {activeTab === 'form' ? 'Completa manualmente el formulario para anadir servicios' : 'Ver y manejar los servicios guardados de MBT'}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <PiAddressBookThin className="text-3xl text-purple-500" />
-        </div>
-      </div>
+	return (
+		<div className="w-full">
+			<div className="flex items-center gap-4 mb-6 mt-4">
+				<div className="flex-1">
+					<h1 className="text-2xl font-bold text-navy-700 dark:text-white">
+						Manejo de los Servicios de MBT
+					</h1>
+					<p className="text-gray-600 dark:text-gray-300">
+						{activeTab === 'form' ? 'Completa manualmente el formulario para anadir servicios' : 'Ver y manejar los servicios guardados de MBT'}
+					</p>
+				</div>
+				<div className="flex items-center gap-3">
+					<PiAddressBookThin className="text-3xl text-purple-500" />
+				</div>
+			</div>
 
-      {activeTab === 'form' ? (
-        <>
-          <div className="space-y-6">
-            {services.map((service, index) => renderServiceForm(service, index))}
-          </div>
-
-          <div className="mt-6 p-4 bg-purple-50 dark:bg-accent-900/20 rounded-lg">
-            <h5 className="font-semibold text-accent-700 dark:text-accent-300 mb-2">Form Guidelines:</h5>
-            <div className="text-sm text-purple-600 dark:text-accent-400 space-y-1">
-              <p>• El codigo del servicio debe ser unico y seguir el formato de la empresa</p>
-              <p>• El codigo de vuelo es obligatorio para servicios de llegada</p>
-              <p>• Usa formato de 24 horas para la hora de recogida</p>
-              <p>• Especifica claramente origen y destino</p>
-              <p>• Agrega notas para requisitos o instrucciones especiales</p>
-            </div>
-          </div>
-        </>
-      ) : (
-        renderServicesView()
-      )}
-    </div>
-  );
+			{activeTab === 'form' ? (
+				<>
+					<div className="space-y-6">
+						{services.map((service, index) => renderServiceForm(service, index))}
+					</div>
+				</>
+			) : (
+				renderServicesView()
+			)}
+		</div>
+	);
 };
 
 export default MBTransferService;

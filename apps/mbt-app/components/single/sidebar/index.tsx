@@ -5,8 +5,25 @@ import Image from "next/image";
 import logo from "../../../public/layout/ConfiguratorLogo.png";
 import Card from "../card";
 
-import { HiX, HiOutlineCalendar, HiOutlineUsers, HiOutlineBriefcase, HiOutlineChartBar, HiOutlineClock } from "react-icons/hi";
-type ItemKey = "live" | "workday" | "itinerary" | "notes" | "employees" | "accounting" | "stats";
+import {
+	HiX,
+	HiOutlineUsers,
+	HiOutlineBriefcase,
+	HiOutlineChartBar,
+	HiOutlineClock,
+	HiOutlineViewList,
+	HiOutlinePlusCircle,
+} from "react-icons/hi";
+import { FiMessageSquare } from "react-icons/fi";
+
+type ItemKey =
+	| "workday"
+	| "service-management"
+	| "service-creation"
+	| "messages"
+	| "personnel"
+	| "stats"
+	| "accounting";
 
 function Sidebar(props: {
 	open: boolean;
@@ -21,7 +38,7 @@ function Sidebar(props: {
 }) {
 	const { open, onClose, variant, mini, activeKey, onSelect } = props;
 
-	const [localActive, setLocalActive] = useState<ItemKey>("itinerary");
+	const [localActive, setLocalActive] = useState<ItemKey>("service-creation");
 	const active = activeKey ?? localActive;
 
 	const { employee } = useAuth();
@@ -30,10 +47,12 @@ function Sidebar(props: {
 
 	const menu: Array<{ key: ItemKey; label: string; Icon: any; title?: string }> = [
 		{ key: "workday", label: "Jornada", Icon: HiOutlineClock },
-		{ key: "itinerary", label: "Servicios", Icon: HiOutlineCalendar, title: "Drives / services" },
-		{ key: "employees", label: "Personal", Icon: HiOutlineUsers },
-		{ key: "accounting",label: "Contabilidad", Icon: HiOutlineBriefcase },
-		{ key: "stats",     label: "Estadísticas", Icon: HiOutlineChartBar },
+		{ key: "service-management", label: "Manejo de Servicios", Icon: HiOutlineViewList, title: "Administrar servicios" },
+		{ key: "service-creation", label: "Creación de Servicios", Icon: HiOutlinePlusCircle, title: "Crear servicios" },
+		{ key: "messages", label: "Mensajes", Icon: FiMessageSquare },
+		{ key: "personnel", label: "Personal", Icon: HiOutlineUsers },
+		{ key: "stats", label: "Estadísticas", Icon: HiOutlineChartBar },
+		{ key: "accounting", label: "Contabilidad", Icon: HiOutlineBriefcase },
 	];
 
 	const handleSelect = (k: ItemKey) => {

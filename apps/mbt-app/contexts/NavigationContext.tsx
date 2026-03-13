@@ -28,7 +28,7 @@ const NavigationContext = createContext<NavigationContextType | undefined>(undef
 export function NavigationProvider({ children }: { children: ReactNode }) {
   const [navigation, setNavigation] = useState<NavigationState>({
     stack: [],
-    currentSection: 'itinerary'
+    currentSection: 'service-creation'
   });
 
   const pushView = (item: NavigationItem) => {

@@ -14,10 +14,7 @@ import {
 import {  
   PiIdentificationBadgeBold,  
   PiBuildingsBold,  
-  PiCarSimpleBold,
-  PiNotebookBold,
-  PiBellRingingBold, 
-  PiCalendarCheckBold
+  PiCarSimpleBold
 } from "react-icons/pi";
 import { useNavigation } from "../../../contexts/NavigationContext";
 import { useBottomBar } from "../../../contexts/BottomBarContext";
@@ -52,26 +49,15 @@ export default function BottomBar({ section, mini = false, className = "" }: Bot
   // The components are being updated in such a way that they themselves use a hook to populate the bottom bar instead
   // remove this useless logic 
   const sectionActions: Record<string, ActionItem[]> = {
-    itinerary: [
-      { key: "new", label: "New Service", Icon: HiOutlinePlus, variant: "primary" },
-      { key: "search", label: "Search", Icon: HiOutlineSearch },
-      { key: "export", label: "Export", Icon: HiOutlineDownload },
-      { key: "refresh", label: "Refresh", Icon: HiOutlineRefresh },
-      { key: "settings", label: "Settings", Icon: HiOutlineCog },
-    ],
+    "service-creation": [],
+    "service-management": [],
+    messages: [],
     workday: [
       { key: "refresh", label: "Actualizar", Icon: HiOutlineRefresh, variant: "primary" },
       { key: "search", label: "Buscar", Icon: HiOutlineSearch },
       { key: "export", label: "Exportar", Icon: HiOutlineDownload },
     ],
-    notes: [
-      { key: "note", label: "New Note", Icon: PiNotebookBold, variant: "primary" },
-      { key: "event", label: "New Event", Icon: PiBellRingingBold },
-      { key: "reminder", label: "New Reminder", Icon: PiCalendarCheckBold },      
-      { key: "search", label: "Search", Icon: HiOutlineSearch },
-      { key: "export", label: "Export", Icon: HiOutlineDownload },
-    ],
-    employees: [
+    personnel: [
       { key: "staff", label: "Empleados", Icon: PiIdentificationBadgeBold },
       { key: "companies", label: "Compañías", Icon: PiBuildingsBold },
       { key: "vehicles", label: "Vehículos", Icon: PiCarSimpleBold },

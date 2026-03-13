@@ -5,14 +5,14 @@ const MAX_RETRIES = 1;
 const ROUTE_CACHE_TTL_MS = 5 * 60 * 1000;
 
 type FlightResult = {
-  code: string;
-  departure_airport?: string;
-  arrival_airport?: string;
-  scheduled_out?: string;
-  scheduled_in?: string;
-  status?: string;
-  error?: string;
-  message?: string;
+	code: string;
+	departure_airport?: string;
+	arrival_airport?: string;
+	scheduled_out?: string;
+	scheduled_in?: string;
+	status?: string;
+	error?: string;
+	message?: string;
 };
 
 const flightLookupCache = new Map<string, { expiresAt: number; data: FlightResult }>();

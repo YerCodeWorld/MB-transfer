@@ -12,11 +12,45 @@ export interface DeveloperNote {
 	title: string;
 	content: string;
 	type: 'PATCH' | 'UPDATE' | 'WARNING' | 'INFO';
+	groupId?: string | null;
+	isFeatured?: boolean;
 	isActive: boolean;
 	startsAt?: string | null;
 	expiresAt?: string | null;
+	group?: DeveloperNoteGroup | null;
+	createdBy?: {
+		id: string;
+		name: string;
+		photo?: string | null;
+		role: string;
+	} | null;
+	seenBy?: SeenReceipt[];
 	createdAt: string;
 	updatedAt: string;
+}
+
+export interface DeveloperNoteGroup {
+	id: string;
+	name: string;
+	versionLabel?: string | null;
+	tagLabel?: string | null;
+	color?: string | null;
+	isFeatured: boolean;
+	isActive: boolean;
+	notes?: DeveloperNote[];
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface SeenReceipt {
+	id: string;
+	seenAt: string;
+	employee: {
+		id: string;
+		name: string;
+		photo?: string | null;
+		role: string;
+	};
 }
 
 class APIClient {
@@ -443,6 +477,7 @@ class APIClient {
 		itineraryId?: string;
 		date?: string;
 		tag?: string;
+		pinned?: boolean;
 		vehicleId?: string;
 		employeeId?: string;
 		limit?: number;
@@ -453,6 +488,7 @@ class APIClient {
 		if (params?.itineraryId) query.set('itineraryId', params.itineraryId);
 		if (params?.date) query.set('date', params.date);
 		if (params?.tag) query.set('tag', params.tag);
+		if (params?.pinned !== undefined) query.set('pinned', params.pinned.toString());
 		if (params?.vehicleId) query.set('vehicleId', params.vehicleId);
 		if (params?.employeeId) query.set('employeeId', params.employeeId);
 		if (params?.limit) query.set('limit', params.limit.toString());
@@ -471,6 +507,7 @@ class APIClient {
 		caption?: string;
 		content: string;
 		tag?: 'EMERGENCY' | 'IMPORTANT' | 'REMINDER' | 'MINOR' | 'IDEA' | 'SUGGESTION';
+		isPinned?: boolean;
 		serviceId?: string;
 		itineraryId?: string;
 		vehicleId?: string;
@@ -490,6 +527,7 @@ class APIClient {
 		caption?: string;
 		content?: string;
 		tag?: 'EMERGENCY' | 'IMPORTANT' | 'REMINDER' | 'MINOR' | 'IDEA' | 'SUGGESTION';
+		isPinned?: boolean;
 		serviceId?: string;
 		itineraryId?: string;
 		vehicleId?: string;
@@ -508,21 +546,100 @@ class APIClient {
 		return this.delete<any>(`/api/v1/notes/${id}`);
 	}
 
+	async markNoteSeen(id: string) {
+		return this.post<any>(`/api/v1/notes/${id}/seen`, {});
+	}
+
 	// Developer notes endpoints
 	async getDeveloperNotes(params?: {
 		active?: boolean;
 		type?: 'PATCH' | 'UPDATE' | 'WARNING' | 'INFO';
+		groupId?: string;
+		featured?: boolean;
 		limit?: number;
 		offset?: number;
 	}) {
 		const query = new URLSearchParams();
 		if (params?.active !== undefined) query.set('active', params.active.toString());
 		if (params?.type) query.set('type', params.type);
+		if (params?.groupId) query.set('groupId', params.groupId);
+		if (params?.featured !== undefined) query.set('featured', params.featured.toString());
 		if (params?.limit) query.set('limit', params.limit.toString());
 		if (params?.offset) query.set('offset', params.offset.toString());
 
 		const queryString = query.toString();
 		return this.get<DeveloperNote[]>(`/api/v1/developer-notes${queryString ? `?${queryString}` : ''}`);
+	}
+
+	async createDeveloperNote(data: {
+		title: string;
+		content: string;
+		type?: 'PATCH' | 'UPDATE' | 'WARNING' | 'INFO';
+		groupId?: string;
+		isFeatured?: boolean;
+		isActive?: boolean;
+		startsAt?: string | null;
+		expiresAt?: string | null;
+	}) {
+		return this.post<DeveloperNote>('/api/v1/developer-notes', data);
+	}
+
+	async updateDeveloperNote(id: string, data: {
+		title?: string;
+		content?: string;
+		type?: 'PATCH' | 'UPDATE' | 'WARNING' | 'INFO';
+		groupId?: string;
+		isFeatured?: boolean;
+		isActive?: boolean;
+		startsAt?: string | null;
+		expiresAt?: string | null;
+	}) {
+		return this.put<DeveloperNote>(`/api/v1/developer-notes/${id}`, data);
+	}
+
+	async deleteDeveloperNote(id: string) {
+		return this.delete<any>(`/api/v1/developer-notes/${id}`);
+	}
+
+	async markDeveloperNoteSeen(id: string) {
+		return this.post<any>(`/api/v1/developer-notes/${id}/seen`, {});
+	}
+
+	async getDeveloperNoteGroups(params?: {
+		active?: boolean;
+		featured?: boolean;
+	}) {
+		const query = new URLSearchParams();
+		if (params?.active !== undefined) query.set('active', params.active.toString());
+		if (params?.featured !== undefined) query.set('featured', params.featured.toString());
+		const queryString = query.toString();
+		return this.get<DeveloperNoteGroup[]>(`/api/v1/developer-notes/groups${queryString ? `?${queryString}` : ''}`);
+	}
+
+	async createDeveloperNoteGroup(data: {
+		name: string;
+		versionLabel?: string;
+		tagLabel?: string;
+		color?: string;
+		isFeatured?: boolean;
+		isActive?: boolean;
+	}) {
+		return this.post<DeveloperNoteGroup>('/api/v1/developer-notes/groups', data);
+	}
+
+	async updateDeveloperNoteGroup(id: string, data: {
+		name?: string;
+		versionLabel?: string;
+		tagLabel?: string;
+		color?: string;
+		isFeatured?: boolean;
+		isActive?: boolean;
+	}) {
+		return this.put<DeveloperNoteGroup>(`/api/v1/developer-notes/groups/${id}`, data);
+	}
+
+	async deleteDeveloperNoteGroup(id: string) {
+		return this.delete<any>(`/api/v1/developer-notes/groups/${id}`);
 	}
 }
 
