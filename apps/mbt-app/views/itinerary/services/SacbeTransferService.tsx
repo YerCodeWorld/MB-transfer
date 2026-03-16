@@ -2,23 +2,24 @@
 
 import { useState, useRef, useEffect } from 'react';
 
-import { useNavigation } from '../../../contexts/NavigationContext';
-import { useServiceData } from '../../../contexts/ServiceDataContext';
-import { useBottomBar } from '../../../contexts/BottomBarContext';
+import { useNavigation } from '@/contexts/NavigationContext';
+import { useServiceData } from '@/contexts/ServiceDataContext';
+import { useBottomBar } from '@/contexts/BottomBarContext';
 
-import { ServiceInput } from '../../../types/services';
+import { ServiceInput } from '@/types/services';
 
-import { convertTo12Hour, convertTo24Hour } from '../../../utils/services';
-import { toDDMMYY } from "../../../utils/dateUtils";
+import { convertTo12Hour, convertTo24Hour } from '@/utils/services';
+import { toDDMMYY } from "@/utils/dateUtils";
 
 import * as XLSX from 'xlsx';
 
-import ServiceTable from '../../../components/shared/ServiceTable';
-import Card from "../../../components/single/card";
+import ServiceTable from '@/components/shared/ServiceTable';
+import LoadingStep from '@/components/shared/loading-step';
+import Card from "@/components/single/card";
 
 import { toast } from 'sonner';
 
-import { BsArrowLeft, BsFileEarmarkExcel, BsUpload, BsExclamationTriangle } from 'react-icons/bs';
+import { BsFileEarmarkExcel, BsUpload, BsExclamationTriangle } from 'react-icons/bs';
 import { HiOutlineDownload, HiOutlineSave, HiChevronLeft } from 'react-icons/hi';
 import { GoFileDiff } from 'react-icons/go';
 
@@ -553,27 +554,39 @@ const SacbeTransferService = () => {
 
   return (
     <div className="relative w-full p-5">
-      {loading && step === 'review' && (
-        <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <Card extra="w-full max-w-lg">
-            <div className="p-6 text-center">
-              <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-accent-200 border-t-accent-600" />
-              <h3 className="text-lg font-bold text-navy-700 dark:text-white">
-                Guardando Servicios...
-              </h3>
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                Estamos cargando {savingCount} servicios de ST a la base de datos.
-              </p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Este proceso puede tardar con archivos grandes. Por favor no cierres la página.
-              </p>
-            </div>
-          </Card>
-        </div>
+      {step === 'upload' && (
+        <LoadingStep
+          isLoading={loading}
+          variant="overlay"
+          title="Procesando archivo"
+          description="Estamos leyendo y validando el Excel antes de mostrar los servicios."
+          currentStep="Extrayendo datos del archivo"
+          steps={[
+            { label: "Cargar archivo", status: "completed" },
+            { label: "Leer hoja y columnas", status: "active" },
+            { label: "Preparar revisión", status: "pending" },
+          ]}
+          panelClassName="max-w-lg"
+        >
+          {renderUploadStep()}
+        </LoadingStep>
       )}
 
-      {step === 'upload' && renderUploadStep()}
       {step === 'review' && renderReviewStep()}
+
+      <LoadingStep
+        isLoading={loading && step === 'review'}
+        variant="page"
+        title="Guardando servicios"
+        description={`Estamos cargando ${savingCount} servicios de ST a la base de datos.`}
+        currentStep="Persistiendo servicios en la base de datos"
+        steps={[
+          { label: "Validar servicios", status: "completed" },
+          { label: "Guardar registros", status: "active" },
+          { label: "Finalizar proceso", status: "pending" },
+        ]}
+        panelClassName="max-w-lg"
+      />
     </div>
   );
 };

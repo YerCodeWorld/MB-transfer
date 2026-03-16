@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useMemo } from 'react';
 
-import { useNavigation } from '../../../contexts/NavigationContext';
-import { useServiceData } from '../../../contexts/ServiceDataContext';
-import { useBottomBar } from '../../../contexts/BottomBarContext';
-import { apiClient } from '../../../utils/api';
+import { useNavigation } from '@/contexts/NavigationContext';
+import { useServiceData } from '@/contexts/ServiceDataContext';
+import { useBottomBar } from '@/contexts/BottomBarContext';
+import { apiClient } from '@/utils/api';
 
-import { ServiceInput } from '../../../types/services';
-import ServiceTable from '../../../components/shared/ServiceTable';
+import { ServiceInput } from '@/types/services';
+import ServiceTable from '@/components/shared/ServiceTable';
 
-import Card from "../../../components/single/card";
+import Card from "@/components/single/card";
 import { toast } from 'sonner';
 
 import { BsArrowLeft, BsCheckCircle, BsPlus, BsTrash, BsList } from 'react-icons/bs';

@@ -1,19 +1,20 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useNavigation } from '../../../contexts/NavigationContext';
-import { useServiceData } from '../../../contexts/ServiceDataContext';
-import { useBottomBar } from '../../../contexts/BottomBarContext';
+import { useNavigation } from '@/contexts/NavigationContext';
+import { useServiceData } from '@/contexts/ServiceDataContext';
+import { useBottomBar } from '@/contexts/BottomBarContext';
 
-import { fetchAtData, extractAtServices, convertIsoStringTo12h } from '../../../utils/services';
+import { fetchAtData, extractAtServices, convertIsoStringTo12h } from '@/utils/services';
 
-import { ServiceInput, FlightInfo } from '../../../types/services';
-import ServiceTable from '../../../components/shared/ServiceTable';
+import { ServiceInput, FlightInfo } from '@/types/services';
+import ServiceTable from '@/components/shared/ServiceTable';
 
 import { BsArrowLeft } from 'react-icons/bs';
 import { FaUser, FaClock, FaUsers, FaRoute, FaInfoCircle, FaTimes, FaCopy, FaMapSigns } from "react-icons/fa";
 import { PiAirplaneBold } from 'react-icons/pi';
 import { HiOutlineRefresh, HiOutlineDownload, HiOutlineSave, HiChevronLeft } from "react-icons/hi";
+
 import { toast } from 'sonner';
 
 interface ServicePreview extends ServiceInput {
