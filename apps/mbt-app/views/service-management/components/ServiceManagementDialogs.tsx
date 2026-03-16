@@ -1,7 +1,7 @@
-import AddServiceModal from "@/components/shared/AddServiceModal";
-import FlightComparisonModal from "@/components/shared/FlightComparisonModal";
-import HoursVisualizationModal, { ServiceHoursRow } from "@/components/shared/HoursVisualizationModal";
-import PDFGeneratorModal from "@/components/shared/PDFGeneratorModal";
+import AddServiceModal from "../modals/AddServiceModal";
+import FlightComparisonModal from "../modals/FlightComparisonModal";
+import HoursVisualizationModal, { ServiceHoursRow } from "../modals/HoursVisualizationModal";
+import PDFGeneratorModal from "../modals/PDFGeneratorModal";
 import ServiceDetailModal from "@/components/shared/ServiceDetailModal";
 import { ServiceInput } from "@/types/services";
 import { ExtendedService } from "../utils/serviceManagement";
@@ -25,6 +25,7 @@ interface ServiceManagementDialogsProps {
   handleFlightTimeUpdate: (serviceId: string, formattedTime: string) => Promise<void>;
   handleAddService: (service: ServiceInput & { serviceType?: "at" | "st" | "mbt" }) => Promise<boolean>;
   handlePDFServiceUpdate: (serviceCode: string, updatedService: ExtendedService) => Promise<void>;
+  markAsChecked: (serviceId: string, checked: boolean) => Promise<void>;
 }
 
 export default function ServiceManagementDialogs({
@@ -46,6 +47,7 @@ export default function ServiceManagementDialogs({
   handleFlightTimeUpdate,
   handleAddService,
   handlePDFServiceUpdate,
+  markAsChecked,
 }: ServiceManagementDialogsProps) {
   return (
     <>
@@ -85,6 +87,7 @@ export default function ServiceManagementDialogs({
         services={filteredServices}
         selectedDate={selectedDate}
         onServiceUpdate={handlePDFServiceUpdate}
+	markServicePDFAsChecked={markAsChecked}
       />
 
       <HoursVisualizationModal

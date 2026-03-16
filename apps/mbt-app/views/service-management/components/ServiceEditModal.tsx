@@ -3,16 +3,15 @@
 import { createPortal } from "react-dom";
 import { SERVICE_KIND_OPTIONS, STATUS_OPTIONS } from "@/constants/allServicesOptions";
 import {
-  ExtendedService,
-  normalizeNotesForEditor,
-  ServiceStatus,
-  toTimeInputValue,
-  VehicleOption,
+	ExtendedService,
+	ServiceStatus,
+	VehicleOption,
+	toTimeInputValue,
+	normalizeNotesForEditor,
 } from "../utils/serviceManagement";
 
 interface ServiceEditModalProps {
   editingService: ExtendedService | null;
-  isClient: boolean;
   selectedDate: string;
   vehicleOptions: VehicleOption[];
   setEditingService: (service: ExtendedService | null) => void;
@@ -21,13 +20,12 @@ interface ServiceEditModalProps {
 
 export default function ServiceEditModal({
   editingService,
-  isClient,
   selectedDate,
   vehicleOptions,
   setEditingService,
   handleSaveEdit,
 }: ServiceEditModalProps) {
-  if (!editingService || !isClient) return null;
+  if (!editingService) return null;
 
   return createPortal(
     <div
