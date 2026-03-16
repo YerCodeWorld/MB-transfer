@@ -414,6 +414,7 @@ class APIClient {
 			pax?: number | null;
 			time?: string | null;
 			flightCode?: string | null;
+			checked?: boolean;
 		}
 	) {
 		return this.put<any>(`/api/v1/services/${serviceId}/pdf-profile`, data);
