@@ -4,6 +4,7 @@ export interface ParsedServiceMessage {
   type: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER';
   code: string;
   client: string;
+  flightCode?: string;
   vehicle?: string;
   pax: number;
   from: string;
@@ -98,61 +99,63 @@ function parseDepartureFormat(lines: string[], type: 'ARRIVAL' | 'DEPARTURE' | '
 }
 
 function parseArrivalFormat(lines: string[], type: 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER'): ParsedServiceMessage {
-  // Arrival format:
-  // LLEGADA
-  // Client Name
-  // Vehicle Type
-  // PAX
-  // Desde: Location (with airport code)
-  // Fecha: Date Time
-  // Vuelo: Flight Code
-  // Hacia: Destination
-
   if (lines.length < 7) {
     throw new Error('Arrival format must contain at least 7 lines');
   }
 
-  // Parse client name (line 1, after LLEGADA)
-  const client = lines[1];
+  const fromLine = lines.find((line) => /^Desde:?\s*/i.test(line)) || '';
+  const dateLine = lines.find((line) => /^Fecha:?\s*/i.test(line)) || '';
+  const timeLine = lines.find((line) => /^Hora:?\s*/i.test(line)) || '';
+  const flightLine = lines.find((line) => /^Vuelo:?\s*/i.test(line)) || '';
+  const toLine = lines.find((line) => /^Hacia:?\s*/i.test(line)) || '';
+  const paxLine = lines.find((line) => /(\d+)\s*pax/i.test(line)) || '';
+  const firstStructuredIndex = lines.findIndex(
+    (line) =>
+      /^Desde:?\s*/i.test(line) ||
+      /^Fecha:?\s*/i.test(line) ||
+      /^Hora:?\s*/i.test(line) ||
+      /^Vuelo:?\s*/i.test(line) ||
+      /^Hacia:?\s*/i.test(line) ||
+      /(\d+)\s*pax/i.test(line)
+  );
+  const identityLines = lines.slice(1, firstStructuredIndex === -1 ? lines.length : firstStructuredIndex);
 
-  // Parse vehicle (line 2)
-  const vehicle = lines[2] || '';
+  const looksLikeCode = (value: string) => /^[A-Z0-9]+(?:[-/][A-Z0-9]+)+$/i.test(value.trim());
 
-  // Parse PAX - look for number in the line (line 3)
-  const paxMatch = lines[3].match(/(\d+)\s*pax/i);
+  const codeCandidate = identityLines[0] || '';
+  const hasExplicitCode = looksLikeCode(codeCandidate) && identityLines.length >= 2;
+  const code = hasExplicitCode ? codeCandidate : flightLine.replace(/^Vuelo:?\s*/i, '').trim() || `ARR_${Date.now()}`;
+  const client = hasExplicitCode ? identityLines[1] || '' : identityLines[0] || '';
+  const vehicle = hasExplicitCode ? identityLines[2] || '' : identityLines[1] || '';
+
+  const paxMatch = paxLine.match(/(\d+)\s*pax/i);
   const pax = paxMatch ? parseInt(paxMatch[1]) : 1;
 
-  // Parse FROM location - remove "Desde:" prefix (line 4)
-  const fromMatch = lines[4].match(/^(?:Desde:?\s*)?(.+)$/i);
-  const from = fromMatch ? fromMatch[1].trim() : lines[4];
+  const fromMatch = fromLine.match(/^(?:Desde:?\s*)?(.+)$/i);
+  const from = fromMatch ? fromMatch[1].trim() : fromLine;
 
-  // Parse DATE and TIME - combined in one line "Fecha: 2025-11-18 15:30:00" (line 5)
-  const dateTimeMatch = lines[5].match(/^(?:Fecha:?\s*)?(.+)$/i);
-  const dateTimeStr = dateTimeMatch ? dateTimeMatch[1].trim() : lines[5];
-  
-  // Split date and time
-  const [date, time] = dateTimeStr.split(' ');
+  const rawDate = dateLine.replace(/^Fecha:?\s*/i, '').trim();
+  const rawTime = timeLine.replace(/^Hora:?\s*/i, '').trim();
+  const [splitDate, splitTime] = rawDate.split(/\s+/);
+  const date = splitDate || rawDate;
+  const time = rawTime || splitTime || rawDate;
 
-  // Parse flight code - remove "Vuelo:" prefix (line 6)
-  const flightMatch = lines[6].match(/^(?:Vuelo:?\s*)?(.+)$/i);
-  const flightCode = flightMatch ? flightMatch[1].trim() : lines[6];
+  const flightMatch = flightLine.match(/^(?:Vuelo:?\s*)?(.+)$/i);
+  const flightCode = flightMatch ? flightMatch[1].trim() : '';
 
-  // Parse TO location - remove "Hacia:" prefix (line 7)
-  const toMatch = lines[7] ? lines[7].match(/^(?:Hacia:?\s*)?(.+)$/i) : null;
-  const to = toMatch ? toMatch[1].trim() : (lines[7] || '');
-
-  // For arrivals, generate a code from flight info if not provided explicitly
-  const code = flightCode || `ARR_${Date.now()}`;
+  const toMatch = toLine.match(/^(?:Hacia:?\s*)?(.+)$/i);
+  const to = toMatch ? toMatch[1].trim() : toLine;
 
   return {
     type,
     code,
     client,
+    flightCode,
     vehicle,
     pax,
     from,
-    date: date || dateTimeStr,
-    time: time || dateTimeStr,
+    date,
+    time,
     to
   };
 }
@@ -182,6 +185,7 @@ export function convertParsedToServiceInput(parsed: ParsedServiceMessage, select
     kindOf: parsed.type,
     clientName: parsed.client,
     pickupTime,
+    flightCode: parsed.flightCode,
     pax: parsed.pax,
     pickupLocation: parsed.from,
     dropoffLocation: parsed.to,
