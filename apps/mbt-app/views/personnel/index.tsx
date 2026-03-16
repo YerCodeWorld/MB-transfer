@@ -23,10 +23,8 @@ export default function PersonnelView() {
 	const { setActions } = useBottomBar();
 	const [activeTab, setActiveTab] = useState<'employees' | 'drivers' | 'allies' | 'vehicles' | 'hotels' | 'zones' | 'routes'>('employees');
 
-	// Role-based access control
-	const hasAccess = employee?.role === 'ADMINISTRATOR' || employee?.role === 'MANAGER';
+	const hasAccess = employee?.role === 'ADMINISTRATOR' || employee?.role === 'DEVELOPER';
 
-	// Set up bottom bar actions for tab switching
 	useEffect(() => {
 		if (!hasAccess) return;
 
