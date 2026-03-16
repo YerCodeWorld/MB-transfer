@@ -9,6 +9,8 @@ export interface BottomBarAction {
   variant?: "primary" | "secondary" | "danger";
   onClick?: () => void;
   disabled?: boolean;
+  active?: boolean;
+  square?: boolean;
 }
 
 interface BottomBarContextType {
