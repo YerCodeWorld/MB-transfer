@@ -5,6 +5,8 @@ export interface Service {
   state: 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELED' | 'REFUNDED';
   clientName: string;
   pickupTime: string;
+  originalPickupTime?: string | null;
+  pickupTimeModifiedAt?: string | null;
   flightCode?: string;
   pax: number;
   luggage?: number;
@@ -173,5 +175,6 @@ export interface ServiceInput {
     pax?: number;
     time?: string;
     flightCode?: string;
+    checked?: boolean;
   };
 }

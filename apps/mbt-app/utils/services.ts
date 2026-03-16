@@ -140,6 +140,24 @@ export async function fetchAtData(date?: string): Promise<{ bookings: any[], dat
 export function extractAtServices(bookings: any[], targetDateStr: string): ServiceInput[] {
   const targetDate = new Date(targetDateStr);
 
+  function resolveVehicleType(reservation: any): string | undefined {
+    const candidates = [
+      reservation.transporter?.car_full,
+      [reservation.transporter?.car_make, reservation.transporter?.car_model].filter(Boolean).join(" ").trim(),
+      reservation.transporter?.car_model,
+      reservation.transporter?.car_type,
+      reservation.vehicle?.name,
+      reservation.car_type,
+      reservation.segment,
+    ];
+
+    const resolved = candidates.find(
+      (value) => typeof value === "string" && value.trim().length > 0
+    );
+
+    return typeof resolved === "string" ? resolved.trim() : undefined;
+  }
+
   function determineType(reservation: any): 'ARRIVAL' | 'DEPARTURE' | 'TRANSFER' {
     const pickup = reservation.pickup_location?.name || "";
     const dropoff = reservation.drop_of_location?.name || "";
@@ -197,7 +215,7 @@ export function extractAtServices(bookings: any[], targetDateStr: string): Servi
       pax,
       pickupLocation: res.pickup_location?.name || "",
       dropoffLocation: res.drop_of_location?.name || "",
-      vehicleType: res.vehicle?.name || res.car_type || undefined,
+      vehicleType: resolveVehicleType(res),
       ally: "AirportTransfer"
     };
   });
