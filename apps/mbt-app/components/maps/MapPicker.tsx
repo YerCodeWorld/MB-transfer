@@ -14,6 +14,7 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, onClo
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
+  const scriptId = "google-maps-script";
   const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(
     latitude && longitude ? { lat: latitude, lng: longitude } : null
   );
@@ -36,11 +37,27 @@ export default function MapPicker({ latitude, longitude, onLocationSelect, onClo
 
     // Check if Google Maps is already loaded
     if (window.google && window.google.maps) {
+      setIsLoaded(true);
       return;
     }
 
+    const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (existingScript) {
+      const handleLoad = () => setIsLoaded(true);
+      const handleError = () => setError("Failed to load Google Maps");
+
+      existingScript.addEventListener("load", handleLoad);
+      existingScript.addEventListener("error", handleError);
+
+      return () => {
+        existingScript.removeEventListener("load", handleLoad);
+        existingScript.removeEventListener("error", handleError);
+      };
+    }
+
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.id = scriptId;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
     script.async = true;
     script.defer = true;
     script.onload = () => setIsLoaded(true);
