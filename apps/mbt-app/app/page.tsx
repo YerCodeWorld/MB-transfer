@@ -3,13 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import Image from "next/image";
-
 import FixedSwitch from "../components/single/fixedSwitch";
+import LoadingStep from "../components/shared/loading-step";
 import { useAuth } from "../contexts/AuthContext";
 
 import { MdWarning, MdWarningAmber } from "react-icons/md";
-// import authImg from "../public/world.jpg";
 
 export default function Auth() {
 
@@ -54,6 +52,19 @@ export default function Auth() {
 
 	return (
 		<div className="relative flex min-h-screen w-full bg-white dark:bg-navy-900">
+			<LoadingStep
+				isLoading={isLoading}
+				variant="page"
+				title="Verificando acceso"
+				description="Estamos autenticando su usuario antes de entrar a la plataforma."
+				currentStep="Autenticando credenciales"
+				steps={[
+					{ label: "Validar formulario", status: "completed" },
+					{ label: "Autenticar usuario", status: "active" },
+					{ label: "Redirigir", status: "pending" },
+				]}
+			/>
+
 			<FixedSwitch />
 
 			<div className="flex w-full items-center justify-center px-6 sm:px-10 lg:px-16">
