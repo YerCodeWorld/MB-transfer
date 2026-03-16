@@ -11,6 +11,8 @@ export interface ExtendedService extends ServiceInput {
   status: ServiceStatus;
   assignedDriver?: string;
   assignedVehicle?: string;
+  originalPickupTime?: string | null;
+  pickupTimeModifiedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
