@@ -4,21 +4,19 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 
 import { useServiceData } from "@/contexts/ServiceDataContext";
 import { useBottomBar } from "@/contexts/BottomBarContext";
-import { useIsClient } from "@/hooks/useIsClient";
 import { apiClient } from "@/utils/api";
 
-import { ServiceHoursRow } from "@/components/shared/HoursVisualizationModal";
-
+import { ServiceHoursRow } from "./modals/HoursVisualizationModal";
 import { ServiceInput } from "@/types/services";
-import { toast } from "sonner";
-import { BsClock, BsClockHistory, BsDownload, BsFilePdf } from "react-icons/bs";
-import { FaPlus } from "react-icons/fa";
+
 import { time12ToMinutes, convertIsoStringTo12h, convertTo24Hour } from "@/utils/services";
+import { exportServicesToExcel } from "@/utils/xlsxFormatter";
 
 import ServiceManagementFilters from "./components/ServiceManagementFilters";
 import ServiceManagementTable from "./components/ServiceManagementTable";
 import ServiceEditModal from "./components/ServiceEditModal";
 import ServiceManagementDialogs from "./components/ServiceManagementDialogs";
+
 import {
   ExtendedService,
   getCompanyName,
@@ -36,8 +34,13 @@ import {
   displayTimeFromService,
 } from "./utils/serviceManagement";
 
+import { toast } from "sonner";
+
+import { BsClock, BsClockHistory, BsDownload, BsFileEarmarkSpreadsheet, BsFilePdf } from "react-icons/bs";
+import { FaPlus } from "react-icons/fa";
+
 export default function ServiceManagementView() {
-  const isClient = useIsClient();
+
   const { services: dbServices, selectedDate, createService, updateService, deleteService, refetchServices } = useServiceData();
   const { setActions, clearActions } = useBottomBar();
   const [vehicleOptions, setVehicleOptions] = useState<VehicleOption[]>([]);
@@ -68,9 +71,7 @@ export default function ServiceManagementView() {
     const fetchVehicles = async () => {
       try {
         const response = await apiClient.get<VehicleOption[]>("/api/v1/vehicules?limit=200");
-        if (response.success && response.data) {
-          setVehicleOptions(response.data);
-        }
+        if (response.success && response.data) setVehicleOptions(response.data);
       } catch (err) {
         console.error("Error loading vehicles:", err);
       }
@@ -87,6 +88,8 @@ export default function ServiceManagementView() {
         kindOf: service.kindOf,
         clientName: service.clientName,
         pickupTime: service.pickupTime,
+        originalPickupTime: service.originalPickupTime,
+        pickupTimeModifiedAt: service.pickupTimeModifiedAt,
         flightCode: service.flightCode,
         pax: service.pax,
         luggage: service.luggage,
@@ -101,6 +104,7 @@ export default function ServiceManagementView() {
               pax: service.pdfProfile.pax || undefined,
               time: service.pdfProfile.time || undefined,
               flightCode: service.pdfProfile.flightCode || undefined,
+	      checked: service.pdfProfile.checked || false
             }
           : undefined,
         ally: service.ally?.name,
@@ -111,16 +115,6 @@ export default function ServiceManagementView() {
         createdAt: service.createdAt,
         updatedAt: service.updatedAt,
       })),
-    [dbServices]
-  );
-
-  const originalPickupTimesByServiceId = useMemo(
-    () =>
-      Object.fromEntries(
-        dbServices
-          .filter((service) => Boolean(service.id))
-          .map((service) => [service.id, service.pickupTime])
-      ) as Record<string, string>,
     [dbServices]
   );
 
@@ -192,10 +186,6 @@ export default function ServiceManagementView() {
     setShowFlightComparison(true);
   }, []);
 
-  const getPDFs = useCallback(() => {
-    setShowPDFGenerator(true);
-  }, []);
-
   const handleAddService = async (newService: ServiceInput & { serviceType?: "at" | "st" | "mbt" }) => {
     const cacheType = newService.serviceType || "mbt";
     const companyName = getCompanyName(cacheType);
@@ -264,6 +254,8 @@ export default function ServiceManagementView() {
   };
 
   const handleSaveEdit = async (updatedService: ExtendedService) => {
+    const originalService = allServices.find((service) => service.id === updatedService.id);
+
     const updateData = {
       code: normalizeOptionalString(updatedService.code),
       kindOf: updatedService.kindOf,
@@ -283,7 +275,6 @@ export default function ServiceManagementView() {
     const result = await updateService(updatedService.id, updateData);
 
     if (result.success) {
-      const originalService = allServices.find((service) => service.id === updatedService.id);
       if (originalService?.serviceType !== updatedService.serviceType) {
         toast.success("Servicio Movido", {
           className: "bg-card text-card-foreground border-border",
@@ -308,6 +299,7 @@ export default function ServiceManagementView() {
       pax: updatedService.pdfData?.pax ?? null,
       time: updatedService.pdfData?.time ?? null,
       flightCode: updatedService.pdfData?.flightCode ?? null,
+      checked: updatedService.pdfData?.checked ?? false
     });
 
     if (!result.success) {
@@ -400,6 +392,24 @@ export default function ServiceManagementView() {
     });
   }, [filteredServices, selectedDate]);
 
+  const exportToExcel = useCallback(async () => {
+    if (filteredServices.length === 0) {
+      toast.warning("No hay servicios para exportar");
+      return;
+    }
+
+    try {
+      await exportServicesToExcel(filteredServices, selectedDate);
+      toast.success("Excel Exportado", {
+        className: "bg-card text-card-foreground border-border",
+        description: `Se exportaron ${filteredServices.length} servicios`,
+      });
+    } catch (error) {
+      console.error("Error exporting Excel:", error);
+      toast.error("Error al exportar Excel");
+    }
+  }, [filteredServices, selectedDate]);
+
   const handleRemoveService = async (service: ExtendedService) => {
     if (confirm(`Are you sure you want to remove service ${service.code}?`)) {
       const result = await deleteService(service.id);
@@ -434,7 +444,7 @@ export default function ServiceManagementView() {
         key: "get-pdfs",
         label: "Generar Diseños",
         Icon: BsFilePdf,
-        onClick: getPDFs,
+        onClick: () => setShowPDFGenerator(true),
       },
       {
         key: "add-service",
@@ -443,26 +453,29 @@ export default function ServiceManagementView() {
         onClick: () => setShowAddService(true),
       },
       {
+        key: "export-excel",
+        label: "Exportar Excel",
+        Icon: BsFileEarmarkSpreadsheet,
+        onClick: exportToExcel,
+      },
+      {
         key: "export-csv",
         label: "Exportar CSV",
         Icon: BsDownload,
         onClick: exportToCSV,
       },
-    ]);
+      ]);
 
     return () => {
       clearActions();
     };
-  }, [checkTimeData, clearActions, exportToCSV, getPDFs, setActions]);
+  }, [checkTimeData, clearActions, exportToCSV, exportToExcel, setActions]);
 
   const hoursRows: ServiceHoursRow[] = filteredServices.map((service) => {
-    const originalRawTime = originalPickupTimesByServiceId[service.id] || service.pickupTime;
+    const originalRawTime = service.originalPickupTime || service.pickupTime;
     const modifiedTime = displayTimeFromService(service.pickupTime, selectedDate);
     const originalTime = displayTimeFromService(originalRawTime, selectedDate);
-    const updatedFromDb =
-      Boolean(service.createdAt) &&
-      Boolean(service.updatedAt) &&
-      String(service.createdAt) !== String(service.updatedAt);
+    const updatedFromDb = Boolean(service.pickupTimeModifiedAt);
     const isModified = updatedFromDb || modifiedTime !== originalTime;
 
     return {
@@ -477,6 +490,12 @@ export default function ServiceManagementView() {
       isModified,
     };
   });
+
+	const markServicePDFAsChecked = async (serviceId: string, checked: boolean) => {
+		const r = await apiClient.updateServicePdfProfile(serviceId, { checked });
+		if (!r.success) throw new Error(r.message);
+		await refetchServices();
+	}
 
   return (
     <div className="m-10">
@@ -503,7 +522,6 @@ export default function ServiceManagementView() {
 
       <ServiceEditModal
         editingService={editingService}
-        isClient={isClient}
         selectedDate={selectedDate}
         vehicleOptions={vehicleOptions}
         setEditingService={setEditingService}
@@ -529,6 +547,7 @@ export default function ServiceManagementView() {
         handleFlightTimeUpdate={handleFlightTimeUpdate}
         handleAddService={handleAddService}
         handlePDFServiceUpdate={handlePDFServiceUpdate}
+	markAsChecked={markServicePDFAsChecked}
       />
     </div>
   );
