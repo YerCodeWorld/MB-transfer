@@ -18,7 +18,6 @@ interface ServiceTableProps {
   company: "AT" | "MBT" | "ST";
 }
 
-// Simple theme map per company
 const companyThemes: Record<
   ServiceTableProps["company"],
   {
