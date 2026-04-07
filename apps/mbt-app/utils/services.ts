@@ -115,7 +115,7 @@ export async function fetchAtData(date?: string): Promise<{ bookings: any[], dat
   tomorrow.setDate(tomorrow.getDate() + 1);
   const yyyyMmDd = toYMDLocal(tomorrow);  
 
-  const url = `https://api.airporttransfer.com/api/bookings?filters%5Bselected_date%5D=${date ?? yyyyMmDd}&pag`;
+  const url = `https://api.viatovia.com/api/bookings?filters%5Bselected_date%5D=${date ?? yyyyMmDd}&pag`;
 
   const headers = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",

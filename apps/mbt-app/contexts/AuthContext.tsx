@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Employee } from '@/types/auth';
-import { apiClient } from '@/utils/api';
+import { apiClient, APIError } from '@/utils/api';
 
 interface AuthContextType {
 	isAuthenticated: boolean;
@@ -20,17 +20,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const setAuthCookie = () => {
+  const setAuthCookie = useCallback(() => {
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 7);
     const secureAttr = window.location.protocol === 'https:' ? '; Secure' : '';
     document.cookie = `mbt-auth=authenticated; path=/; expires=${expiryDate.toUTCString()}; SameSite=Lax${secureAttr}`;
-  };
+  }, []);
 
-  const clearAuthCookie = () => {
+  const clearAuthCookie = useCallback(() => {
     document.cookie = 'mbt-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
     document.cookie = 'mbt-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure';
-  };
+  }, []);
+
+  const clearAuthStorage = useCallback(() => {
+    localStorage.removeItem('mbt-token');
+    localStorage.removeItem('mbt-employee');
+    // Clear cookie with both HTTP/HTTPS variants
+    clearAuthCookie();
+    apiClient.clearToken();
+  }, [clearAuthCookie]);
 
   // Auto-initialize from localStorage on mount
   useEffect(() => {
@@ -74,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // This prevents logout on temporary network issues
             console.error('Token validation failed:', error);
             // Only clear if it's a 401/403 error
-            if (error instanceof Error && error.message.includes('401')) {
+            if (error instanceof APIError && (error.status === 401 || error.status === 403)) {
               clearAuthStorage();
               setIsAuthenticated(false);
               setEmployee(null);
@@ -89,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     initAuth();
-  }, []);
+  }, [clearAuthStorage, setAuthCookie]);
 
   const authenticate = async (identifier: string, accessKey: string): Promise<boolean> => {
     try {
@@ -118,7 +126,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     } catch (error) {
       console.error('Authentication error:', error);
-      return false;
+
+      if (error instanceof APIError && error.status === 401) {
+        return false;
+      }
+
+      throw error;
     }
   };
 
@@ -147,16 +160,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Token refresh error:', error);
-      logout();
-    }
-  };
 
-  const clearAuthStorage = () => {
-    localStorage.removeItem('mbt-token');
-    localStorage.removeItem('mbt-employee');
-    // Clear cookie with both HTTP/HTTPS variants
-    clearAuthCookie();
-    apiClient.clearToken();
+      if (error instanceof APIError && error.status === 401) {
+        logout();
+      }
+    }
   };
 
   return (

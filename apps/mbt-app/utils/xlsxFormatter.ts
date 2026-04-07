@@ -2,27 +2,27 @@ import ExcelJS from "exceljs";
 
 import { ExtendedService } from "@/views/service-management/utils/serviceManagement";
 import {
-  displayTimeFromService,
-  displayTimeToMinutes,
-  getOffsetDisplayTime,
-  normalizeNotesForEditor,
+	displayTimeFromService,
+	displayTimeToMinutes,
+	getOffsetDisplayTime,
+	normalizeNotesForEditor,
 } from "@/views/service-management/utils/serviceManagement";
 
 type CompanyKey = ExtendedService["serviceType"];
 
 type ExportRow = {
-  tipo: string;
-  codigo: string;
-  cliente: string;
-  pickup: string;
-  vuelo: string;
-  vehiculo: string;
-  pax: number | string;
-  desde: string;
-  hacia: string;
-  notas: string;
-  em: string;
-  rowColor: string;
+	tipo: string;
+	codigo: string;
+	cliente: string;
+	pickup: string;
+	vuelo: string;
+	vehiculo: string;
+	pax: number | string;
+	desde: string;
+	hacia: string;
+	notas: string;
+	em: string;
+	rowColor: string;
 };
 
 const EXPORT_HEADERS = ["TIPO", "CODIGO", "CLIENTE", "PICKUP", "VUELO", "VEHICULO", "PAX", "DESDE", "HACIA", "NOTAS", "EM"];
@@ -30,15 +30,15 @@ const EXPORT_HEADERS = ["TIPO", "CODIGO", "CLIENTE", "PICKUP", "VUELO", "VEHICUL
 const COMPANY_ORDER: CompanyKey[] = ["at", "mbt", "st"];
 
 const COMPANY_STYLES: Record<CompanyKey, { label: string; color: string }> = {
-  at: { label: "Airport Transfer", color: "FFF2CC" },
-  mbt: { label: "MB Transfer", color: "9FC5E8" },
-  st: { label: "SACBE TRANSFER", color: "B6D7A8" },
+	at: { label: "Airport Transfer", color: "FFF2CC" },
+	mbt: { label: "MB Transfer", color: "9FC5E8" },
+	st: { label: "SACBE TRANSFER", color: "B6D7A8" },
 };
 
 const TYPE_ROW_COLORS: Record<string, string> = {
-  TRANSFER: "D9EAD3",
-  DEPARTURE: "FCE5CD",
-  ARRIVAL: "FFFFFF",
+	TRANSFER: "D9EAD3",
+	DEPARTURE: "FCE5CD",
+	ARRIVAL: "FFFFFF",
 };
 
 const HEADER_FILL = "1F4E78";
@@ -49,7 +49,7 @@ const ITINERARY_END_FILL = "1C1C1C";
 const ITINERARY_END_TEXT = "FFFFFF";
 
 type ServiceNoteItem = {
-  tag?: string;
+	tag?: string;
 };
 
 const isNoteArray = (value: unknown): value is ServiceNoteItem[] =>

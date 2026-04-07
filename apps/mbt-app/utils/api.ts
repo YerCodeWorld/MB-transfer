@@ -1,10 +1,29 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const DEFAULT_TIMEOUT_MS = 10000;
 
 interface APIResponse<T = any> {
 	success: boolean;
 	message?: string;
 	data?: T;
 	errors?: any[];
+}
+
+interface APIRequestOptions extends RequestInit {
+	timeoutMs?: number;
+}
+
+export class APIError extends Error {
+	status?: number;
+	code?: string;
+	cause?: unknown;
+
+	constructor(message: string, options: { status?: number; code?: string; cause?: unknown } = {}) {
+		super(message);
+		this.name = 'APIError';
+		this.status = options.status;
+		this.code = options.code;
+		this.cause = options.cause;
+	}
 }
 
 export interface DeveloperNote {
@@ -84,25 +103,66 @@ class APIClient {
 
 	private async request<T>(
 		endpoint: string,
-		options: RequestInit = {}
+		options: APIRequestOptions = {}
 	): Promise<APIResponse<T>> {
 		const url = `${this.baseURL}${endpoint}`;
+		const controller = new AbortController();
+		const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+		const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
 
-		const response = await fetch(url, {
-			...options,
-			headers: {
-				...this.getHeaders(),
-				...options.headers,
-			},
-		});
+		try {
+			const response = await fetch(url, {
+				...options,
+				headers: {
+					...this.getHeaders(),
+					...options.headers,
+				},
+				signal: controller.signal,
+			});
 
-		const data = await response.json();
+			const data = await this.parseResponse<T>(response);
 
-		if (!response.ok) {
-			throw new Error(data.message || 'API request failed');
+			if (!response.ok) {
+				throw new APIError(data.message || 'API request failed', {
+					status: response.status,
+					code: 'HTTP_ERROR',
+				});
+			}
+
+			return data;
+		} catch (error) {
+			if (error instanceof APIError) {
+				throw error;
+			}
+
+			if (error instanceof DOMException && error.name === 'AbortError') {
+				throw new APIError(`The request to ${this.baseURL} timed out after ${timeoutMs / 1000} seconds.`, {
+					code: 'TIMEOUT',
+					cause: error,
+				});
+			}
+
+			throw new APIError(`Unable to reach the API at ${this.baseURL}.`, {
+				code: 'NETWORK_ERROR',
+				cause: error,
+			});
+		} finally {
+			globalThis.clearTimeout(timeoutId);
+		}
+	}
+
+	private async parseResponse<T>(response: Response): Promise<APIResponse<T>> {
+		const contentType = response.headers.get('content-type') || '';
+
+		if (contentType.includes('application/json')) {
+			return response.json() as Promise<APIResponse<T>>;
 		}
 
-		return data;
+		const text = await response.text();
+		return {
+			success: response.ok,
+			message: text || (response.ok ? undefined : 'API request failed'),
+		};
 	}
 
 	// Auth endpoints

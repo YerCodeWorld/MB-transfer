@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import FixedSwitch from "../components/single/fixedSwitch";
 import LoadingStep from "../components/shared/loading-step";
 import { useAuth } from "../contexts/AuthContext";
+import { APIError } from "../utils/api";
 
 import { MdWarning, MdWarningAmber } from "react-icons/md";
 
@@ -44,8 +45,18 @@ export default function Auth() {
 				setError("Credenciales inválidas. Acceso denegado.");
 				setIsLoading(false);
 			}
-		} catch {
-			setError("Error al conectar con el servidor. Intente nuevamente.");
+		} catch (error) {
+			if (error instanceof APIError) {
+				if (error.code === "TIMEOUT") {
+					setError("El servidor local tardó demasiado en responder. Revise la API en localhost:3001 y la conexión a la base de datos.");
+				} else if (error.code === "NETWORK_ERROR") {
+					setError("No se pudo conectar con la API en localhost:3001. Verifique que el servidor local esté corriendo.");
+				} else {
+					setError(error.message);
+				}
+			} else {
+				setError("Error al conectar con el servidor. Intente nuevamente.");
+			}
 			setIsLoading(false);
 		}
 	};
