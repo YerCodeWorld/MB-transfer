@@ -236,7 +236,7 @@ const AirportTransferService = () => {
 		title="Total de Servicios"
 		subtitle={
 		  <span>
-		    Siempre verifique que los servicios aquí sean los mismos que en el sitio oficial de <strong>Airport Transfer</strong>.
+		    Siempre verifique que los servicios aquí sean los mismos que en el sitio oficial de <strong>ViaToVia</strong>.
 		  </span>
 		}
 		company="AT"

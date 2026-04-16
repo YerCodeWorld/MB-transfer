@@ -2,6 +2,7 @@ import React from "react";
 import FullCalendar from "@fullcalendar/react"; // must go before plugins
 import dayGridPlugin from "@fullcalendar/daygrid"; // a plugin!
 import interactionPlugin from "@fullcalendar/interaction"; // needed for dayClick
+
 function EventCalendar(props: {
   calendarData: {
     title: string;
@@ -20,11 +21,9 @@ function EventCalendar(props: {
       plugins={[dayGridPlugin, interactionPlugin]}
       headerToolbar={false}
       initialView="dayGridMonth"
-      contentHeight="600px"
       events={calendarData}
       initialDate={initialDate}
       editable={true}
-      height="100%"
     />
   );
 }

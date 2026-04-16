@@ -27,9 +27,9 @@ export const serviceCompanies: ServiceCompany[] = [
 		id: 'at',
 		bgBox: "bg-[url('/at-website.png')]",
 		icon: GoCodescan,
-		title: "AirportTransfer",
-		desc: "Consigue los servicios de AT automáticamente con la utilidad que intercepta una solicitud a su base de datos.",
-		day: "AT",
+		title: "ViaToVia",
+		desc: "Consigue los servicios de ViaToVia automáticamente con la utilidad que intercepta una solicitud a su base de datos.",
+		day: "VtV",
 		date: "HTTPS",
 	},
 	{
@@ -91,7 +91,7 @@ const ServiceCreationView = () => {
             Herramientas de captura y creación
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-            Selecciona una herramienta para obtener o crear servicios. Cada opción te lleva al flujo detallado que ya existe para Airport Transfer, Sacbé Transfer y MB Transfer.
+            Selecciona una herramienta para obtener o crear servicios. Cada opción te lleva al flujo detallado que ya existe para ViaToVia, Sacbé Transfer y MB Transfer.
           </p>
         </div>
 

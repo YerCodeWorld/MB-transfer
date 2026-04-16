@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import Calendar, { CalendarTileProperties } from "react-calendar";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
+import "react-calendar/dist/Calendar.css";
 import "../../css/MiniCalendar.css";
 
 import { useServiceData } from "../../../contexts/ServiceDataContext";
 import { isSameDay, startOfGrid, parseYMDLocal } from "../../../utils/dateUtils";
 import { apiClient } from "../../../utils/api";
-
-import "react-calendar/dist/Calendar.css";
 
 type MiniCalendarProps = { width?: string };
 
@@ -121,22 +120,26 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ width }) => {
   const tileContent = ({ date, view }: CalendarTileProperties) => {
     if (view !== "month") return null;
     const key = toYMDFromDateParts(date);
-    const count = counts[key] ?? 0;    
+    const count = counts[key] ?? 0;
     if (!count) return null;
 
     const label = `${count} service${count === 1 ? "" : "s"} on ${key}`;
 
     return (
       <div
-        className="mt-1 items-center"
+        className="mt-1 flex items-center justify-center"
         onMouseEnter={(e) => showTip(e.currentTarget as HTMLElement, label)}
         onMouseLeave={hideTip}
         onFocus={(e) => showTip(e.currentTarget as HTMLElement, label)}
         onBlur={hideTip}
       >
-        <div className={`min-w-[1.5rem] px-1 text-[10px] font-semibold ${badgeClass(count)} text-center`}>
+        <div
+          className={`min-w-[1.65rem] rounded-full px-1.5 py-0.5 text-center text-[10px] font-semibold leading-none shadow-sm ${badgeClass(
+            count,
+          )}`}
+        >
           {count}
-        </div>        
+        </div>
       </div>
     );
   };
@@ -163,8 +166,8 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ width }) => {
     <div
       ref={containerRef}
       className="
-        relative
-        flex h-full max-w-full flex-col rounded-2xl bg-accent-100 px-3 py-4
+        relative flex h-full max-w-full flex-col gap-3 rounded-2xl border border-black/5
+        bg-white/70 px-3 py-4 shadow-[0_14px_34px_rgba(15,23,42,0.08)] backdrop-blur-sm
         dark:border dark:border-white/10 dark:bg-navy-800
       "
       style={width ? { width } : undefined}
@@ -182,7 +185,8 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ width }) => {
         )}
       </div>
 
-      <Calendar        
+      <Calendar
+        className="mini-calendar"
         onChange={handleDateChange}
         value={value}
         view="month"
@@ -209,12 +213,12 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ width }) => {
         }
       />
 
-      <div className="mt-3 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-gray-600 dark:text-gray-300">
         <span className="inline-flex h-3 w-3 rounded-sm bg-accent-200" /> 1 to 4
         <span className="inline-flex h-3 w-3 rounded-sm bg-green-600" /> 5 to 9
         <span className="inline-flex h-3 w-3 rounded-sm bg-green-300" /> 10 to 14
         <span className="inline-flex h-3 w-3 rounded-sm bg-orange-500" /> 15 to 24
-        <span className="inline-flex h-3 w-3 rounded-sm bg-rose-600" /> 25+        
+        <span className="inline-flex h-3 w-3 rounded-sm bg-rose-600" /> 25+
       </div>
     </div>
   );
